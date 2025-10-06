@@ -13,6 +13,7 @@
       ./modules/user/hyprland.nix
       ./modules/user/dunst.nix
       ./modules/user/virtualisation.nix
+      ./modules/user/winboat.nix
     ];
 
     home = {

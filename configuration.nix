@@ -11,6 +11,8 @@
         ./modules/system/ly.nix
         ./modules/system/hyprland.nix
         ./modules/system/system_services.nix
+        # WinBoat system requirements (Docker, kernel modules, groups)
+        ./modules/system/winboat.nix
       ];
 
 

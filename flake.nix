@@ -7,7 +7,8 @@
         nixos-hardware.url = "github:NixOS/nixos-hardware/master";
         home-manager.url = "github:nix-community/home-manager/release-25.05";
         home-manager.inputs.nixpkgs.follows = "nixpkgs";
-        #nixlypkgs.url = "path:./nixlypkgs";
+        nixlypkgs.url = "github:aCeTotal/nixlypkgs";
+        nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
     };
 
     outputs = inputs@{ self, nixpkgs, nixpkgs-unstable, nixos-hardware, home-manager, ... }:
@@ -15,7 +16,7 @@
             system = "x86_64-linux";
             pkgsStable = import nixpkgs {
                 inherit system;
-                #overlays = [ inputs.nixlypkgs.overlays.default ];
+                overlays = [ inputs.nixlypkgs.overlays.default ];
                 config = { allowUnfree = true; };
             };
         in {
@@ -28,11 +29,11 @@
                         nixpkgs-unstable = nixpkgs-unstable;
                     };
                     modules = [
-                        #{ nixpkgs.overlays = [ inputs.nixlypkgs.overlays.default ]; }
+                        { nixpkgs.overlays = [ inputs.nixlypkgs.overlays.default ]; }
                         ./configuration.nix
                         home-manager.nixosModules.home-manager {
                             home-manager = {
-                                extraSpecialArgs = { inherit inputs; };
+                                extraSpecialArgs = { inherit inputs system nixpkgs-unstable; };
                                 useGlobalPkgs = true;
                                 useUserPackages = true;
                                 backupFileExtension = "backup";
@@ -47,7 +48,7 @@
                 total = home-manager.lib.homeManagerConfiguration {
                     inherit system;
                     pkgs = pkgsStable;
-                    extraSpecialArgs = { inherit inputs; };
+                    extraSpecialArgs = { inherit inputs system nixpkgs-unstable; };
                     modules = [ ./home.nix ];
                 };
             };
