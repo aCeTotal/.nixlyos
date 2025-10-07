@@ -8,8 +8,8 @@
       ./modules/user/bash.nix
       ./modules/user/btop.nix
       ./modules/user/starship.nix
-      ./modules/user/cursor_icons.nix
       ./modules/user/alacritty.nix
+      ./modules/user/thunar_exo.nix
       ./modules/user/hyprland.nix
       ./modules/user/dunst.nix
       ./modules/user/virtualisation.nix

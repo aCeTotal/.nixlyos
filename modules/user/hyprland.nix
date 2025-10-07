@@ -11,21 +11,6 @@
     home.packages = (with pkgs; [
         swappy
         slurp
-        xfce.thunar
-        xfce.thunar-archive-plugin
-        xfce.thunar-volman
-        xfce.thunar-media-tags-plugin
-        gtkhash
-        xfce.tumbler
-        ffmpegthumbnailer
-        poppler
-        libgsf
-        libopenraw
-        p7zip
-        zip
-        unzip
-        unrar
-        file-roller
         hyprshot
         hyprlock
         networkmanagerapplet
@@ -35,12 +20,9 @@
         # alacritty provided via HM shared packages
     ]) ++ lib.optionals (pkgs ? mcontrolcenter) [ pkgs.mcontrolcenter ];
 
-    # Ensure Thunar is the default handler for folders
-    xdg.mimeApps.enable = true;
-    xdg.mimeApps.defaultApplications = {
-      "inode/directory" = [ "thunar.desktop" ];
-      "application/x-gnome-saved-search" = [ "thunar.desktop" ];
-    };
+    # Thunar defaults are managed in thunar_exo.nix
+
+    # exo/terminal preference managed in modules/user/thunar_exo.nix
 
     home.file.".config/hypr/hyprland.conf".text = ''
 
