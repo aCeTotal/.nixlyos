@@ -9,16 +9,20 @@
     ];
 
     home.packages = (with pkgs; [
-        swappy
+        # Screenshot + clipboard + notifications
+        grim
         slurp
-        hyprshot
+        wl-clipboard
+        libnotify
+        sway-contrib.grimshot
+        swappy
         hyprlock
         networkmanagerapplet
         blueman
-        wl-clipboard
         cliphist
-        # alacritty provided via HM shared packages
-    ]) ++ lib.optionals (pkgs ? mcontrolcenter) [ pkgs.mcontrolcenter ];
+    ])
+    ++ lib.optionals (pkgs ? mcontrolcenter) [ pkgs.mcontrolcenter ]
+    ++ lib.optionals (pkgs ? hyprland-contrib) [ pkgs.hyprland-contrib ];
 
     # Thunar defaults are managed in thunar_exo.nix
 
@@ -45,7 +49,7 @@ monitor = , preferred, auto, 1
 $terminal = alacritty
 $fileManager = thunar
 $browser = google-chrome-stable
-$screenshot = hyprshot -m region
+$screenshot = grimshot copy area
 $launcher = wofi --show drun
 
 
@@ -62,6 +66,8 @@ exec-once = systemctl --user start hyprpolkitagent
 exec-once = nm-applet --indicator
 exec-once = blueman-applet
 exec-once = wl-paste --watch cliphist store
+exec-once = wl-paste --type text --watch wl-copy --primary --type text
+exec-once = wl-paste --primary --type text --watch wl-copy --type text
 exec-once = thunar --daemon
 exec-once = mcontrolcenter
 
@@ -290,7 +296,7 @@ bind = $mainMod SHIFT, 9, movetoworkspace, 9
 bind = $mainMod SHIFT, 0, movetoworkspace, 10
 
 # Example special workspace (scratchpad)
-bind = $mainMod, S, togglespecialworkspace, magic
+bind = $mainMod, M, togglespecialworkspace, magic
 bind = $mainMod SHIFT, S, movetoworkspace, special:magic
 
 # Scroll through existing workspaces with mainMod + scroll
@@ -338,6 +344,8 @@ windowrulev2 = opacity 0.92 0.92,class:^(dunst)$
 
 
     '';
+
+    # (Removed local script; bound directly in Hyprland via $screenshot)
 
 
 
