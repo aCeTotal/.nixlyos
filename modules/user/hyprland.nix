@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
 
@@ -8,7 +8,7 @@
         ./wofi.nix
     ];
 
-    home.packages = with pkgs; [
+    home.packages = (with pkgs; [
         swappy
         slurp
         xfce.thunar
@@ -33,7 +33,7 @@
         wl-clipboard
         cliphist
         # alacritty provided via HM shared packages
-    ];
+    ]) ++ lib.optionals (pkgs ? mcontrolcenter) [ pkgs.mcontrolcenter ];
 
     # Ensure Thunar is the default handler for folders
     xdg.mimeApps.enable = true;
@@ -81,6 +81,7 @@ exec-once = nm-applet --indicator
 exec-once = blueman-applet
 exec-once = wl-paste --watch cliphist store
 exec-once = thunar --daemon
+exec-once = mcontrolcenter
 
 #############################
 ### ENVIRONMENT VARIABLES ###
