@@ -128,10 +128,7 @@
 
   };
 
-    home.sessionVariables = {
-      EDITOR = "nvim";
-      VISUAL = "nvim";
-    };
+    # EDITOR/VISUAL moved to modules/user/env.nix to consolidate session vars
 
     home.packages = with pkgs; [
       ripgrep

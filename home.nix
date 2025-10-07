@@ -9,11 +9,12 @@
       ./modules/user/btop.nix
       ./modules/user/starship.nix
       ./modules/user/alacritty.nix
+      ./modules/user/env.nix
       ./modules/user/thunar_exo.nix
       ./modules/user/hyprland.nix
       ./modules/user/dunst.nix
       ./modules/user/virtualisation.nix
-      ./modules/user/winboat.nix
+      # WinBoat disabled
     ];
 
     home = {
@@ -40,11 +41,6 @@
           autoconnect = ["qemu:///system"];
           uris = ["qemu:///system"];
      };
-    };
-
-    # Manage Environment variables
-    home.sessionVariables = {
-      Editor = "vim";
     };
 
     # Calendar/accounts: set basePath to satisfy HM module defaults
