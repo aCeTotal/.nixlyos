@@ -22,6 +22,11 @@
     stateVersion = "24.05";
     };
 
+    # User applications
+    home.packages = with pkgs; [
+      seahorse
+    ];
+
     
     programs.bash.shellAliases = {
       "update" = "cd $HOME/dev_nixly/.nixlyos/ && sudo nixos-rebuild switch --flake .#nixlyos";

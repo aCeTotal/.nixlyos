@@ -23,6 +23,10 @@
   services.fstrim.enable = true;
   services.gnome.gnome-keyring.enable = true;
 
+  # Auto-unlock GNOME Keyring via PAM for ly (DM) and TTY login
+  security.pam.services.ly.enableGnomeKeyring = true;
+  security.pam.services.login.enableGnomeKeyring = true;
+
 
 
 
