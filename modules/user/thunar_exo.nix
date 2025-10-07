@@ -26,7 +26,7 @@
     (pkgs.writeShellScriptBin "openthunar" ''
       #!/usr/bin/env bash
       set -euo pipefail
-      target="${1:-$PWD}"
+      target="''${1:-$PWD}"
       if [ -f "$target" ]; then
         target="$(dirname "$target")"
       fi
