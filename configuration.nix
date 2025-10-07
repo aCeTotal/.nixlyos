@@ -11,6 +11,8 @@
         ./modules/system/ly.nix
         ./modules/system/hyprland.nix
         ./modules/system/system_services.nix
+        # MSI EC kernel driver support
+        ./modules/system/msi-ec.nix
         # WinBoat system requirements (Docker, kernel modules, groups)
         ./modules/system/winboat.nix
       ];
