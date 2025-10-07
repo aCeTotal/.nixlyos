@@ -66,7 +66,6 @@ exec-once = systemctl --user start hyprpolkitagent
 exec-once = nm-applet --indicator
 exec-once = blueman-applet
 exec-once = wl-paste --watch cliphist store
-exec-once = wl-paste --type text --watch wl-copy --primary --type text
 exec-once = wl-paste --primary --type text --watch wl-copy --type text
 exec-once = thunar --daemon
 exec-once = mcontrolcenter

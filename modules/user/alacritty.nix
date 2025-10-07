@@ -38,6 +38,9 @@ style = "Regular"
 
 [window]
 opacity = 0.75
+
+[selection]
+save_to_clipboard = true
     '';
 
 
