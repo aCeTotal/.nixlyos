@@ -8,12 +8,16 @@ let
     alacritty
   ]);
 
-  # Instantiate unstable lazily only when provided
+  # Instantiate unstable lazily with unfree enabled (needed for Blender + CUDA/OptiX)
   unstable = if nixpkgs-unstable != null && system != null
-             then nixpkgs-unstable.legacyPackages.${system}
+             then import nixpkgs-unstable {
+               inherit system;
+               config = { allowUnfree = true; };
+             }
              else null;
   hmUnstablePkgs = lib.optionals (unstable != null) (with unstable; [
     codex
+    (blender.override { cudaSupport = true; })
   ]);
 
   systemStablePkgs = lib.optionals (pkgs-stable != null) (with pkgs-stable; [

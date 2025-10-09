@@ -14,7 +14,7 @@
       ./modules/user/hyprland.nix
       ./modules/user/dunst.nix
       ./modules/user/virtualisation.nix
-      # WinBoat disabled
+      ./modules/user/winstripping.nix
     ];
 
     home = {

@@ -1,12 +1,6 @@
 { config, pkgs, pkgs-stable, inputs, system, ... }:
 
-let
-  blenderCustom = pkgs.blender.overrideAttrs (old: {
-    makeFlags = [ "-j4" ];
-  }) // {
-    cudaSupport = true;
-  };
-in {
+{
   # Tillat ufrie + usikre pakker på tvers av nixpkgs
   nixpkgs.config = {
     allowUnfree = true;
@@ -69,4 +63,3 @@ in {
       };
   };
 }
-

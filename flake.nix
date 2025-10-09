@@ -9,6 +9,8 @@
         home-manager.inputs.nixpkgs.follows = "nixpkgs";
         nixlypkgs.url = "github:aCeTotal/nixlypkgs";
         nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
+        dao-flake.url = "path:/mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor";
+        dao-flake.inputs.nixpkgs.follows = "nixpkgs";
     };
 
     outputs = inputs@{ self, nixpkgs, nixpkgs-unstable, nixos-hardware, home-manager, ... }:
@@ -30,6 +32,7 @@
                     };
                     modules = [
                         { nixpkgs.overlays = [ inputs.nixlypkgs.overlays.default ]; }
+                        ./modules/dao.nix
                         ./configuration.nix
                         home-manager.nixosModules.home-manager {
                             home-manager = {
@@ -44,13 +47,5 @@
                 };
             };
 
-            homeConfigurations = {
-                total = home-manager.lib.homeManagerConfiguration {
-                    inherit system;
-                    pkgs = pkgsStable;
-                    extraSpecialArgs = { inherit inputs system nixpkgs-unstable; };
-                    modules = [ ./home.nix ];
-                };
-            };
         };
 }

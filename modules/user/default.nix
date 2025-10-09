@@ -20,7 +20,7 @@
     #Work
     #teams-for-linux
 
-    #    (blender.override { cudaSupport = true;})
+    # blender (CUDA via stable HM set)
     
   ];
   

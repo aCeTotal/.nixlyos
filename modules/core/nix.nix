@@ -15,8 +15,8 @@
       keep-outputs = true;
       keep-derivations = true;
       builders-use-substitutes = true;
-      max-jobs = "auto";
-      cores = 0;
+      max-jobs = 1;
+      cores = 6;
       http-connections = 50;
       connect-timeout = 30;
       fallback = true;
