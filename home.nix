@@ -32,7 +32,13 @@
     programs.bash.shellAliases = {
       "update" = "cd $HOME/dev_nixly/.nixlyos/ && sudo nixos-rebuild switch --flake .#nixlyos";
       "upgrade" = "cd $HOME/dev_nixly/.nixlyos/ && nix flake update && sudo nixos-rebuild switch --flake .#nixlyos";
-      "nixly" = "cd $HOME/dev_nixly/";  
+      "nixly" = "cd $HOME/dev_nixly/";
+
+      "game" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/";
+
+      "start_backend" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_backend";
+      "start_directory" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_directory";
+      "start_client" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_client";
     };
 
 
