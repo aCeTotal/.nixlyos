@@ -41,6 +41,23 @@ opacity = 0.75
 
 [selection]
 save_to_clipboard = true
+
+# Make copy/paste bindings explicit (Ctrl+Shift+C/V)
+[[keyboard.bindings]]
+key = "C"
+mods = "Control|Shift"
+action = "Copy"
+
+[[keyboard.bindings]]
+key = "V"
+mods = "Control|Shift"
+action = "Paste"
+
+# Paste primary selection with Shift+Insert (common on Linux)
+[[keyboard.bindings]]
+key = "Insert"
+mods = "Shift"
+action = "PasteSelection"
     '';
 
 

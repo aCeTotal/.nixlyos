@@ -74,7 +74,8 @@
         };
         # BOOT settings
         supportedFilesystems = [ "ext4" "ntfs3" "vfat" ];
-        kernelModules = [ "nvidia" "nvidia_uvm" "tcp_bbr" ];
+        # NVIDIA modules are managed in core/gpu/nvidia.nix
+        kernelModules = [ "tcp_bbr" ];
         initrd.systemd.enable = true;
         # Use Zen kernel from unstable only if provided
         kernelPackages =

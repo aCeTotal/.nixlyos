@@ -10,6 +10,16 @@
     package = pkgs.nixVersions.latest;
 
     settings = {
+      # Prefer binary caches to avoid local source builds
+      substituters = [
+        "https://cache.nixos.org"
+        "https://nix-community.cachix.org"
+        "https://nixlyos.cachix.org"
+      ];
+      trusted-public-keys = [
+        "nix-community.cachix.org-1:mB9FSh9qf/f+mU9ZfZPmEH9JPE0RSeW8V1w0x9Wl6iY="
+        "nixlyos.cachix.org-1:MHb4zMKxhNmxw/aHmRVBJj3gjEp0VJphEfO8zAa+yWM="
+      ];
       experimental-features = [ "nix-command" "flakes" "cgroups" "auto-allocate-uids" ];
       auto-optimise-store = true;
       keep-outputs = true;

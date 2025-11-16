@@ -3,12 +3,15 @@
 let
   hmStablePkgs = lib.optionals (pkgs-stable != null) (with pkgs-stable; [
     discord
+    gimp
+    celluloid
     google-chrome
     teams-for-linux
     alacritty
+    citrix_workspace
   ]);
 
-  # Instantiate unstable lazily with unfree enabled (needed for Blender + CUDA/OptiX)
+  # Instantiate unstable lazily with unfree enabled (for select tools only)
   unstable = if nixpkgs-unstable != null && system != null
              then import nixpkgs-unstable {
                inherit system;
@@ -17,6 +20,7 @@ let
              else null;
   hmUnstablePkgs = lib.optionals (unstable != null) (with unstable; [
     codex
+    libreoffice-fresh
     (blender.override { cudaSupport = true; })
   ]);
 

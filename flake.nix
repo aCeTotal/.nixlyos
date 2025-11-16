@@ -9,8 +9,9 @@
         home-manager.inputs.nixpkgs.follows = "nixpkgs";
         nixlypkgs.url = "github:aCeTotal/nixlypkgs";
         nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
-        dao-flake.url = "path:/mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor";
-        dao-flake.inputs.nixpkgs.follows = "nixpkgs";
+        # Note: Project-specific flakes (e.g., DAO/thelastemperor) should be
+        # used only within their own repo via `nix develop` and not referenced
+        # from the system flake.
     };
 
     outputs = inputs@{ self, nixpkgs, nixpkgs-unstable, nixos-hardware, home-manager, ... }:
@@ -32,7 +33,6 @@
                     };
                     modules = [
                         { nixpkgs.overlays = [ inputs.nixlypkgs.overlays.default ]; }
-                        ./modules/dao.nix
                         ./configuration.nix
                         home-manager.nixosModules.home-manager {
                             home-manager = {

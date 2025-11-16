@@ -634,7 +634,7 @@ fi
 '';
     };
 
-    # Waybar click-to-open menu popup under cursor (wofi)
+    # Waybar click-to-open menu popup under cursor (rofi)
     home.file.".config/waybar/menu_popup.sh" = {
       executable = true;
       text = ''
@@ -678,11 +678,10 @@ POS_X=$(( CUR_X - WIDTH / 2 ))
 POS_Y=$(( CUR_Y + 28 ))
 
 choice=$(printf '%s\n' "$MENU_ITEMS" \
-  | wofi --dmenu \
-          --prompt "" \
-          --x "$POS_X" --y "$POS_Y" \
-          --width "$WIDTH" --height "$HEIGHT" \
-          --allow-images --cache-file /dev/null)
+  | rofi -dmenu \
+          -i \
+          -p "" \
+          -theme-str "window { width: ''${WIDTH}px; location: north; anchor: north; x-offset: ''${POS_X}; y-offset: ''${POS_Y}; } listview { lines: ''${COUNT}; }")
 
 # Exit if nothing selected
 [[ -n "$choice" ]] || exit 0

@@ -4,7 +4,6 @@
   security.rtkit.enable = true;
   # Option renamed upstream; use services.pulseaudio
   services.pulseaudio.enable = false;
-  hardware.bluetooth.enable = true;
   services.blueman.enable = true;
 
   services.pipewire = {

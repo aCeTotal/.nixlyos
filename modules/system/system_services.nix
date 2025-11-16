@@ -5,6 +5,12 @@
   # Power Management
   powerManagement.cpuFreqGovernor = "powersave";
 
+  services.logind = {
+    lidSwitch = "poweroff";
+    lidSwitchExternalPower = "poweroff";
+    lidSwitchDocked = "poweroff";
+  };
+
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

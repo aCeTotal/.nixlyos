@@ -15,6 +15,8 @@
       ./modules/user/dunst.nix
       ./modules/user/virtualisation.nix
       ./modules/user/winstripping.nix
+      ./modules/user/rofi.nix
+      ./modules/user/derivations.nix
     ];
 
     home = {
@@ -26,6 +28,7 @@
     # User applications
     home.packages = with pkgs; [
       seahorse
+      rofi-wayland
     ];
 
     
@@ -38,7 +41,8 @@
 
       "start_backend" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_backend";
       "start_directory" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_directory";
-      "start_client" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_client";
+      "start_client" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#smoke";
+      "start_stack" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_stack";
     };
 
 

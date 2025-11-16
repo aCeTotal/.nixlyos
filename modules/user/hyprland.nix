@@ -5,7 +5,7 @@
     imports = [
         ./waybar.nix
         ./hyprpaper.nix
-        ./wofi.nix
+        ./clipman.nix
     ];
 
     home.packages = (with pkgs; [
@@ -19,7 +19,7 @@
         hyprlock
         networkmanagerapplet
         blueman
-        cliphist
+        clipman
     ])
     ++ lib.optionals (pkgs ? mcontrolcenter) [ pkgs.mcontrolcenter ]
     ++ lib.optionals (pkgs ? hyprland-contrib) [ pkgs.hyprland-contrib ];
@@ -50,7 +50,7 @@ $terminal = alacritty
 $fileManager = thunar
 $browser = google-chrome-stable
 $screenshot = grimshot copy area
-$launcher = wofi --show drun
+$launcher = rofi -show drun
 
 
 #################
@@ -65,8 +65,11 @@ exec-once = waybar
 exec-once = systemctl --user start hyprpolkitagent
 exec-once = nm-applet --indicator
 exec-once = blueman-applet
-exec-once = wl-paste --watch cliphist store
-exec-once = wl-paste --primary --type text --watch wl-copy --type text
+exec-once = wl-paste --type text --watch clipman store --no-persist
+exec-once = wl-paste --primary --type text --watch clipman store --no-persist
+## NOTE: This watcher force-synced PRIMARY selection to CLIPBOARD and could
+## overwrite normal Ctrl+C copies unexpectedly. Disable to avoid paste issues.
+# exec-once = wl-paste --primary --type text --watch wl-copy --type text
 exec-once = thunar --daemon
 exec-once = mcontrolcenter
 
@@ -264,6 +267,7 @@ bind = $mainMod, D, pseudo,
 bind = $mainMod, J, togglesplit,
 bind = $mainMod, S, exec, $screenshot
 bind = , Print, exec, $screenshot
+bind = $mainMod, W, exec, sh -c 'p=$(clipman pick -t rofi); [ -n "$p" ] && printf "%s" "$p" | wl-copy && printf "%s" "$p" | wl-copy --primary'
 
 bind = $mainMod, left, movefocus, l
 bind = $mainMod, right, movefocus, r
@@ -305,6 +309,8 @@ bind = $mainMod, mouse_up, workspace, e-1
 # Move/resize windows with mainMod + LMB/RMB and dragging
 bindm = $mainMod, mouse:272, movewindow
 bindm = $mainMod, mouse:273, resizewindow
+
+# Keep middle mouse button default (primary selection paste)
 
 # Laptop multimedia keys for volume and LCD brightness
 bindel = ,XF86AudioRaiseVolume, exec, wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+

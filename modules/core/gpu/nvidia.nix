@@ -4,6 +4,8 @@ let
   # nvtop attribute changed across nixpkgs versions; prefer new names.
   nvtopPkg = (pkgs.nvtopPackages.full or (pkgs.nvtopPackages.nvidia or (pkgs.nvtop or null)));
 in {
+  # Ensure X picks the NVIDIA driver explicitly (Xwayland uses this too)
+  services.xserver.videoDrivers = [ "nvidia" ];
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
@@ -11,7 +13,8 @@ in {
 
   hardware.nvidia = {
     modesetting.enable = true;
-    nvidiaPersistenced = true;
+    # Disable persistenced to avoid service failures and keep defaults simple
+    nvidiaPersistenced = false;
     powerManagement.enable = false;
     powerManagement.finegrained = false;
     open = false;
@@ -42,4 +45,8 @@ in {
     SDL_VIDEODRIVER = "wayland";
     MOZ_ENABLE_WAYLAND = "1";
   };
+
+  # Rely on hardware.nvidia.nvidiaPersistenced above; no extra unit needed.
+
+  # No additional performance-tweaking services; keep config simple.
 }
