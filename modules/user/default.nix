@@ -4,7 +4,6 @@
   home.packages = with pkgs; [
     google-chrome
     libreoffice
-    pureref
     kitty
     codex
     freecad

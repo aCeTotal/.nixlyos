@@ -43,6 +43,8 @@
       "start_directory" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_directory";
       "start_client" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#smoke";
       "start_stack" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_stack";
+      # Force NVIDIA GPU for Blender (no nvidia-offload script needed)
+      "blender-nvidia" = "env __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=1 blender";
     };
 
 

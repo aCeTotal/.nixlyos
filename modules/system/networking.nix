@@ -1,4 +1,4 @@
-{ config, pkgs, nixpkgs-unstable ? null, inputs, lib, ... }:
+{ config, pkgs, pkgs-unstable ? null, inputs, lib, ... }:
 
 {
 
@@ -41,8 +41,7 @@
     ++
 
 #Unstable packages (if available)
-    (let unstable = if nixpkgs-unstable != null then nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system} else null;
-     in lib.optionals (unstable != null) (with unstable; [
+    (lib.optionals (pkgs-unstable != null) (with pkgs-unstable; [
 
 
     ]));

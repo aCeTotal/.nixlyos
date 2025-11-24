@@ -1,15 +1,12 @@
-{ config, lib, pkgs, nixpkgs-unstable ? null, system ? null, ... }:
+{ config, lib, pkgs, pkgs-unstable ? null, ... }:
 
 let
-  unstable = if nixpkgs-unstable != null && system != null
-             then nixpkgs-unstable.legacyPackages.${system}
-             else null;
-  freerdpPkg = unstable.freerdp3;
+  freerdpPkg = if pkgs-unstable != null then pkgs-unstable.freerdp3 else null;
 in {
   assertions = [
     {
-      assertion = unstable != null && unstable ? freerdp3;
-      message = ''WinBoat requires freerdp3 from nixpkgs-unstable. Ensure nixpkgs-unstable is passed in extraSpecialArgs.'';
+      assertion = pkgs-unstable != null && pkgs-unstable ? freerdp3;
+      message = ''WinBoat requires freerdp3 from the unstable package set. Ensure pkgs-unstable is passed in extraSpecialArgs.'';
     }
   ];
   # Home Manager: install WinBoat and required client tools

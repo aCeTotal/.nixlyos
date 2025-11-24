@@ -9,9 +9,6 @@
         home-manager.inputs.nixpkgs.follows = "nixpkgs";
         nixlypkgs.url = "github:aCeTotal/nixlypkgs";
         nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
-        # Note: Project-specific flakes (e.g., DAO/thelastemperor) should be
-        # used only within their own repo via `nix develop` and not referenced
-        # from the system flake.
     };
 
     outputs = inputs@{ self, nixpkgs, nixpkgs-unstable, nixos-hardware, home-manager, ... }:
@@ -22,6 +19,10 @@
                 overlays = [ inputs.nixlypkgs.overlays.default ];
                 config = { allowUnfree = true; };
             };
+            pkgsUnstable = import nixpkgs-unstable {
+                inherit system;
+                config = { allowUnfree = true; };
+            };
         in {
             nixosConfigurations = {
                 nixlyos = nixpkgs.lib.nixosSystem {
@@ -29,14 +30,20 @@
                     specialArgs = {
                         inherit inputs system;
                         pkgs-stable = pkgsStable;
-                        nixpkgs-unstable = nixpkgs-unstable;
+                        pkgs-unstable = pkgsUnstable;
                     };
                     modules = [
-                        { nixpkgs.overlays = [ inputs.nixlypkgs.overlays.default ]; }
+                        {
+                            nixpkgs.overlays = [ inputs.nixlypkgs.overlays.default ];
+                            nixpkgs.config.allowUnfree = true;
+                        }
                         ./configuration.nix
                         home-manager.nixosModules.home-manager {
                             home-manager = {
-                                extraSpecialArgs = { inherit inputs system nixpkgs-unstable; };
+                                extraSpecialArgs = {
+                                  inherit inputs system;
+                                  pkgs-unstable = pkgsUnstable;
+                                };
                                 useGlobalPkgs = true;
                                 useUserPackages = true;
                                 backupFileExtension = "backup";

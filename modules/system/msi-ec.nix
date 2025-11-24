@@ -1,11 +1,11 @@
-{ lib, config, pkgs, system, nixpkgs-unstable, ... }:
+{ lib, config, pkgs, pkgs-unstable ? null, ... }:
 
 let
   kp = config.boot.kernelPackages;
   # Try both common attribute spellings to avoid eval failure if one is missing
   msiEcPkg = if kp ? msi-ec then kp.msi-ec else if kp ? msi_ec then kp.msi_ec else null;
   # Prefer stable if available; fall back to unstable if needed
-  unstablePkgs = nixpkgs-unstable.legacyPackages.${system};
+  unstablePkgs = pkgs-unstable;
   mccPkg =
     if pkgs ? mcontrolcenter then pkgs.mcontrolcenter
     else if unstablePkgs ? mcontrolcenter then unstablePkgs.mcontrolcenter

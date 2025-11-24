@@ -30,6 +30,8 @@
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
+    kernelPackages = pkgs.linuxPackages_zen;
+
     kernelParams = [
       "quiet"
       "loglevel=3"

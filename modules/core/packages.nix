@@ -1,4 +1,4 @@
-{ config, lib, pkgs-stable ? null, nixpkgs-unstable ? null, system ? null, ... }:
+{ config, lib, pkgs-stable ? null, pkgs-unstable ? null, ... }:
 
 let
   hmStablePkgs = lib.optionals (pkgs-stable != null) (with pkgs-stable; [
@@ -6,19 +6,14 @@ let
     gimp
     celluloid
     google-chrome
+    pureref
     teams-for-linux
     alacritty
     citrix_workspace
   ]);
 
-  # Instantiate unstable lazily with unfree enabled (for select tools only)
-  unstable = if nixpkgs-unstable != null && system != null
-             then import nixpkgs-unstable {
-               inherit system;
-               config = { allowUnfree = true; };
-             }
-             else null;
-  hmUnstablePkgs = lib.optionals (unstable != null) (with unstable; [
+  # Packages from the unstable channel (provided via flake specialArgs)
+  hmUnstablePkgs = lib.optionals (pkgs-unstable != null) (with pkgs-unstable; [
     codex
     libreoffice-fresh
     (blender.override { cudaSupport = true; })

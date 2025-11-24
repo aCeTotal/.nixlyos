@@ -3,7 +3,6 @@
 {
   # Tillat ufrie + usikre pakker på tvers av nixpkgs
   nixpkgs.config = {
-    allowUnfree = true;
     permittedInsecurePackages = [
       "freeimage-unstable-2021-11-01"
       "electron-29.4.6"

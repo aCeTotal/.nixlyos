@@ -1,17 +1,14 @@
 { config
 , lib
 , pkgs
-, nixpkgs-unstable ? null
-, system ? null
+, pkgs-unstable ? null
 , ... }:
 
 let
-  unstable = if nixpkgs-unstable != null && system != null
-             then nixpkgs-unstable.legacyPackages.${system}
-             else null;
-  remminaPkg = if unstable != null && unstable ? remmina
-               then unstable.remmina
-               else pkgs.remmina;
+  remminaPkg =
+    if pkgs-unstable != null && pkgs-unstable ? remmina
+    then pkgs-unstable.remmina
+    else pkgs.remmina;
 
   startScript = pkgs.writeShellScript "freerdp-autostart" ''
     set -euo pipefail

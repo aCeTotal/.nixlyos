@@ -1,11 +1,6 @@
 { lib, pkgs, ... }:
 
 {
-  # Allow unfree packages for system-level nixpkgs (e.g., NVIDIA, CUDA, etc.).
-  nixpkgs.config = {
-    allowUnfree = true;
-  };
-
   nix = {
     package = pkgs.nixVersions.latest;
 
@@ -16,8 +11,14 @@
         "https://nix-community.cachix.org"
         "https://nixlyos.cachix.org"
       ];
+      # Trust nix-community with both the legacy and rotated keys.
+      # This avoids cache signature mismatches during key rotation windows.
       trusted-public-keys = [
+        # nix-community (legacy)
         "nix-community.cachix.org-1:mB9FSh9qf/f+mU9ZfZPmEH9JPE0RSeW8V1w0x9Wl6iY="
+        # nix-community (rotated)
+        "nix-community.cachix.org-1:mB9FSh9Ri720+E4BhrzE3Mdpb+jr7H4SSqXZqml7BOw="
+        # local nixlyos cache
         "nixlyos.cachix.org-1:MHb4zMKxhNmxw/aHmRVBJj3gjEp0VJphEfO8zAa+yWM="
       ];
       experimental-features = [ "nix-command" "flakes" "cgroups" "auto-allocate-uids" ];

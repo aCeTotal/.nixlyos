@@ -30,6 +30,8 @@
     spiceUSBRedirection.enable = true;
     libvirtd = {
       enable = true;
+      onShutdown = "shutdown";
+      shutdownTimeout = 60;
       qemu = {
         package = pkgs.qemu_kvm;
         ovmf.enable = true;
@@ -39,4 +41,3 @@
     };
   };
 }
-

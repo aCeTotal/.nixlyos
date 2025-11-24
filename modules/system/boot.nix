@@ -1,4 +1,4 @@
-{ pkgs, nixpkgs-unstable ? null, ... }:
+{ pkgs, ... }:
 
 {
 
@@ -77,11 +77,6 @@
         # NVIDIA modules are managed in core/gpu/nvidia.nix
         kernelModules = [ "tcp_bbr" ];
         initrd.systemd.enable = true;
-        # Use Zen kernel from unstable only if provided
-        kernelPackages =
-          if nixpkgs-unstable != null then
-            (nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}).linuxPackages_zen
-          else pkgs.linuxPackages;
         tmp.cleanOnBoot = true;
         modprobeConfig.enable = true;
         extraModprobeConfig = ''
