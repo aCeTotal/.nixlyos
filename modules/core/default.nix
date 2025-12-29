@@ -5,8 +5,6 @@
     ./boot.nix
     ./networking.nix
     ./nix.nix
-    ./virt.nix
-    ./virt-windows11.nix
     ./nfs.nix
     ./ssh.nix
     ./gaming.nix

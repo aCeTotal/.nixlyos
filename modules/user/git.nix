@@ -10,19 +10,19 @@
     programs.git = {
         enable = true;
         package = pkgs.gitFull;
-        userName  = "aCeTotal";
+        userName = "aCeTotal";
         userEmail = "lars.oksendal@gmail.com";
     };
 
     programs.ssh = {
         enable = true;
-        compression = true;
-        controlMaster = "auto";
-
         matchBlocks = {
-            "github.com" = {
-                identityFile = "~/.ssh/github";
-            };
+          "*" = {
+            compression = true;
+          };
+          "github.com" = {
+            identityFile = "~/.ssh/github";
+          };
         };
     };
 }

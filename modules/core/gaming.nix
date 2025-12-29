@@ -44,7 +44,7 @@
     lutris
     heroic
     bottles
-    protonup
+    protonup-ng
     protontricks
     wineWowPackages.staging
     winetricks

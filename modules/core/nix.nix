@@ -1,32 +1,18 @@
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   nix = {
     package = pkgs.nixVersions.latest;
 
     settings = {
-      # Prefer binary caches to avoid local source builds
-      substituters = [
-        "https://cache.nixos.org"
-        "https://nix-community.cachix.org"
-        "https://nixlyos.cachix.org"
-      ];
-      # Trust nix-community with both the legacy and rotated keys.
-      # This avoids cache signature mismatches during key rotation windows.
-      trusted-public-keys = [
-        # nix-community (legacy)
-        "nix-community.cachix.org-1:mB9FSh9qf/f+mU9ZfZPmEH9JPE0RSeW8V1w0x9Wl6iY="
-        # nix-community (rotated)
-        "nix-community.cachix.org-1:mB9FSh9Ri720+E4BhrzE3Mdpb+jr7H4SSqXZqml7BOw="
-        # local nixlyos cache
-        "nixlyos.cachix.org-1:MHb4zMKxhNmxw/aHmRVBJj3gjEp0VJphEfO8zAa+yWM="
-      ];
-      experimental-features = [ "nix-command" "flakes" "cgroups" "auto-allocate-uids" ];
       auto-optimise-store = true;
+      sandbox = true;
+      accept-flake-config = false;
+      experimental-features = [ "nix-command" "flakes" ];
       keep-outputs = true;
       keep-derivations = true;
       builders-use-substitutes = true;
-      max-jobs = 1;
+      max-jobs = 3;
       cores = 6;
       http-connections = 50;
       connect-timeout = 30;
@@ -34,6 +20,16 @@
       min-free = 2147483648;
       max-free = 6442450944;
       trusted-users = [ "root" "@wheel" ];
+
+      substituters = [
+        "https://cache.nixos.org"
+        "https://cache.nix-community.org"
+      ];
+
+      trusted-substituters = [
+        "https://cache.nixos.org"
+        "https://cache.nix-community.org"
+      ];
     };
 
     gc = {
@@ -45,3 +41,4 @@
     optimise.automatic = true;
   };
 }
+

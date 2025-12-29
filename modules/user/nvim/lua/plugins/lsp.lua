@@ -20,8 +20,8 @@ require'lspconfig'.clangd.setup{
 
 require'lspconfig'.html.setup {}
 require'lspconfig'.cssls.setup {}
--- tsserver is deprecated; use ts_ls
 require'lspconfig'.ts_ls.setup {}
+require'lspconfig'.clangd.setup {}
 require'lspconfig'.rust_analyzer.setup{capabilities=capabilities}
 require'lspconfig'.cmake.setup{capabilities=capabilities}
 require'lspconfig'.dockerls.setup{capabilities=capabilities}

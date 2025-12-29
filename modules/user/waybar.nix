@@ -194,6 +194,7 @@
 {
   "layer": "top",
   "position": "top",
+  "exclusive": true,
   "height": 32,
   "spacing": 0,
   "modules-left": [

@@ -21,7 +21,7 @@
 # Unstable packages
     (with pkgs; [
      protontricks
-     protonup
+    protonup-ng
      discord
      ])
 

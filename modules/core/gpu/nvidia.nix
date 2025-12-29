@@ -1,8 +1,7 @@
-{ config, lib, pkgs, ... }:
+{ config, system, inputs, lib, pkgs, pkgs-unstable, ... }:
 
 let
-  # nvtop attribute changed across nixpkgs versions; prefer new names.
-  nvtopPkg = (pkgs.nvtopPackages.full or (pkgs.nvtopPackages.nvidia or (pkgs.nvtop or null)));
+    nvtopPkg = (pkgs.nvtopPackages.full or (pkgs.nvtopPackages.nvidia or (pkgs.nvtop or null)));
 in {
   # Ensure X picks the NVIDIA driver explicitly (Xwayland uses this too)
   services.xserver.videoDrivers = [ "nvidia" ];
@@ -19,7 +18,7 @@ in {
     powerManagement.finegrained = false;
     open = false;
     nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.production;
+    package = config.boot.kernelPackages.nvidiaPackages.latest;
   };
 
   boot = {

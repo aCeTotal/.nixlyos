@@ -267,7 +267,7 @@ bindm = $mainMod, mouse:273, resizewindow # Resize window
 
     home.packages = with pkgs; [
         swaybg
-        rofi-wayland
+        rofi
         grim
         swappy
         shotman

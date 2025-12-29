@@ -38,7 +38,7 @@
   };
 
   programs.ssh = {
-    startAgent = true;
+    startAgent = false;
     extraConfig = ''
       Host *
         ServerAliveInterval 20

@@ -28,7 +28,7 @@
     # User applications
     home.packages = with pkgs; [
       seahorse
-      rofi-wayland
+      rofi
     ];
 
     

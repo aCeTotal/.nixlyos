@@ -2,7 +2,6 @@
 
 {
   security.rtkit.enable = true;
-  # Option renamed upstream; use services.pulseaudio
   services.pulseaudio.enable = false;
   services.blueman.enable = true;
 

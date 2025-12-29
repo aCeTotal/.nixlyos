@@ -42,6 +42,5 @@
     };
   };
 
-  # Avoid blocking boot on wait-online
   systemd.services.NetworkManager-wait-online.enable = false;
 }

@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ system, inputs, lib, pkgs, ... }:
 
 {
   boot = {
@@ -19,7 +19,7 @@
         configurationLimit = 5;
       };
 
-      timeout = 3;
+      timeout = 2;
     };
 
     initrd.systemd.enable = true;
@@ -42,13 +42,13 @@
     ];
   };
 
-  security = {
-    apparmor.enable = true;
-    sudo.wheelNeedsPassword = true;
-    tpm2.enable = true;
-    tpm2.pkcs11.enable = true;
-    tpm2.tctiEnvironment.enable = true;
-  };
+    #  security = {
+    #apparmor.enable = true;
+    #sudo.wheelNeedsPassword = true;
+    #tpm2.enable = true;
+    #tpm2.pkcs11.enable = true;
+    #tpm2.tctiEnvironment.enable = true;
+    #};
 
   boot.kernel.sysctl = {
     "kernel.sysrq" = 1;
