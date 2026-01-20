@@ -5,7 +5,7 @@
   home.sessionVariables = {
     EDITOR = "nvim";
     VISUAL = "nvim";
-    BROWSER = "google-chrome-stable";
+    BROWSER = "brave";
     TERMINAL = "alacritty";
   };
 }

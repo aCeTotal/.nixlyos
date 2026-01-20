@@ -31,16 +31,5 @@
   networking.networkmanager.enable = true;
   networking.networkmanager.dns = lib.mkDefault "systemd-resolved";
 
-  # Start nm-applet as a user service (Hyprland-friendly)
-  systemd.user.services = {
-    nm-applet = {
-      description = "Network manager applet";
-      wantedBy = [ "graphical-session.target" ];
-      partOf = [ "graphical-session.target" ];
-      # Use --indicator so it shows up in Waybar's SNI tray
-      serviceConfig.ExecStart = "${pkgs.networkmanagerapplet}/bin/nm-applet --indicator";
-    };
-  };
-
   systemd.services.NetworkManager-wait-online.enable = false;
 }

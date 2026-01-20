@@ -1,220 +1,284 @@
--- Mason + LSP setup without requiring lspconfig (avoids deprecation warnings)
-local mason = require("mason")
-local mason_lsp = require("mason-lspconfig")
-local lsp_format = require("lsp-format")
+-- LSP Configuration (Neovim 0.11+ API)
 
-mason.setup({})
-lsp_format.setup({ eslint = { sync = true } })
-
--- Prefer modern server names; replace deprecated ones (e.g. tsserver -> ts_ls)
-local servers = {
-  "bashls",
-  "clangd",
-  "gopls",
-  "nixd",
-  "lua_ls",
-  "rust_analyzer",
-  "marksman",
-  "html",
-  "astro",
-  "tailwindcss",
-  "ts_ls",
-  "dockerls",
-  "cssls",
-  "emmet_ls",
-  "eslint",
-}
-
--- Only ask Mason to install servers it manages; exclude ones provided by system (e.g., clangd)
-local mason_servers = {}
-for _, s in ipairs(servers) do
-  local d = defs and defs[s]
-  if d and d.pkg and not d.no_mason then table.insert(mason_servers, s) end
-end
-mason_lsp.setup({ ensure_installed = mason_servers, automatic_installation = false })
-
--- Enhance capabilities for nvim-cmp
+-- Enhanced capabilities for nvim-cmp
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 local ok_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
-if ok_cmp then capabilities = cmp_nvim_lsp.default_capabilities(capabilities) end
-
-local function on_attach(client, bufnr)
-  pcall(lsp_format.on_attach, client, bufnr)
-  if vim.lsp.inlay_hint then
-    local ih = vim.lsp.inlay_hint
-    if type(ih) == "table" and type(ih.enable) == "function" then
-      pcall(ih.enable, true, { bufnr = bufnr })
-    else
-      pcall(ih, bufnr, true)
-    end
-  end
+if ok_cmp then
+  capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
 end
 
--- Build command from Mason (if available) or fallback to PATH
-local registry_ok, registry = pcall(require, "mason-registry")
-local function mason_cmd(pkg, bin, args)
-  local cmd = { bin }
-  if registry_ok then
-    local ok, p = pcall(registry.get_package, pkg)
-    if ok and p:is_installed() then
-      local binpath = p:get_install_path() .. "/bin/" .. bin
-      if vim.loop.fs_stat(binpath) then cmd[1] = binpath end
-    end
-  end
-  if type(args) == "table" then
-    for _, a in ipairs(args) do table.insert(cmd, a) end
-  end
-  return cmd
-end
-
--- Simple root finder using marker files
-local function find_root(markers, fname)
-  markers = markers or { ".git" }
-  local startpath = fname or vim.api.nvim_buf_get_name(0)
-  startpath = startpath ~= "" and startpath or vim.loop.cwd()
-  local dir = vim.fs.dirname(startpath)
-  local root_file = vim.fs.find(markers, { path = dir, upward = true })[1]
-  return root_file and vim.fs.dirname(root_file) or dir
-end
-
--- Minimal server specs covering common tools
-local defs = {
-  bashls = {
-    pkg = "bash-language-server",
-    bin = "bash-language-server",
-    args = { "start" },
-    filetypes = { "sh" },
-    root_markers = { ".git" },
-    no_mason = true, -- use system package via Nix instead of Mason
+-- Enable semantic tokens for better highlighting
+capabilities.textDocument.semanticTokens = {
+  dynamicRegistration = false,
+  tokenTypes = {
+    "namespace", "type", "class", "enum", "interface", "struct",
+    "typeParameter", "parameter", "variable", "property", "enumMember",
+    "event", "function", "method", "macro", "keyword", "modifier",
+    "comment", "string", "number", "regexp", "operator", "decorator",
   },
-  clangd = {
-    bin = "clangd",
-    filetypes = { "c", "cpp", "objc", "objcpp", "cuda", "proto" },
-    root_markers = { ".git", "compile_commands.json", "compile_flags.txt" },
+  tokenModifiers = {
+    "declaration", "definition", "readonly", "static", "deprecated",
+    "abstract", "async", "modification", "documentation", "defaultLibrary",
   },
-  gopls = {
-    pkg = "gopls",
-    bin = "gopls",
-    filetypes = { "go", "gomod", "gowork", "gotmpl" },
-    root_markers = { "go.work", "go.mod", ".git" },
-  },
-  nixd = {
-    bin = "nixd",
-    filetypes = { "nix" },
-    root_markers = { "flake.nix", "shell.nix", "default.nix", ".git" },
-    settings = {},
-  },
-  lua_ls = {
-    pkg = "lua-language-server",
-    bin = "lua-language-server",
-    filetypes = { "lua" },
-    root_markers = { ".luarc.json", ".luarc.jsonc", ".git" },
-    settings = { Lua = { telemetry = { enable = false } } },
-  },
-  rust_analyzer = {
-    pkg = "rust-analyzer",
-    bin = "rust-analyzer",
-    filetypes = { "rust" },
-    root_markers = { "Cargo.toml", "rust-project.json", ".git" },
-  },
-  marksman = {
-    pkg = "marksman",
-    bin = "marksman",
-    args = { "serve" },
-    filetypes = { "markdown" },
-    root_markers = { ".git" },
-  },
-  html = {
-    pkg = "vscode-langservers-extracted",
-    bin = "vscode-html-language-server",
-    args = { "--stdio" },
-    filetypes = { "html" },
-    root_markers = { ".git" },
-  },
-  astro = {
-    pkg = "astro-language-server",
-    bin = "astro-ls",
-    args = { "--stdio" },
-    filetypes = { "astro" },
-    root_markers = { "package.json", ".git" },
-  },
-  tailwindcss = {
-    pkg = "tailwindcss-language-server",
-    bin = "tailwindcss-language-server",
-    args = { "--stdio" },
-    filetypes = {
-      "html", "css", "scss", "sass", "less",
-      "javascript", "javascriptreact", "typescript", "typescriptreact",
-      "svelte", "astro", "vue"
-    },
-    root_markers = { "tailwind.config.js", "tailwind.config.cjs", "tailwind.config.ts", "package.json", ".git" },
-  },
-  ts_ls = {
-    pkg = "typescript-language-server",
-    bin = "typescript-language-server",
-    args = { "--stdio" },
-    filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
-    root_markers = { "package.json", "tsconfig.json", "jsconfig.json", ".git" },
-  },
-  dockerls = {
-    pkg = "dockerfile-language-server",
-    bin = "docker-langserver",
-    args = { "--stdio" },
-    filetypes = { "dockerfile" },
-    root_markers = { ".git" },
-  },
-  cssls = {
-    pkg = "vscode-langservers-extracted",
-    bin = "vscode-css-language-server",
-    args = { "--stdio" },
-    filetypes = { "css", "scss", "less" },
-    root_markers = { ".git" },
-  },
-  emmet_ls = {
-    pkg = "emmet-ls",
-    bin = "emmet-ls",
-    args = { "--stdio" },
-    filetypes = { "html", "css", "javascriptreact", "typescriptreact", "svelte" },
-    root_markers = { ".git" },
-  },
-  eslint = {
-    pkg = "eslint-lsp",
-    bin = "vscode-eslint-language-server",
-    args = { "--stdio" },
-    filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
-    root_markers = { ".eslintrc", ".eslintrc.json", ".eslintrc.js", "package.json", ".git" },
-  },
+  formats = { "relative" },
+  requests = { range = true, full = { delta = true } },
+  multilineTokenSupport = false,
+  overlappingTokenSupport = true,
 }
 
--- Start servers via FileType autocmds
-local function setup(server, overrides)
-  local d = defs[server] or {}
-  local cfg = vim.tbl_deep_extend("force", {
-    name = server,
-    cmd = mason_cmd(d.pkg, d.bin or server, d.args),
-    root_dir = function(fname) return find_root(d.root_markers, fname) end,
-    filetypes = d.filetypes,
-    capabilities = capabilities,
-    on_attach = on_attach,
-    settings = d.settings,
-  }, overrides or {})
+-- LSP keymaps via LspAttach autocmd
+vim.api.nvim_create_autocmd("LspAttach", {
+  group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
+  callback = function(ev)
+    local opts = { buffer = ev.buf, silent = true }
 
-  if not cfg.filetypes or #cfg.filetypes == 0 then return end
+    -- Navigation
+    vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+    vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+    vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+    vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+    vim.keymap.set("n", "gt", vim.lsp.buf.type_definition, opts)
 
-  vim.api.nvim_create_autocmd("FileType", {
-    pattern = cfg.filetypes,
-    callback = function(args)
-      vim.lsp.start(cfg, { bufnr = args.buf })
+    -- Documentation
+    vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+    vim.keymap.set("n", "<C-k>", vim.lsp.buf.signature_help, opts)
+
+    -- Actions
+    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+    vim.keymap.set({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, opts)
+    vim.keymap.set("n", "<leader>f", function()
+      vim.lsp.buf.format({ async = true })
+    end, opts)
+
+    -- Diagnostics
+    vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
+    vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts)
+    vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+    vim.keymap.set("n", "<leader>dl", vim.diagnostic.setloclist, opts)
+  end,
+})
+
+-- Diagnostic configuration (Neovim 0.11+ API)
+vim.diagnostic.config({
+  virtual_text = { prefix = "●" },
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = " ",
+      [vim.diagnostic.severity.WARN] = " ",
+      [vim.diagnostic.severity.HINT] = " ",
+      [vim.diagnostic.severity.INFO] = " ",
+    },
+  },
+  underline = true,
+  update_in_insert = false,
+  severity_sort = true,
+  float = {
+    border = "rounded",
+    source = "always",
+  },
+})
+
+-- LSP hover/signature borders
+vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, { border = "rounded" })
+vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, { border = "rounded" })
+
+-- Server configurations
+local servers = {
+  -- C/C++
+  clangd = {
+    cmd = {
+      "clangd",
+      "--background-index",
+      "--clang-tidy",
+      "--header-insertion=iwyu",
+      "--completion-style=detailed",
+      "--function-arg-placeholders",
+      "--fallback-style=llvm",
+      "--query-driver=/nix/store/*/bin/gcc,/nix/store/*/bin/g++,/nix/store/*/bin/clang,/nix/store/*/bin/clang++",
+    },
+    init_options = {
+      usePlaceholders = true,
+      completeUnimported = true,
+      clangdFileStatus = true,
+      fallbackFlags = { "-std=c++20", "-Wall" },
+    },
+    root_markers = { "compile_commands.json", ".clangd", "CMakeLists.txt", "Makefile", ".git" },
+  },
+
+  -- HTML
+  html = {
+    filetypes = { "html", "htmldjango", "php" },
+  },
+
+  -- CSS
+  cssls = {},
+
+  -- JavaScript/TypeScript
+  ts_ls = {
+    filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
+  },
+
+  -- PHP
+  phpactor = {},
+
+  -- Python
+  pyright = {},
+
+  -- Lua (for Neovim config)
+  lua_ls = {
+    settings = {
+      Lua = {
+        runtime = { version = "LuaJIT" },
+        diagnostics = { globals = { "vim" } },
+        workspace = {
+          library = vim.api.nvim_get_runtime_file("", true),
+          checkThirdParty = false,
+        },
+        telemetry = { enable = false },
+      },
+    },
+  },
+
+  -- Nix
+  nil_ls = {
+    settings = {
+      ["nil"] = {
+        formatting = { command = { "nixpkgs-fmt" } },
+      },
+    },
+  },
+
+  -- Bash
+  bashls = {},
+
+  -- JSON
+  jsonls = {},
+
+  -- YAML
+  yamlls = {},
+}
+
+-- Setup all servers using vim.lsp.config (Neovim 0.11+ API)
+for server, config in pairs(servers) do
+  config.capabilities = capabilities
+  vim.lsp.config(server, config)
+end
+
+-- Enable all configured servers
+vim.lsp.enable(vim.tbl_keys(servers))
+
+-- Generate .clangd config with NixOS include paths
+local function generate_clangd_config(root)
+  if vim.fn.filereadable(root .. "/.clangd") == 1 then
+    return
+  end
+
+  local handle = io.popen("echo | gcc -E -Wp,-v -xc - 2>&1 | grep '^ /' | head -20")
+  if not handle then return end
+  local output = handle:read("*a")
+  handle:close()
+
+  local includes = {}
+  for path in output:gmatch("(%S+)") do
+    if vim.fn.isdirectory(path) == 1 then
+      table.insert(includes, '    - "-I' .. path .. '"')
+    end
+  end
+
+  if #includes == 0 then return end
+
+  local config = "# Auto-generated for NixOS\nCompileFlags:\n  Add:\n" .. table.concat(includes, "\n") .. "\n"
+
+  local file = io.open(root .. "/.clangd", "w")
+  if file then
+    file:write(config)
+    file:close()
+    vim.notify(".clangd generated", vim.log.levels.INFO)
+  end
+end
+
+-- Auto-generate compile_commands.json for C/C++ projects
+local function generate_compile_commands(root, callback)
+  local cmd = nil
+
+  if vim.fn.filereadable(root .. "/CMakeLists.txt") == 1 then
+    cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build && ln -sf build/compile_commands.json ."
+  elseif vim.fn.filereadable(root .. "/meson.build") == 1 then
+    cmd = "meson setup build --wipe 2>/dev/null || meson setup build && ln -sf build/compile_commands.json ."
+  elseif vim.fn.filereadable(root .. "/Makefile") == 1 then
+    cmd = "bear -- make -n 2>/dev/null || bear -- make clean all 2>/dev/null || bear -- make"
+  else
+    return false
+  end
+
+  vim.notify("Generating compile_commands.json...", vim.log.levels.INFO)
+  vim.fn.jobstart(cmd, {
+    cwd = root,
+    on_exit = function(_, code)
+      if code == 0 then
+        vim.notify("compile_commands.json generated!", vim.log.levels.INFO)
+        if callback then callback() end
+      else
+        vim.notify("Failed to generate compile_commands.json", vim.log.levels.WARN)
+      end
     end,
-    desc = "Start LSP server " .. server,
   })
+  return true
 end
 
--- Per-server tweaks
-setup("clangd", { cmd = { "clangd" } })
-setup("lua_ls")
+-- Auto-generate on entering C/C++ buffer
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "c", "cpp" },
+  callback = function()
+    local root = vim.fn.getcwd()
+    generate_clangd_config(root)
+    if vim.fn.filereadable(root .. "/compile_commands.json") == 0
+       and vim.fn.filereadable(root .. "/build/compile_commands.json") == 0 then
+      generate_compile_commands(root, function()
+        vim.schedule(function() vim.cmd("LspRestart clangd") end)
+      end)
+    end
+  end,
+  once = true,
+})
 
--- Defaults for the rest
-for _, s in ipairs(servers) do
-  if s ~= "clangd" and s ~= "lua_ls" then setup(s) end
-end
+-- Command to generate compile_commands.json for C/C++ projects
+vim.api.nvim_create_user_command("GenerateCompileCommands", function()
+  local root = vim.fn.getcwd()
+  local cmd = nil
+
+  if vim.fn.filereadable(root .. "/CMakeLists.txt") == 1 then
+    cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build && ln -sf build/compile_commands.json ."
+  elseif vim.fn.filereadable(root .. "/meson.build") == 1 then
+    cmd = "meson setup build --wipe 2>/dev/null || meson setup build && ln -sf build/compile_commands.json ."
+  elseif vim.fn.filereadable(root .. "/Makefile") == 1 then
+    cmd = "bear -- make -n || bear -- make"
+  else
+    vim.notify("No build system found (CMake, Meson, or Makefile)", vim.log.levels.WARN)
+    return
+  end
+
+  vim.notify("Generating compile_commands.json...", vim.log.levels.INFO)
+  vim.fn.jobstart(cmd, {
+    cwd = root,
+    on_exit = function(_, code)
+      if code == 0 then
+        vim.notify("compile_commands.json generated! Restarting LSP...", vim.log.levels.INFO)
+        vim.schedule(function()
+          vim.cmd("LspRestart")
+        end)
+      else
+        vim.notify("Failed to generate compile_commands.json", vim.log.levels.ERROR)
+      end
+    end,
+  })
+end, { desc = "Generate compile_commands.json and restart LSP" })
+
+-- Command to regenerate .clangd config
+vim.api.nvim_create_user_command("GenerateClangd", function()
+  local root = vim.fn.getcwd()
+  -- Delete existing to force regeneration
+  vim.fn.delete(root .. "/.clangd")
+  generate_clangd_config(root)
+  vim.cmd("LspRestart clangd")
+end, { desc = "Regenerate .clangd config with NixOS include paths" })

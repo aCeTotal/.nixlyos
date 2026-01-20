@@ -10,12 +10,15 @@
     programs.git = {
         enable = true;
         package = pkgs.gitFull;
-        userName = "aCeTotal";
-        userEmail = "lars.oksendal@gmail.com";
+        settings.user = {
+            name = "aCeTotal";
+            email = "lars.oksendal@gmail.com";
+        };
     };
 
     programs.ssh = {
         enable = true;
+        enableDefaultConfig = false;
         matchBlocks = {
           "*" = {
             compression = true;

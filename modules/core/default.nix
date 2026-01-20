@@ -3,6 +3,7 @@
 {
   imports = [
     ./boot.nix
+    ./ly.nix
     ./networking.nix
     ./nix.nix
     ./nfs.nix
@@ -12,6 +13,7 @@
     ./neovim/default.nix
     ./users.nix
     ./timezone_locale.nix
+    ./system_services.nix
     ./wayland.nix
     ./sound.nix
     ./zram.nix

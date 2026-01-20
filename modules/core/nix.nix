@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  nixpkgs.config.allowUnfree = true;
+
   nix = {
     package = pkgs.nixVersions.latest;
 
@@ -23,12 +25,10 @@
 
       substituters = [
         "https://cache.nixos.org"
-        "https://cache.nix-community.org"
       ];
 
       trusted-substituters = [
         "https://cache.nixos.org"
-        "https://cache.nix-community.org"
       ];
     };
 

@@ -8,13 +8,14 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
-    nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
+    nixlypkgs.inputs.nixpkgs.follows = "nixpkgs-stable"; # overlay følger stable
   };
 
   outputs = inputs@{
     self,
     nixpkgs,
     nixpkgs-stable,
+    nixlypkgs,
     home-manager,
     nixos-hardware,
     ...
@@ -22,9 +23,11 @@
   let
     system = "x86_64-linux";
 
+    # Stable-pakker med overlay fra nixlypkgs
     pkgs-stable = import nixpkgs-stable {
       inherit system;
       config.allowUnfree = true;
+      overlays = [ nixlypkgs.overlays.default ];
     };
   in {
     nixosConfigurations.nixlyos = nixpkgs.lib.nixosSystem {
@@ -35,13 +38,6 @@
       };
 
       modules = [
-        {
-          nixpkgs = {
-            overlays = [ inputs.nixlypkgs.overlays.default ];
-            config.allowUnfree = true;
-          };
-        }
-
         ./configuration.nix
 
         nixos-hardware.nixosModules.common-pc
@@ -49,7 +45,7 @@
         home-manager.nixosModules.home-manager
         {
           home-manager = {
-            useGlobalPkgs = true;   # ← bruker unstable pkgs
+            useGlobalPkgs = true;      # bruker stable+overlay
             useUserPackages = true;
             backupFileExtension = "backup";
 

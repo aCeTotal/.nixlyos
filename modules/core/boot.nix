@@ -3,29 +3,16 @@
 {
   boot = {
     loader = {
-      # Switch to GRUB for broader compatibility with existing installs
       efi = {
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot"; # Ensure this mounts your ESP
       };
 
-      systemd-boot.enable = false;
-
-      grub = {
-        enable = true;
-        efiSupport = true;
-        device = "nodev";         # Use EFI, do not touch MBR
-        useOSProber = false;       # Do not probe other OS installations
-        configurationLimit = 5;
-      };
-
-      timeout = 2;
+      systemd-boot.enable = true;
     };
 
     initrd.systemd.enable = true;
-
     consoleLogLevel = 3;
-
     tmp.cleanOnBoot = true;
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];

@@ -1,22 +1,30 @@
-{ lib, pkgs-stable, ... }:
+{ lib, pkgs-stable, nixlypkgs, system, inputs, ... }:
 
 let
-  hmStablePkgs = with pkgs-stable; [
-    discord
-    gimp
-    celluloid
-    google-chrome
-    pureref
-    teams-for-linux
-    libreoffice-fresh
-    codex
-    (blender.override { cudaSupport = true; })
-  ];
-in {
-  config = {
-    home-manager.sharedModules = [
-      { home.packages = hmStablePkgs; }
+  hmPackages =
+    with pkgs-stable; [
+       discord
+       freecad
+       claude-code
+       brave
+       firefox
+       google-chrome
+       gimp
+       celluloid
+       pureref
+       teams-for-linux
+       libreoffice-fresh
+       codex
+       (blender.override { cudaSupport = true; })
+       speedtree
+       nixlytile
     ];
-  };
+in
+{
+  config.home-manager.sharedModules = [
+    {
+      home.packages = hmPackages;
+    }
+  ];
 }
 

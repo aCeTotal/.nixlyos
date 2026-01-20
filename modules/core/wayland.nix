@@ -7,6 +7,7 @@
       xdg-desktop-portal-wlr
       xdg-desktop-portal-gtk
     ];
+    config.common.default = "*";
   };
 
   programs.xwayland.enable = true;

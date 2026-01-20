@@ -11,12 +11,7 @@
       ./modules/user/alacritty.nix
       ./modules/user/env.nix
       ./modules/user/thunar_exo.nix
-      ./modules/user/hyprland.nix
       ./modules/user/dunst.nix
-      ./modules/user/virtualisation.nix
-      ./modules/user/winstripping.nix
-      ./modules/user/rofi.nix
-      ./modules/user/derivations.nix
     ];
 
     home = {
@@ -24,27 +19,12 @@
     homeDirectory = "/home/total";
     stateVersion = "24.05";
     };
-
-    # User applications
-    home.packages = with pkgs; [
-      seahorse
-      rofi
-    ];
-
     
     programs.bash.shellAliases = {
-      "update" = "cd $HOME/dev_nixly/.nixlyos/ && sudo nixos-rebuild switch --flake .#nixlyos";
-      "upgrade" = "cd $HOME/dev_nixly/.nixlyos/ && nix flake update && sudo nixos-rebuild switch --flake .#nixlyos";
-      "nixly" = "cd $HOME/dev_nixly/";
-
-      "game" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/";
-
-      "start_backend" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_backend";
-      "start_directory" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_directory";
-      "start_client" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#smoke";
-      "start_stack" = "cd /mnt/nfs/Bigdisk1/dev/gamedev/Godot/thelastemperor/ && nix run .#start_stack";
-      # Force NVIDIA GPU for Blender (no nvidia-offload script needed)
-      "blender-nvidia" = "env __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=1 blender";
+      "update" = "cd $HOME/dev_nixly/.nixlyos/ && sudo nixos-rebuild boot --flake .#nixlyos";
+      "upgrade" = "cd $HOME/dev_nixly/.nixlyos/ && nix flake update && sudo nixos-rebuild boot --flake .#nixlyos";
+      "nixly" = "cd $HOME/dev_nixly/.nixlyos/";
+      "c" = "claude";
     };
 
 
@@ -62,13 +42,6 @@
     # Let Home Manager install and manage itself.
     programs.home-manager.enable = true;
 
-    # Notifications: mako removed to test BT popups
-
-    # Also disable Blueman's own Notification plugin via dconf
-    dconf.settings."org/blueman/plugins/notification" = {
-      enabled = false;
-    };
-
-    # Starship konfig håndteres via ./modules/user/starship.nix
-
+    # Overwrites existing home-manager file
+    xdg.configFile."mimeapps.list".force = true;
 }

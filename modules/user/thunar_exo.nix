@@ -4,13 +4,13 @@
   # File manager, integration, and helpers
   home.packages = (with pkgs; [
     # File manager + plugins
-    xfce.thunar
-    xfce.thunar-archive-plugin
-    xfce.thunar-volman
-    xfce.thunar-media-tags-plugin
-    xfce.tumbler
+    thunar
+    thunar-archive-plugin
+    thunar-volman
+    thunar-media-tags-plugin
+    tumbler
     # Integration and utilities
-    xfce.exo
+    xfce4-exo
     desktop-file-utils
     gtkhash
     ffmpegthumbnailer

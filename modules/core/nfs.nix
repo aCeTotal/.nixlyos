@@ -2,7 +2,6 @@
 
 {
   services.cachefilesd.enable = true;
-  # NFS client option was removed in newer NixOS; mounts work without it.
 
   # Ensure mount directories exist at boot
   systemd.tmpfiles.rules = [
@@ -11,7 +10,7 @@
   ];
 
   fileSystems."/mnt/nfs/Bigdisk1" = {
-    device = "192.168.0.40:/bigdisk1";
+    device = "10.0.0.8:/bigdisk1";
     fsType = "nfs";
     options = [
       "rw"
@@ -26,7 +25,6 @@
       "rsize=1048576"
       "wsize=1048576"
       "nconnect=8"
-      # Prefer fast failure on access if server is down
       "soft"
       "timeo=5"
       "retrans=2"
