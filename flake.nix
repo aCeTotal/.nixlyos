@@ -7,7 +7,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
-    nixlypkgs.url = "github:aCeTotal/nixlypkgs";
+    nixlypkgs.url = "path:/home/total/dev_nixly/nixlypkgs";
     nixlypkgs.inputs.nixpkgs.follows = "nixpkgs-stable"; # overlay følger stable
   };
 

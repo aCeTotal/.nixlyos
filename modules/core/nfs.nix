@@ -1,7 +1,19 @@
 { lib, pkgs, ... }:
 
 {
-  services.cachefilesd.enable = true;
+  services.cachefilesd = {
+    enable = true;
+    # Tillat cache å bruke mer plass før cleanup starter
+    # brun = start cleanup, bcull = aggressiv cleanup, bstop = stopp caching
+    extraConfig = ''
+      brun 20%
+      bcull 10%
+      bstop 5%
+      frun 20%
+      fcull 10%
+      fstop 5%
+    '';
+  };
 
   # Ensure mount directories exist at boot
   systemd.tmpfiles.rules = [
@@ -33,7 +45,9 @@
       "noatime"
       "nodiratime"
       "tcp"
-      "lookupcache=positive"
+      "lookupcache=all"
+      "actimeo=300"
+      "nocto"
     ];
   };
 }

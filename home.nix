@@ -12,6 +12,7 @@
       ./modules/user/env.nix
       ./modules/user/thunar_exo.nix
       ./modules/user/dunst.nix
+      ./modules/core/nixlytile_config.nix
     ];
 
     home = {
@@ -21,9 +22,9 @@
     };
     
     programs.bash.shellAliases = {
-      "update" = "cd $HOME/dev_nixly/.nixlyos/ && sudo nixos-rebuild boot --flake .#nixlyos";
-      "upgrade" = "cd $HOME/dev_nixly/.nixlyos/ && nix flake update && sudo nixos-rebuild boot --flake .#nixlyos";
-      "nixly" = "cd $HOME/dev_nixly/.nixlyos/";
+      "update" = "cd $HOME/.nixlyos/ && sudo nixos-rebuild boot --flake .#nixlyos";
+      "upgrade" = "cd $HOME/.nixlyos/ && nix flake update && sudo nixos-rebuild boot --flake .#nixlyos";
+      "nixly" = "cd $HOME/.nixlyos/";
       "c" = "claude";
     };
 

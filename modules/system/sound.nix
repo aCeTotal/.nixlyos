@@ -37,16 +37,8 @@
 
   security.rtkit.enable = true;
 
-  hardware.bluetooth.enable = true;
+  # Bluetooth config is in modules/core/gaming.nix
   services.blueman.enable = true;
-
-  hardware.bluetooth.settings = {
-    General = {
-      Experimental = true;
-      ControllerMode = "dual";     # klassisk + LE
-      FastConnectable = true;
-    };
-  };
 
   environment.systemPackages = with pkgs; [
     bluez

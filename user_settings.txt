@@ -1,0 +1,195 @@
+# NixlyOS User Settings for nixlytile
+# This file is read by the nixlytile build process
+# Format is designed to be easily parsed and converted to C code
+#
+# Sections: [background], [monitors], [commands], [bindings], [buttons]
+# Lines starting with # are comments
+# Empty lines are ignored
+
+[background]
+# Wallpaper path (relative to $HOME or absolute)
+path=.nixlyos/wallpapers/beach.jpg
+mode=fill
+
+[monitors]
+# Monitor configuration
+# Format: name|mfact|nmaster|scale|layout|transform|x|y
+# name: output name (e.g., DP-1, HDMI-A-1) or NULL for default
+# mfact: master area factor (0.0-1.0)
+# nmaster: number of windows in master area
+# scale: output scale (1, 2, etc.)
+# layout: layout index (0=btrtile, 1=tile, 2=floating, 3=monocle)
+# transform: WL_OUTPUT_TRANSFORM (0=normal, 1=90, 2=180, 3=270, 4=flipped, etc.)
+# x,y: position (-1,-1 for auto)
+NULL|0.55|1|1|0|0|-1|-1
+
+[commands]
+# Custom commands that can be referenced in bindings
+# Format: name|executable|arg1|arg2|...
+termcmd|foot
+alacrittycmd|alacritty
+btopcmd|alacritty|-e|btop
+bravecmd|brave|--no-first-run|--no-default-browser-check|--disable-session-crashed-bubble|--disable-breakpad|--disable-background-networking|--disable-component-update|--disable-sync|--disable-features=TranslateUI
+menucmd|wmenu-run
+netcmd|nm-connection-editor
+thunarcmd|thunar
+
+[bindings]
+# Key bindings for nixlytile
+# Format: modifier|key|function|arg_type|arg_value
+#
+# Modifiers: MODKEY, SHIFT, CTRL, ALT, MONITORKEY
+#   Use + to combine: MODKEY+SHIFT, MODKEY+CTRL, etc.
+#
+# arg_type: 0=none, i=int, f=float, ui=uint, v=command
+#
+# Key names are XKB key names without XKB_KEY_ prefix
+
+# Modal and file manager
+MODKEY|o|modal_show|0|
+MODKEY|e|spawn|v|thunarcmd
+
+# Terminal spawning
+MODKEY+SHIFT|Return|spawn|v|termcmd
+MODKEY|Return|spawn|v|alacrittycmd
+
+# Focus navigation
+MODKEY|j|focusstack|i|+1
+MODKEY|k|focusstack|i|-1
+
+# Client rotation
+MODKEY+SHIFT|J|rotate_clients|i|+1
+MODKEY+SHIFT|K|rotate_clients|i|-1
+
+# Master area control
+MODKEY|i|incnmaster|i|+1
+MODKEY|d|incnmaster|i|-1
+MODKEY|h|setmfact|f|-0.05
+MODKEY|l|setmfact|f|+0.05
+
+# Zoom and view
+MODKEY+CTRL|Return|zoom|0|
+MODKEY|Tab|view|0|
+
+# Toggle features
+MODKEY|g|togglegaps|0|
+MODKEY|b|togglestatusbar|0|
+
+# Kill client
+MODKEY+SHIFT|C|killclient|0|
+MODKEY|q|killclient|0|
+
+# Layouts
+MODKEY|t|setlayout|layout|0
+MODKEY+SHIFT|f|setlayout|layout|1
+MODKEY|space|setlayout|0|
+MODKEY+SHIFT|space|togglefloating|0|
+MODKEY|f|togglefullscreen|0|
+MODKEY|F5|togglefullscreenadaptivesync|0|
+
+# Testing/Debug
+MODKEY|u|testhzosd|0|
+MODKEY+CTRL|i|setcustomhz|f|25.55
+
+# View all tags
+MODKEY|0|view|ui|~0
+MODKEY+SHIFT|parenright|tag|ui|~0
+
+# Monitor focus
+MODKEY|comma|focusmon|dir|LEFT
+MODKEY|period|focusmon|dir|RIGHT
+MODKEY+SHIFT|less|tagmon|dir|LEFT
+MODKEY+SHIFT|greater|tagmon|dir|RIGHT
+
+# Browser
+MODKEY|BackSpace|spawn|v|bravecmd
+
+# Direction-based focus
+MODKEY|Up|focusdir|dir|UP
+MODKEY|Down|focusdir|dir|DOWN
+MODKEY|Right|focusdir|dir|RIGHT
+MODKEY|Left|focusdir|dir|LEFT
+
+# Swap clients directionally
+MODKEY+SHIFT|Up|swapclients|dir|UP
+MODKEY+SHIFT|Down|swapclients|dir|DOWN
+MODKEY+SHIFT|Right|swapclients|dir|RIGHT
+MODKEY+SHIFT|Left|swapclients|dir|LEFT
+
+# Ratio adjustments
+MODKEY+CTRL|Right|setratio_h|f|+0.025
+MODKEY+CTRL|Left|setratio_h|f|-0.025
+MODKEY+CTRL|Up|setratio_v|f|-0.025
+MODKEY+CTRL|Down|setratio_v|f|+0.025
+
+# Tag keys (workspaces 1-9)
+MODKEY|1|view|ui|1<<0
+MODKEY+CTRL|1|toggleview|ui|1<<0
+MODKEY+SHIFT|exclam|tag|ui|1<<0
+MODKEY+CTRL+SHIFT|1|toggletag|ui|1<<0
+
+MODKEY|2|view|ui|1<<1
+MODKEY+CTRL|2|toggleview|ui|1<<1
+MODKEY+SHIFT|at|tag|ui|1<<1
+MODKEY+CTRL+SHIFT|2|toggletag|ui|1<<1
+
+MODKEY|3|view|ui|1<<2
+MODKEY+CTRL|3|toggleview|ui|1<<2
+MODKEY+SHIFT|numbersign|tag|ui|1<<2
+MODKEY+CTRL+SHIFT|3|toggletag|ui|1<<2
+
+MODKEY|4|view|ui|1<<3
+MODKEY+CTRL|4|toggleview|ui|1<<3
+MODKEY+SHIFT|dollar|tag|ui|1<<3
+MODKEY+CTRL+SHIFT|4|toggletag|ui|1<<3
+
+MODKEY|5|view|ui|1<<4
+MODKEY+CTRL|5|toggleview|ui|1<<4
+MODKEY+SHIFT|percent|tag|ui|1<<4
+MODKEY+CTRL+SHIFT|5|toggletag|ui|1<<4
+
+MODKEY|6|view|ui|1<<5
+MODKEY+CTRL|6|toggleview|ui|1<<5
+MODKEY+SHIFT|asciicircum|tag|ui|1<<5
+MODKEY+CTRL+SHIFT|6|toggletag|ui|1<<5
+
+MODKEY|7|view|ui|1<<6
+MODKEY+CTRL|7|toggleview|ui|1<<6
+MODKEY+SHIFT|ampersand|tag|ui|1<<6
+MODKEY+CTRL+SHIFT|7|toggletag|ui|1<<6
+
+MODKEY|8|view|ui|1<<7
+MODKEY+CTRL|8|toggleview|ui|1<<7
+MODKEY+SHIFT|asterisk|tag|ui|1<<7
+MODKEY+CTRL+SHIFT|8|toggletag|ui|1<<7
+
+MODKEY|9|view|ui|1<<8
+MODKEY+CTRL|9|toggleview|ui|1<<8
+MODKEY+SHIFT|parenleft|tag|ui|1<<8
+MODKEY+CTRL+SHIFT|9|toggletag|ui|1<<8
+
+# Quit
+MODKEY+SHIFT|Q|quit|0|
+
+# Monitor warp (CTRL + arrows)
+MONITORKEY|Up|warptomonitor|dir|UP
+MONITORKEY|Down|warptomonitor|dir|DOWN
+MONITORKEY|Left|warptomonitor|dir|LEFT
+MONITORKEY|Right|warptomonitor|dir|RIGHT
+
+# Move tile to monitor by number (CTRL+SHIFT + number)
+MONITORKEY+SHIFT|exclam|tagtomonitornum|ui|0
+MONITORKEY+SHIFT|at|tagtomonitornum|ui|1
+MONITORKEY+SHIFT|numbersign|tagtomonitornum|ui|2
+MONITORKEY+SHIFT|dollar|tagtomonitornum|ui|3
+
+# VT switching (Ctrl+Alt+Backspace to quit)
+CTRL+ALT|Terminate_Server|quit|0|
+
+[buttons]
+# Mouse button bindings
+# Format: modifier|button|function|arg_type|arg_value
+# Buttons: LEFT, MIDDLE, RIGHT
+MODKEY|LEFT|moveresize|ui|CurMove
+MODKEY|MIDDLE|togglefloating|0|
+MODKEY|RIGHT|moveresize|ui|CurResize
