@@ -3,6 +3,7 @@
 {
 
     imports = [
+      ./modules/user/steam.nix
       # programs
       ./modules/user/git.nix
       ./modules/user/bash.nix

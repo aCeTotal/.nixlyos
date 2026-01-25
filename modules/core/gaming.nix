@@ -6,6 +6,9 @@
     gamescopeSession.enable = true;
     remotePlay.openFirewall = false;
     dedicatedServer.openFirewall = false;
+    extraCompatPackages = with pkgs; [
+      proton-ge-bin
+    ];
   };
 
   hardware.steam-hardware.enable = true;
@@ -33,6 +36,13 @@
 
   environment.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${lib.concatStringsSep ":" [ "$HOME/.steam/root/compatibilitytools.d" "$HOME/.local/share/Steam/compatibilitytools.d" ]}";
+
+    # Force dedicated NVIDIA GPU for Steam/games
+    __NV_PRIME_RENDER_OFFLOAD = "1";
+    __NV_PRIME_RENDER_OFFLOAD_PROVIDER = "NVIDIA-G0";
+    __VK_LAYER_NV_optimus = "NVIDIA_only";
+    VK_DRIVER_FILES = "/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json";
+    DXVK_FILTER_DEVICE_NAME = "NVIDIA";
   };
 
   environment.systemPackages = with pkgs; [
