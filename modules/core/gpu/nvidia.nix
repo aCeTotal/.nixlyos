@@ -1,7 +1,22 @@
 { config, system, inputs, lib, pkgs, pkgs-unstable, ... }:
 
 let
-    nvtopPkg = (pkgs.nvtopPackages.full or (pkgs.nvtopPackages.nvidia or (pkgs.nvtop or null)));
+  nvtopPkg = (pkgs.nvtopPackages.full or (pkgs.nvtopPackages.nvidia or (pkgs.nvtop or null)));
+
+  # ============================================
+  # GPU CONFIGURATION OPTIONS
+  # Set these based on your hardware:
+  # ============================================
+
+  # Set to true for hybrid laptop (Intel + NVIDIA), false for desktop with only NVIDIA
+  isHybridLaptop = true;
+
+  # Only needed if isHybridLaptop = true
+  # Find your bus IDs with: lspci | grep -E "VGA|3D"
+  # Format: "PCI:bus:device:function" (convert hex to decimal)
+  intelBusId = "PCI:0:2:0";
+  nvidiaBusId = "PCI:1:0:0";
+
 in {
   # Ensure X picks the NVIDIA driver explicitly (Xwayland uses this too)
   services.xserver.videoDrivers = [ "nvidia" ];
@@ -12,22 +27,21 @@ in {
 
   hardware.nvidia = {
     modesetting.enable = true;
-    # Disable persistenced to avoid service failures and keep defaults simple
-    nvidiaPersistenced = false;
-    powerManagement.enable = true;
-    powerManagement.finegrained = true;  # Kreves for offload
+    nvidiaPersistenced = !isHybridLaptop;  # Enable on desktop, disable on laptop
+    powerManagement.enable = isHybridLaptop;
+    powerManagement.finegrained = isHybridLaptop;  # Only for hybrid laptops
     open = false;
     nvidiaSettings = true;
     package = config.boot.kernelPackages.nvidiaPackages.latest;
 
-    # Prime offload for hybrid Intel + NVIDIA laptop
-    prime = {
+    # Prime configuration - only for hybrid laptops
+    prime = lib.mkIf isHybridLaptop {
       offload = {
         enable = true;
-        enableOffloadCmd = true;  # Gir "nvidia-offload" kommando
+        enableOffloadCmd = true;  # Provides "nvidia-offload" command
       };
-      intelBusId = "PCI:0:2:0";
-      nvidiaBusId = "PCI:1:0:0";
+      intelBusId = intelBusId;
+      nvidiaBusId = nvidiaBusId;
     };
   };
 
@@ -45,16 +59,13 @@ in {
     ++ lib.optional (nvtopPkg != null) nvtopPkg;
 
   environment.sessionVariables = {
-    # For offload-modus: IKKE sett __GLX_VENDOR_LIBRARY_NAME globalt
-    # Det vil tvinge alt til NVIDIA. La Prime håndtere dette.
     WLR_NO_HARDWARE_CURSORS = "1";
     NIXOS_OZONE_WL = "1";
     QT_QPA_PLATFORM = "wayland";
     SDL_VIDEODRIVER = "wayland";
     MOZ_ENABLE_WAYLAND = "1";
+  } // lib.optionalAttrs (!isHybridLaptop) {
+    # Desktop-only: Set NVIDIA as default for everything
+    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
   };
-
-  # Rely on hardware.nvidia.nvidiaPersistenced above; no extra unit needed.
-
-  # No additional performance-tweaking services; keep config simple.
 }
