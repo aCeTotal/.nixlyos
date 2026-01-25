@@ -9,6 +9,7 @@
       };
 
       systemd-boot.enable = true;
+      systemd-boot.configurationLimit = 5;  # Behold maks 5 generasjoner i boot
     };
 
     initrd.systemd.enable = true;
@@ -18,6 +19,14 @@
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
     kernelPackages = pkgs.linuxPackages_zen;
+
+    kernelPatches = [{
+      name = "disable-nova-core";
+      patch = null;
+      structuredExtraConfig = {
+        DRM_NOVA = lib.kernel.no;
+      };
+    }];
 
     kernelParams = [
       "quiet"

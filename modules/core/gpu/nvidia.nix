@@ -14,11 +14,21 @@ in {
     modesetting.enable = true;
     # Disable persistenced to avoid service failures and keep defaults simple
     nvidiaPersistenced = false;
-    powerManagement.enable = false;
-    powerManagement.finegrained = false;
+    powerManagement.enable = true;
+    powerManagement.finegrained = true;  # Kreves for offload
     open = false;
     nvidiaSettings = true;
     package = config.boot.kernelPackages.nvidiaPackages.latest;
+
+    # Prime offload for hybrid Intel + NVIDIA laptop
+    prime = {
+      offload = {
+        enable = true;
+        enableOffloadCmd = true;  # Gir "nvidia-offload" kommando
+      };
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
+    };
   };
 
   boot = {
@@ -35,9 +45,8 @@ in {
     ++ lib.optional (nvtopPkg != null) nvtopPkg;
 
   environment.sessionVariables = {
-    LIBVA_DRIVER_NAME = "nvidia";
-    GBM_BACKEND = "nvidia-drm";
-    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    # For offload-modus: IKKE sett __GLX_VENDOR_LIBRARY_NAME globalt
+    # Det vil tvinge alt til NVIDIA. La Prime håndtere dette.
     WLR_NO_HARDWARE_CURSORS = "1";
     NIXOS_OZONE_WL = "1";
     QT_QPA_PLATFORM = "wayland";

@@ -20,11 +20,7 @@ let
     spotify
     mpv
     vlc
-      bottles
-      steam-run
-      anime-downloader
-      lutris
-      onlyoffice-desktopeditors
+    onlyoffice-desktopeditors
   ];
 in
 {

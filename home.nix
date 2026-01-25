@@ -23,8 +23,8 @@
     };
     
     programs.bash.shellAliases = {
-      "update" = "cd $HOME/.nixlyos/ && sudo nixos-rebuild boot --flake .#nixlyos";
-      "upgrade" = "cd $HOME/.nixlyos/ && nix flake update && sudo nixos-rebuild boot --flake .#nixlyos";
+      "update" = "nix flake update nixlypkgs --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
+      "upgrade" = "nix flake update --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "nixly" = "cd $HOME/.nixlyos/";
       "c" = "claude";
     };

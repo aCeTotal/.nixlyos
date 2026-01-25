@@ -22,9 +22,10 @@
 
   services.resolved = {
     enable = true;
-    dnssec = "allow-downgrade";
-    # Valid values: "true" | "resolve" | "false"
-    llmnr = "false";
+    settings.Resolve = {
+      DNSSEC = "allow-downgrade";
+      LLMNR = "no";
+    };
   };
 
   # Enable NetworkManager here instead, per request
