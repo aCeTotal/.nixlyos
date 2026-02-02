@@ -1,4 +1,4 @@
-{ config, pkgs, lib, pkgs-stable, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   programs.steam = {
@@ -20,19 +20,28 @@
     settings = {
       general = {
         renice = 10;
-        ioprio = 4;
+        ioprio = 0;               # Real-time I/O priority
         inotify = 8192;
         inhibit_screensaver = 1;
         softrealtime = "auto";
+        reaper_freq = 5;          # Check for game exit every 5s
+        desiredgov = "performance"; # CPU governor during gaming
+        defaultgov = "powersave";   # Return to powersave after
       };
       gpu = {
-        apply_gpu_optimisations = "auto";
-        gpu_device = "auto";
-        amd_performance_level = "high";
+        apply_gpu_optimisations = "accept-responsibility";
+        gpu_device = 0;
+        nv_powermizer_mode = 1;   # Prefer max performance for Nvidia
+        nv_core_clock_mhz_offset = 0;
+        nv_mem_clock_mhz_offset = 0;
+      };
+      cpu = {
+        park_cores = "no";
+        pin_cores = "yes";        # Pin game to specific cores
       };
       custom = {
-        start = "''";
-        end = "''";
+        start = "${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på'";
+        end = "${pkgs.libnotify}/bin/notify-send 'GameMode' 'Deaktivert - Tilbake til normal'";
       };
     };
   };
@@ -61,6 +70,10 @@
     vulkan-validation-layers
     vulkan-tools
     pkgsi686Linux.vulkan-loader # 32-bit Vulkan for Steam games
+
+    # Performance monitoring
+    libnotify           # For gamemode notifications
+    schedtool           # CPU scheduling tool
   ];
 
   # ========================================

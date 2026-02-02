@@ -81,7 +81,7 @@
     wireguard-tools
     openconnect              # Cisco AnyConnect-kompatibel
     vpnc                     # Cisco VPN
-    sstp-client              # SSTP-klient
+    sstp                     # SSTP-klient
     strongswan               # IKEv2/IPsec
     libreswan                # Alternativ IPsec
     openfortivpn             # Fortinet
