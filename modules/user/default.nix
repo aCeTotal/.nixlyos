@@ -1,9 +1,12 @@
 { pkgs, users, inputs, system, ...}:
 
 {
+  imports = [
+    ./clickonce.nix
+  ];
+
   home.packages = with pkgs; [
     google-chrome
-    libreoffice
     kitty
     codex
     freecad

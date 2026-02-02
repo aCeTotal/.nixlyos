@@ -12,7 +12,6 @@ let
     celluloid
     pureref
     teams-for-linux
-    libreoffice-fresh
     codex
     (blender.override { cudaSupport = true; })
     speedtree

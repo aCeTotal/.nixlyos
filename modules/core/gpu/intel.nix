@@ -9,6 +9,12 @@
       vaapiVdpau
       libvdpau-va-gl
     ];
+    extraPackages32 = with pkgs.pkgsi686Linux; [
+      vulkan-loader
+      intel-media-driver
+      vaapiVdpau
+      libvdpau-va-gl
+    ];
   };
 
   environment.systemPackages = with pkgs; [

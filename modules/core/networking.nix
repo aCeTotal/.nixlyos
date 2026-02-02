@@ -1,7 +1,29 @@
 { config, lib, pkgs, ... }:
 
 {
-  boot.kernelModules = [ "tcp_bbr" ];
+  # Kernel-moduler for nettverk og VPN
+  boot.kernelModules = [
+    "tcp_bbr"
+    # IPsec/IKEv2
+    "af_key"
+    "ah4"
+    "ah6"
+    "esp4"
+    "esp6"
+    "xfrm_user"
+    "xfrm_algo"
+    # L2TP
+    "l2tp_core"
+    "l2tp_netlink"
+    "l2tp_ppp"
+    # PPTP
+    "nf_conntrack_pptp"
+    "nf_nat_pptp"
+    # TUN/TAP for OpenVPN
+    "tun"
+    # WireGuard (innebygd i moderne kernels)
+    "wireguard"
+  ];
 
   boot.kernel.sysctl = {
     "net.core.rmem_default" = 4194304;
@@ -32,5 +54,41 @@
   networking.networkmanager.enable = true;
   networking.networkmanager.dns = lib.mkDefault "systemd-resolved";
 
+  # NetworkManager VPN plugins
+  networking.networkmanager.plugins = with pkgs; [
+    networkmanager-openvpn      # OpenVPN
+    networkmanager-vpnc         # Cisco VPN
+    networkmanager-openconnect  # Cisco AnyConnect / OpenConnect
+    networkmanager-fortisslvpn  # Fortinet SSL VPN
+    networkmanager-l2tp         # L2TP/IPsec
+    networkmanager-sstp         # SSTP (Microsoft)
+  ];
+
   systemd.services.NetworkManager-wait-online.enable = false;
+
+  # StrongSwan for IKEv2/IPsec
+  services.strongswan = {
+    enable = true;
+    secrets = [ "/etc/ipsec.secrets" ];
+  };
+
+  environment.systemPackages = with pkgs; [
+    networkmanagerapplet
+    kdePackages.plasma-nm
+
+    # VPN-klienter
+    openvpn
+    wireguard-tools
+    openconnect              # Cisco AnyConnect-kompatibel
+    vpnc                     # Cisco VPN
+    sstp-client              # SSTP-klient
+    strongswan               # IKEv2/IPsec
+    libreswan                # Alternativ IPsec
+    openfortivpn             # Fortinet
+
+    # Nyttige verktøy
+    iproute2
+    iptables
+    nftables
+  ];
 }

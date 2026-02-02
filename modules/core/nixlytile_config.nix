@@ -4,7 +4,6 @@
 
     home.file.".config/nixlytile/config.conf".text = ''
 
-
 # Nixlytile Configuration File
 # Place this file at ~/.config/nixlytile/config.conf
 # Lines starting with # are comments
@@ -13,183 +12,216 @@
 # ================= APPEARANCE =================
 
 # Focus follows mouse (1 = enabled, 0 = disabled)
-        sloppyfocus = 1
+sloppyfocus = 1
 
 # Smart gaps - disable outer gap when only one window (1 = enabled)
-        smartgaps = 0
+smartgaps = 0
 
 # Enable gaps between windows (1 = enabled)
-        gaps = 1
+gaps = 1
 
 # Gap size in pixels between windows
-        gappx = 5
+gappx = 5
 
 # Window border width in pixels
-        borderpx = 1
+borderpx = 1
 
 # Lock cursor during resize (1 = lock, 0 = free)
-        lock_cursor = 0
+lock_cursor = 0
+
+# ================= HTPC MODE =================
+# HTPC mode optimizes for controller/TV usage by hiding the statusbar,
+# killing all windows, and disabling background tasks to minimize
+# CPU, IO, and RAM load.
+
+# Enable HTPC mode features (1 = enabled, 0 = disabled)
+htpc_mode_enabled = 1
+
+# Start in HTPC mode when nixlytile launches (1 = enabled)
+htpc_mode_autostart = 0
+
+# Auto-enter HTPC mode when a game controller connects (1 = enabled)
+htpc_mode_auto_on_controller = 1
+
+# Wallpaper to display in HTPC mode (supports ~ and $HOME)
+htpc_wallpaper = ~/.nixlyos/wallpapers/htpc.jpg
+
+# ================= PC GAMING =================
+# Configure which gaming services to scan for games in the PC Gaming view.
+# The PC Gaming view is accessible from the controller guide menu.
+
+# Enable Steam library scanning (1 = enabled, 0 = disabled)
+gaming_steam_enabled = 1
+
+# Enable Heroic Games Launcher scanning (Epic/GOG games)
+gaming_heroic_enabled = 1
+
+# Enable Lutris scanning (future support)
+gaming_lutris_enabled = 1
+
+# Enable Bottles scanning (future support)
+gaming_bottles_enabled = 1
 
 # ================= COLORS =================
 # Colors are in hex format: #RRGGBBAA or #RRGGBB
 # Examples: #FF0000FF (red, full opacity), #00FF00 (green)
 
 # Root/desktop background color
-        rootcolor = #222222FF
+rootcolor = #222222FF
 
 # Unfocused window border color
-        bordercolor = #444444FF
+bordercolor = #444444FF
 
 # Focused window border color
-        focuscolor = #005577FF
+focuscolor = #005577FF
 
 # Urgent window border color
-        urgentcolor = #FF0000FF
+urgentcolor = #FF0000FF
 
 # Fullscreen background color
-        fullscreen_bg = #1A1A1AFF
+fullscreen_bg = #1A1A1AFF
 
 # ================= STATUSBAR =================
 
 # Statusbar height in pixels
-        statusbar_height = 26
+statusbar_height = 26
 
 # Gap at top of statusbar
-        statusbar_top_gap = 3
+statusbar_top_gap = 3
 
 # Spacing between status modules
-        statusbar_module_spacing = 10
+statusbar_module_spacing = 10
 
 # Padding inside status modules
-        statusbar_module_padding = 8
+statusbar_module_padding = 8
 
 # Gap between icon and text in status modules
-        statusbar_icon_text_gap = 6
+statusbar_icon_text_gap = 6
 
 # Statusbar foreground (text) color
-        statusbar_fg = #FFFFFFFF
+statusbar_fg = #FFFFFFFF
 
 # Statusbar background color (semi-transparent)
-        statusbar_bg = #00000016
+statusbar_bg = #00000016
 
 # Popup background color
-        statusbar_popup_bg = #00000080
+statusbar_popup_bg = #00000080
 
 # Muted volume indicator color
-        statusbar_volume_muted_fg = #FF4C4CFF
+statusbar_volume_muted_fg = #FF4C4CFF
 
 # Muted microphone indicator color
-        statusbar_mic_muted_fg = #FF4C4CFF
+statusbar_mic_muted_fg = #FF4C4CFF
 
 # Workspace tag background
-        statusbar_tag_bg = #00000033
+statusbar_tag_bg = #00000033
 
 # Active workspace tag background
-        statusbar_tag_active_bg = #3399FF44
+statusbar_tag_active_bg = #3399FF44
 
 # Hovered workspace tag background
-        statusbar_tag_hover_bg = #66B3FFAA
+statusbar_tag_hover_bg = #66B3FFAA
 
 # Hover fade animation duration (0 = instant)
-        statusbar_hover_fade_ms = 0
+statusbar_hover_fade_ms = 0
 
 # Workspace tag padding
-        statusbar_workspace_padding = 8
+statusbar_workspace_padding = 8
 
 # Workspace tag spacing
-        statusbar_workspace_spacing = 4
+statusbar_workspace_spacing = 4
 
 # Thumbnail preview height
-        statusbar_thumb_height = 40
+statusbar_thumb_height = 40
 
 # Thumbnail preview gap
-        statusbar_thumb_gap = 2
+statusbar_thumb_gap = 2
 
 # Thumbnail window color
-        statusbar_thumb_window = #FFFFFF55
+statusbar_thumb_window = #FFFFFF55
 
 # Force RGBA decode for tray icons (workaround for some apps)
-        statusbar_tray_force_rgba = 0
+statusbar_tray_force_rgba = 0
 
 # Statusbar font (comma-separated for fallbacks)
 # Format: "family:size=N:weight=Bold"
-        statusbar_font = "monospace:size=16:weight=Bold, monospace:size=16"
+statusbar_font = "monospace:size=16:weight=Bold, monospace:size=16"
 
 # Font letter spacing adjustment
-        statusbar_font_spacing = 0
+statusbar_font_spacing = 0
 
 # Force font color rendering (1 = enabled)
-        statusbar_font_force_color = 1
+statusbar_font_force_color = 1
 
 # ================= KEYBOARD =================
 
 # Key repeat delay in milliseconds
-        repeat_delay = 250
+repeat_delay = 250
 
 # Key repeat rate (characters per second)
-        repeat_rate = 60
+repeat_rate = 60
 
 # ================= TRACKPAD/MOUSE =================
 
 # Enable tap to click (1 = enabled)
-        tap_to_click = 1
+tap_to_click = 1
 
 # Enable tap and drag (1 = enabled)
-        tap_and_drag = 1
+tap_and_drag = 1
 
 # Enable drag lock (1 = enabled)
-        drag_lock = 1
+drag_lock = 1
 
 # Enable natural scrolling (1 = enabled, reverses scroll direction)
-        natural_scrolling = 0
+natural_scrolling = 0
 
 # Disable touchpad while typing (1 = enabled)
-        disable_while_typing = 1
+disable_while_typing = 1
 
 # Left-handed mode (1 = enabled, swaps buttons)
-        left_handed = 0
+left_handed = 0
 
 # Middle button emulation (1 = enabled)
-        middle_button_emulation = 0
+middle_button_emulation = 0
 
 # Pointer acceleration speed (-1.0 to 1.0)
-        accel_speed = 0.0
+accel_speed = 0.0
 
 # Acceleration profile: "flat" or "adaptive"
-        accel_profile = adaptive
+accel_profile = adaptive
 
 # Scroll method: "none", "2fg" (two finger), "edge", "button"
-        scroll_method = 2fg
+scroll_method = 2fg
 
 # Click method: "none", "button_areas", "clickfinger"
-        click_method = button_areas
+click_method = button_areas
 
 # Tap button map: "lrm" (left/right/middle) or "lmr" (left/middle/right)
-        button_map = lrm
+button_map = lrm
 
 # ================= RESIZING =================
 
 # Resize factor for mouse resizing
-        resize_factor = 0.0002
+resize_factor = 0.0002
 
 # Minimum interval between resize updates (ms)
-        resize_interval_ms = 24
+resize_interval_ms = 24
 
 # Minimum pointer movement before resize (pixels)
-        resize_min_pixels = 3.0
+resize_min_pixels = 3.0
 
 # Smallest ratio change to trigger arrange
-        resize_ratio_epsilon = 0.002
+resize_ratio_epsilon = 0.002
 
 # ================= SEARCH =================
 
 # Minimum characters before starting file search
-        modal_file_search_minlen = 1
+modal_file_search_minlen = 1
 
 # ================= WALLPAPER & STARTUP =================
 
 # Wallpaper image path (supports ~ and $HOME)
-        wallpaper = ~/.nixlyos/wallpapers/beach.jpg
+wallpaper = ~/.nixlyos/wallpapers/beach.jpg
 
 # Custom autostart command (overrides default which includes wallpaper)
 # If you set this, wallpaper setting is ignored
@@ -242,10 +274,10 @@
 # ================= MODIFIER KEYS =================
 
 # Main modifier key: super (Windows key), alt, ctrl, shift
-        modkey = super
+modkey = super
 
 # Monitor navigation modifier key
-        monitorkey = ctrl
+monitorkey = ctrl
 
 # ================= SPAWN COMMANDS =================
 # These define default programs. Note: these are NOT automatically bound
@@ -254,19 +286,19 @@
 # using "bind = ... spawn <program>".
 
 # Default terminal
-        terminal = foot
+terminal = foot
 
 # Alternative terminal (for Shift+Enter)
-        terminal_alt = alacritty
+terminal_alt = alacritty
 
 # Web browser
-        browser = brave
+browser = brave
 
 # File manager
-        filemanager = thunar
+filemanager = thunar
 
 # Application launcher
-        launcher = wmenu-run
+launcher = wmenu-run
 
 # ================= KEYBINDINGS =================
 # Format: bind = modifiers+key action [argument]
@@ -294,6 +326,7 @@
 #   togglefullscreen        - Toggle fullscreen
 #   togglegaps              - Toggle gaps
 #   togglestatusbar         - Toggle statusbar
+#   htpc_mode_toggle        - Toggle HTPC mode (hides statusbar, pauses background tasks)
 #   focusmon <left/right>   - Focus monitor in direction
 #   tagmon <left/right>     - Move window to monitor
 #   modal_show              - Open modal (apps tab)
@@ -309,38 +342,38 @@
 #   chvt <1-12>             - Switch to virtual terminal
 
 # === Window management ===
-        bind = mod+q killclient
-        bind = mod+shift+Q quit
-        bind = mod+shift+space togglefloating
-        bind = mod+shift+f togglefullscreen
-        bind = mod+shift+g togglegaps
-        bind = mod+b togglestatusbar
+bind = mod+q killclient
+bind = mod+shift+Q quit
+bind = mod+shift+space togglefloating
+bind = mod+f togglefullscreen
+bind = mod+shift+g togglegaps
+bind = mod+b togglestatusbar
+bind = mod+shift+h htpc_mode_toggle
 
 # === Focus navigation ===
-        bind = mod+j focusstack +1
-        bind = mod+k focusstack -1
-        bind = mod+Up focusdir up
-        bind = mod+Down focusdir down
-        bind = mod+Left focusdir left
-        bind = mod+Right focusdir right
+bind = mod+j focusstack +1
+bind = mod+k focusstack -1
+bind = mod+Up focusdir up
+bind = mod+Down focusdir down
+bind = mod+Left focusdir left
+bind = mod+Right focusdir right
 
 # === Window movement ===
-        bind = mod+shift+Up swapclients 0
-        bind = mod+shift+Down swapclients 1
-        bind = mod+shift+Left swapclients 2
-        bind = mod+shift+Right swapclients 3
-        bind = mod+shift+J rotate_clients +1
-        bind = mod+shift+K rotate_clients -1
+bind = mod+shift+Up swapclients 0
+bind = mod+shift+Down swapclients 1
+bind = mod+shift+Left swapclients 2
+bind = mod+shift+Right swapclients 3
+bind = mod+shift+J rotate_clients +1
+bind = mod+shift+K rotate_clients -1
 
 # === Layout adjustment ===
-        bind = mod+h setmfact -0.05
-        bind = mod+l setmfact +0.05
-        bind = mod+d incnmaster -1
-        bind = mod+ctrl+Left setratio_h -0.025
-        bind = mod+ctrl+Right setratio_h +0.025
-        bind = mod+ctrl+Up setratio_v -0.025
-        bind = mod+ctrl+Down setratio_v +0.025
-        bind = mod+ctrl+Return zoom
+bind = mod+h setmfact -0.05
+bind = mod+l setmfact +0.05
+bind = mod+d incnmaster -1
+bind = mod+ctrl+Left setratio_h -0.025
+bind = mod+ctrl+Right setratio_h +0.025
+bind = mod+ctrl+Up setratio_v -0.025
+bind = mod+ctrl+Down setratio_v +0.025
 
 # === Applications ===
 # These keybindings launch programs. The 'spawn' action runs shell commands.
@@ -348,20 +381,20 @@
 # Commands can be simple program names or full shell commands with arguments.
 
 # Terminal emulators
-        bind = mod+Return spawn alacritty
-        bind = mod+shift+Return spawn foot
+bind = mod+Return spawn alacritty
+bind = mod+shift+Return spawn foot
 
 # Application launcher / search modal
-        bind = mod+p modal_show
-        bind = mod+f modal_show_files
-        bind = mod+g modal_show_git
-        bind = mod+i nixpkgs_show
+bind = mod+p modal_show
+bind = mod+v modal_show_files
+bind = mod+g modal_show_git
+bind = mod+i nixpkgs_show
 
 # File manager
-        bind = mod+e spawn thunar
+bind = mod+e spawn thunar
 
 # Web browser
-        bind = mod+BackSpace spawn brave
+bind = mod+BackSpace spawn brave
 
 # Example additional applications (uncomment to enable):
 # bind = mod+n spawn nm-connection-editor
@@ -369,40 +402,44 @@
 # bind = mod+c spawn code
 # bind = mod+s spawn spotify
 
+# Frame pacing statistics panel (slides in from right, shows FPS, latency, etc.)
+bind = mod+ctrl+Return gamepanel
+
 # === Workspaces (tags) ===
-        bind = mod+1 view 1
-        bind = mod+2 view 2
-        bind = mod+3 view 4
-        bind = mod+4 view 8
-        bind = mod+5 view 16
-        bind = mod+6 view 32
-        bind = mod+7 view 64
-        bind = mod+8 view 128
-        bind = mod+9 view 256
-        bind = mod+0 view all
+bind = mod+1 view 1
+bind = mod+2 view 2
+bind = mod+3 view 4
+bind = mod+4 view 8
+bind = mod+5 view 16
+bind = mod+6 view 32
+bind = mod+7 view 64
+bind = mod+8 view 128
+bind = mod+9 view 256
+bind = mod+0 view all
 
-        bind = mod+shift+1 tag 1
-        bind = mod+shift+2 tag 2
-        bind = mod+shift+3 tag 4
-        bind = mod+shift+4 tag 8
-        bind = mod+shift+5 tag 16
-        bind = mod+shift+6 tag 32
-        bind = mod+shift+7 tag 64
-        bind = mod+shift+8 tag 128
-        bind = mod+shift+9 tag 256
-        bind = mod+shift+0 tag all
+bind = mod+shift+1 tag 1
+bind = mod+shift+2 tag 2
+bind = mod+shift+3 tag 4
+bind = mod+shift+4 tag 8
+bind = mod+shift+5 tag 16
+bind = mod+shift+6 tag 32
+bind = mod+shift+7 tag 64
+bind = mod+shift+8 tag 128
+bind = mod+shift+9 tag 256
+bind = mod+shift+0 tag all
 
-        bind = mod+Tab view 0
+bind = mod+Tab view 0
 
 # === Monitor navigation ===
-        bind = mod+comma focusmon -1
-        bind = mod+period focusmon 1
-        bind = mod+shift+less tagmon -1
-        bind = mod+shift+greater tagmon 1
-        bind = ctrl+Up warptomonitor 0
-        bind = ctrl+Down warptomonitor 1
-        bind = ctrl+Left warptomonitor 2
-        bind = ctrl+Right warptomonitor 3
+bind = mod+comma focusmon -1
+bind = mod+period focusmon 1
+bind = mod+shift+less tagmon -1
+bind = mod+shift+greater tagmon 1
+bind = ctrl+Up warptomonitor 0
+bind = ctrl+Down warptomonitor 1
+bind = ctrl+Left warptomonitor 2
+bind = ctrl+Right warptomonitor 3
+
 
         '';
 

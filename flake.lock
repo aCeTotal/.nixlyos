@@ -27,8 +27,8 @@
         ]
       },
       "locked": {
-        "lastModified": 1769376734,
-        "narHash": "sha256-EyOeeEmkjYX3dz4JL+ZaBEEFjH+oKrG+EX+WEQn+qc0=",
+        "lastModified": 1769890022,
+        "narHash": "sha256-lXy/dzhoWhf58FZQyvKKWu646dJEiIgHM5raWCSsXVQ=",
         "path": "/home/total/dev_nixly/nixlypkgs",
         "type": "path"
       },

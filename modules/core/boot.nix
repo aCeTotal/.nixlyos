@@ -55,6 +55,9 @@
     "fs.protected_symlinks" = 1;
     "fs.protected_fifos" = 2;
     "fs.protected_regular" = 2;
+
+    # Gaming
+    "vm.max_map_count" = 16777216; # Kreves av mange spill (Star Citizen, etc.)
   };
 
   services.fstrim.enable = true;

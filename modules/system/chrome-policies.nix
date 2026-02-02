@@ -12,7 +12,9 @@
         "SuppressFirstRunDefaultBrowserPrompt": true,
         "BackgroundModeEnabled": false,
         "BrowserCrashDumpEnabled": false,
-        "MetricsReportingEnabled": false
+        "MetricsReportingEnabled": false,
+        "AutoOpenFileTypes": ["application"],
+        "AutoOpenAllowedForURLs": ["*"]
       }
     '';
 
@@ -25,7 +27,24 @@
         "SuppressFirstRunDefaultBrowserPrompt": true,
         "BackgroundModeEnabled": false,
         "BrowserCrashDumpEnabled": false,
-        "MetricsReportingEnabled": false
+        "MetricsReportingEnabled": false,
+        "AutoOpenFileTypes": ["application"],
+        "AutoOpenAllowedForURLs": ["*"]
+      }
+    '';
+
+    # Brave Browser policies
+    "brave/policies/managed/fast-fresh.json".text = ''
+      {
+        "RestoreOnStartup": 0,
+        "HideFirstRunExperience": true,
+        "DefaultBrowserSettingEnabled": false,
+        "SuppressFirstRunDefaultBrowserPrompt": true,
+        "BackgroundModeEnabled": false,
+        "BrowserCrashDumpEnabled": false,
+        "MetricsReportingEnabled": false,
+        "AutoOpenFileTypes": ["application"],
+        "AutoOpenAllowedForURLs": ["*"]
       }
     '';
   };

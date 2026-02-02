@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, pkgs-stable, ... }:
 
 {
   programs.steam = {
@@ -8,6 +8,9 @@
     dedicatedServer.openFirewall = false;
     extraCompatPackages = with pkgs; [
       proton-ge-bin
+    ];
+    extraPackages = with pkgs; [
+      gamemode
     ];
   };
 
@@ -34,11 +37,6 @@
     };
   };
 
-  environment.sessionVariables = {
-    STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${lib.concatStringsSep ":" [ "$HOME/.steam/root/compatibilitytools.d" "$HOME/.local/share/Steam/compatibilitytools.d" ]}";
-    # Prime-variabler settes nå via nvidia-offload kommandoen
-  };
-
   environment.systemPackages = with pkgs; [
     steamcmd
     gamescope
@@ -57,6 +55,12 @@
     xow_dongle-firmware
     linuxConsoleTools # for jstest and input debugging
     evtest
+
+    # Vulkan packages
+    vulkan-loader
+    vulkan-validation-layers
+    vulkan-tools
+    pkgsi686Linux.vulkan-loader # 32-bit Vulkan for Steam games
   ];
 
   # ========================================
