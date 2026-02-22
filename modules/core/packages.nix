@@ -1,10 +1,9 @@
-{ lib, pkgs-stable, system, inputs, ... }:
+{ lib, pkgs-stable, pkgs-unstable, system, inputs, ... }:
 
 let
-  hmPackages = with pkgs-stable; [
+  stablePackages = with pkgs-stable; [
     discord
     freecad
-    claude-code
     brave
     firefox
     google-chrome
@@ -15,17 +14,22 @@ let
     codex
     (blender.override { cudaSupport = true; })
     speedtree
+    claude
     nixlytile
+    citrix-workspace-nixly
     spotify
     mpv
     vlc
     onlyoffice-desktopeditors
   ];
+
+  unstablePackages = with pkgs-unstable; [
+  ];
 in
 {
   config.home-manager.sharedModules = [
     {
-      home.packages = hmPackages;
+      home.packages = stablePackages ++ unstablePackages;
     }
   ];
 }

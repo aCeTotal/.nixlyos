@@ -46,4 +46,7 @@
 
     # Overwrites existing home-manager file
     xdg.configFile."mimeapps.list".force = true;
+
+    # Set login keyring as default (auto-unlocked via PAM on login)
+    home.file.".local/share/keyrings/default".text = "login";
 }

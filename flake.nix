@@ -23,18 +23,40 @@
   let
     system = "x86_64-linux";
 
+    permittedInsecure = [
+      "freeimage-unstable-2021-11-01"
+      "electron-29.4.6"
+      "dotnet-sdk-6.0.428"
+      "dotnet-runtime-6.0.36"
+      "dotnet-sdk-wrapped-6.0.428"
+      "libxml2-2.13.8"
+      "libsoup-2.74.3"
+    ];
+
     # Stable-pakker med overlay fra nixlypkgs
     pkgs-stable = import nixpkgs-stable {
       inherit system;
-      config.allowUnfree = true;
+      config = {
+        allowUnfree = true;
+        permittedInsecurePackages = permittedInsecure;
+      };
       overlays = [ nixlypkgs.overlays.default ];
+    };
+
+    # Unstable-pakker
+    pkgs-unstable = import nixpkgs {
+      inherit system;
+      config = {
+        allowUnfree = true;
+        permittedInsecurePackages = permittedInsecure;
+      };
     };
   in {
     nixosConfigurations.nixlyos = nixpkgs.lib.nixosSystem {
       inherit system;
 
       specialArgs = {
-        inherit inputs system pkgs-stable;
+        inherit inputs system pkgs-stable pkgs-unstable;
       };
 
       modules = [
@@ -50,7 +72,7 @@
             backupFileExtension = "backup";
 
             extraSpecialArgs = {
-              inherit inputs system pkgs-stable;
+              inherit inputs system pkgs-stable pkgs-unstable;
             };
 
             users.total = import ./home.nix;

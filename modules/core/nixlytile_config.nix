@@ -3,11 +3,16 @@
 {
 
     home.file.".config/nixlytile/config.conf".text = ''
-
 # Nixlytile Configuration File
 # Place this file at ~/.config/nixlytile/config.conf
 # Lines starting with # are comments
 # Format: key = value
+#
+# Hot-reload: Changes are applied automatically when this file is saved.
+
+# =============================================================================
+#                           DESKTOP (Window Manager)
+# =============================================================================
 
 # ================= APPEARANCE =================
 
@@ -29,38 +34,8 @@ borderpx = 1
 # Lock cursor during resize (1 = lock, 0 = free)
 lock_cursor = 0
 
-# ================= HTPC MODE =================
-# HTPC mode optimizes for controller/TV usage by hiding the statusbar,
-# killing all windows, and disabling background tasks to minimize
-# CPU, IO, and RAM load.
-
-# Enable HTPC mode features (1 = enabled, 0 = disabled)
-htpc_mode_enabled = 1
-
-# Start in HTPC mode when nixlytile launches (1 = enabled)
-htpc_mode_autostart = 0
-
-# Auto-enter HTPC mode when a game controller connects (1 = enabled)
-htpc_mode_auto_on_controller = 1
-
-# Wallpaper to display in HTPC mode (supports ~ and $HOME)
-htpc_wallpaper = ~/.nixlyos/wallpapers/htpc.jpg
-
-# ================= PC GAMING =================
-# Configure which gaming services to scan for games in the PC Gaming view.
-# The PC Gaming view is accessible from the controller guide menu.
-
-# Enable Steam library scanning (1 = enabled, 0 = disabled)
-gaming_steam_enabled = 1
-
-# Enable Heroic Games Launcher scanning (Epic/GOG games)
-gaming_heroic_enabled = 1
-
-# Enable Lutris scanning (future support)
-gaming_lutris_enabled = 1
-
-# Enable Bottles scanning (future support)
-gaming_bottles_enabled = 1
+# Bypass surface visibility optimization (1 = enabled, 0 = disabled)
+# bypass_surface_visibility = 0
 
 # ================= COLORS =================
 # Colors are in hex format: #RRGGBBAA or #RRGGBB
@@ -153,6 +128,15 @@ statusbar_font_spacing = 0
 # Force font color rendering (1 = enabled)
 statusbar_font_force_color = 1
 
+# ================= WALLPAPER & STARTUP =================
+
+# Wallpaper image path (supports ~ and $HOME)
+wallpaper = ~/.nixlyos/wallpapers/beach.jpg
+
+# Custom autostart command (overrides default which includes wallpaper)
+# If you set this, wallpaper setting is ignored
+# autostart = "your-custom-startup-command &"
+
 # ================= KEYBOARD =================
 
 # Key repeat delay in milliseconds
@@ -217,15 +201,6 @@ resize_ratio_epsilon = 0.002
 
 # Minimum characters before starting file search
 modal_file_search_minlen = 1
-
-# ================= WALLPAPER & STARTUP =================
-
-# Wallpaper image path (supports ~ and $HOME)
-wallpaper = ~/.nixlyos/wallpapers/beach.jpg
-
-# Custom autostart command (overrides default which includes wallpaper)
-# If you set this, wallpaper setting is ignored
-# autostart = "your-custom-startup-command &"
 
 # ================= MONITORS =================
 # Configure monitor positions, resolution, and refresh rate.
@@ -326,7 +301,6 @@ launcher = wmenu-run
 #   togglefullscreen        - Toggle fullscreen
 #   togglegaps              - Toggle gaps
 #   togglestatusbar         - Toggle statusbar
-#   htpc_mode_toggle        - Toggle HTPC mode (hides statusbar, pauses background tasks)
 #   focusmon <left/right>   - Focus monitor in direction
 #   tagmon <left/right>     - Move window to monitor
 #   modal_show              - Open modal (apps tab)
@@ -348,7 +322,6 @@ bind = mod+shift+space togglefloating
 bind = mod+f togglefullscreen
 bind = mod+shift+g togglegaps
 bind = mod+b togglestatusbar
-bind = mod+shift+h htpc_mode_toggle
 
 # === Focus navigation ===
 bind = mod+j focusstack +1
@@ -440,14 +413,61 @@ bind = ctrl+Down warptomonitor 1
 bind = ctrl+Left warptomonitor 2
 bind = ctrl+Right warptomonitor 3
 
+# =============================================================================
+#                          HTPC (Home Theater PC)
+# =============================================================================
+
+# ================= HTPC MODE =================
+# 1 = desktop only (normal window manager)
+# 2 = htpc only (controller/TV, starts directly in HTPC mode)
+nixlytile_mode = 2
+
+# Wallpaper to display in HTPC mode (supports ~ and $HOME)
+htpc_wallpaper = ~/.nixlyos/wallpapers/htpc.jpg
+
+# HTPC menu pages (1 = show, 0 = hide)
+htpc_page_pcgaming = 1
+htpc_page_retrogaming = 1
+htpc_page_movies = 1
+htpc_page_tvshows = 1
+htpc_page_quit = 1
+
+# ================= MEDIA SERVER =================
+# Connect to a nixlymediaserver instance for Movies & TV Shows.
+# The server is auto-discovered via UDP broadcast on the local network.
+# Set this manually if auto-discovery fails or the server is on a different subnet.
+# Format: IP:port or full URL (http:// prefix is optional)
+#
+# Examples:
+# media_server = 192.168.1.100:8080
+# media_server = http://10.0.0.8:8080
+# media_server = myserver.local:8080
+media_server = aceclan.no:8080
+
+# Client download bandwidth limit in Mbps (for transcoded streaming)
+# client_download_mbps = 100
+
+# ================= PC GAMING =================
+# Configure which gaming services to scan for games in the PC Gaming view.
+# The PC Gaming view is accessible from the controller guide menu.
+#
+# GPU-specific launch parameters are hardcoded in game_launch_params.h
+# and automatically applied based on your detected discrete GPU.
+# Parameters you set manually in Steam's launch options will NOT be duplicated.
+
+# Enable Steam library scanning (1 = enabled, 0 = disabled)
+gaming_steam_enabled = 1
+
+# Enable Heroic Games Launcher scanning (Epic/GOG games)
+gaming_heroic_enabled = 1
+
+# Enable Lutris scanning (future support)
+gaming_lutris_enabled = 1
+
+# Enable Bottles scanning (future support)
+gaming_bottles_enabled = 1
+
 
         '';
-
-# (Removed local script; bound directly in Hyprland via $screenshot)
-
-
-
-
-
 
 }

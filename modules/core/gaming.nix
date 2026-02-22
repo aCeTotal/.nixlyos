@@ -57,11 +57,10 @@
     bottles
     protonup-ng
     protontricks
-    wineWowPackages.staging
+    wineWow64Packages.staging
     winetricks
     dxvk
     vkd3d
-    xow_dongle-firmware
     linuxConsoleTools # for jstest and input debugging
     evtest
 
@@ -74,6 +73,10 @@
     # Performance monitoring
     libnotify           # For gamemode notifications
     schedtool           # CPU scheduling tool
+
+    # Media playback
+    mpv
+    yt-dlp
   ];
 
   # ========================================

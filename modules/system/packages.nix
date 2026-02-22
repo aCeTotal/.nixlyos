@@ -10,6 +10,7 @@
       "dotnet-runtime-6.0.36"
       "dotnet-sdk-wrapped-6.0.428"
       "libxml2-2.13.8"
+      "libsoup-2.74.3"
     ];
   };
 

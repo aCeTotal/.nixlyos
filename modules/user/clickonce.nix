@@ -2,7 +2,7 @@
 
 let
   # Wine med staging patches for bedre .NET-støtte
-  winePackage = pkgs.wineWowPackages.stagingFull;
+  winePackage = pkgs.wineWow64Packages.stagingFull;
 
   # ClickOnce launcher script - håndterer både URLer og lokale filer
   clickonce-launcher = pkgs.writeShellScriptBin "clickonce-launcher" ''
