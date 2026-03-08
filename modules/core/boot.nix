@@ -80,6 +80,25 @@
     "fs.protected_fifos" = 2;
     "fs.protected_regular" = 2;
 
+    # Nettverkshardening
+    "net.ipv4.conf.all.rp_filter" = 1;              # reverse path filtering
+    "net.ipv4.conf.default.rp_filter" = 1;
+    "net.ipv4.conf.all.accept_redirects" = 0;        # avvis ICMP redirects
+    "net.ipv4.conf.default.accept_redirects" = 0;
+    "net.ipv6.conf.all.accept_redirects" = 0;
+    "net.ipv6.conf.default.accept_redirects" = 0;
+    "net.ipv4.conf.all.send_redirects" = 0;           # ikke send ICMP redirects
+    "net.ipv4.conf.default.send_redirects" = 0;
+    "net.ipv4.conf.all.accept_source_route" = 0;      # blokkerer source routing
+    "net.ipv6.conf.all.accept_source_route" = 0;
+    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;       # smurf attack protection
+    "net.ipv4.conf.all.log_martians" = 1;              # logger ugyldige pakker
+    "net.ipv4.conf.default.log_martians" = 1;
+
+    # Kernel anti-exploit hardening
+    "kernel.yama.ptrace_scope" = 2;                    # begrenser ptrace
+    "fs.suid_dumpable" = 0;                            # ingen core dumps fra SUID
+
     # Gaming
     "vm.max_map_count" = 16777216; # Kreves av mange spill (Star Citizen, etc.)
   };

@@ -17,6 +17,7 @@
     ./wayland.nix
     ./sound.nix
     ./zram.nix
+    ./security.nix
     ./gpu/nvidia.nix
     ./cpu/intel.nix
     ../system/msi-ec.nix

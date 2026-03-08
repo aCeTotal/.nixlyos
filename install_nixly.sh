@@ -73,6 +73,31 @@ done
 
 [[ $EUID -eq 0 ]] || die "Run as root (sudo)."
 
+# Verify UEFI boot and Secure Boot state (must be disabled or in Setup Mode for lanzaboote)
+[[ -d /sys/firmware/efi ]] || die "System is not booted in UEFI mode. This installer requires UEFI."
+
+SB_VAR="/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c"
+SM_VAR="/sys/firmware/efi/efivars/SetupMode-8be4df61-93ca-11d2-aa0d-00e098032b8c"
+
+SB_ENABLED=0
+SETUP_MODE=0
+
+if [[ -f "$SB_VAR" ]]; then
+  SB_BYTE=$(od -An -t u1 -j4 -N1 "$SB_VAR" | tr -d ' ')
+  [[ "$SB_BYTE" == "1" ]] && SB_ENABLED=1
+fi
+
+if [[ -f "$SM_VAR" ]]; then
+  SM_BYTE=$(od -An -t u1 -j4 -N1 "$SM_VAR" | tr -d ' ')
+  [[ "$SM_BYTE" == "1" ]] && SETUP_MODE=1
+fi
+
+if [[ "$SETUP_MODE" -eq 1 ]]; then
+  log "Secure Boot er i Setup Mode – klar for nøkkelregistrering"
+else
+  die "Secure Boot er ikke i Setup Mode. Gå inn i BIOS/UEFI og sett Secure Boot til Setup Mode før du kjører dette scriptet."
+fi
+
 # Auto-pick a disk if not provided: prefer NVMe/SSD, size >= 32G, non-removable.
 if [[ -z "$DISK" ]]; then
   CANDIDATE=$(lsblk -dn -o NAME,TYPE,RM,SIZE,ROTA | awk '$2=="disk" && $3==0 {print $0}' | awk '(index($1,"nvme")==1 || $5==0) {print $1}' | head -n1)
