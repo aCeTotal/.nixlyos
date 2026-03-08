@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # NixOS installer for SSD/NVMe with FDE (root) and ext4.
-# - Bootloader: systemd-boot (UEFI). Note: ESP (/boot) remains unencrypted by UEFI design.
+# - Bootloader: lanzaboote (Secure Boot via UEFI). ESP (/boot) remains unencrypted by UEFI design.
 # - Root: LUKS2 (argon2id) + ext4 tuned for SSD with low I/O (no swap partition; zram enabled).
 # - Destructive: WIPES the chosen disk completely.
 
@@ -23,8 +23,9 @@ Usage: sudo $(basename "$0") [--disk /dev/xxx] [--hostname NAME] [--flake-dir PA
 Performs a clean NixOS installation on the selected disk with:
 - GPT: 512MiB ESP (FAT32, unencrypted), rest LUKS2 (argon2id) for root
 - Root filesystem: ext4, SSD/NVMe optimized (noatime, discard=async)
-- Bootloader: systemd-boot (UEFI)
+- Bootloader: lanzaboote (Secure Boot via UEFI)
 - Swap: zram (no swap partition)
+- Secure Boot keys generated automatically
 
 Options:
   --disk                   Device to install to (e.g., /dev/nvme0n1 or /dev/sda)
@@ -33,12 +34,13 @@ Options:
   --luks-passphrase        LUKS passphrase (non-interactive)
   --luks-passphrase-file   File containing LUKS passphrase
   --luks-passphrase-stdin  Read LUKS passphrase from stdin (non-interactive; safe from argv)
-  --prompt-luks-passphrase Prompt securely for LUKS passphrase (no echo; safest for history)
+  --no-prompt              Skip interactive passphrase prompt (generate random passphrase)
 
-Notes on encryption requirements:
-- With systemd-boot, the ESP (/boot, FAT32) cannot be encrypted by UEFI design.
+By default, the installer prompts for a LUKS passphrase interactively.
+
+Notes on encryption:
+- ESP (/boot, FAT32) cannot be encrypted by UEFI design.
 - All OS data, including /, is encrypted with modern LUKS2 (argon2id).
-- If you require an encrypted /boot as well, install with GRUB instead.
 EOF
 }
 
@@ -47,7 +49,7 @@ HOSTNAME="nixlyos"
 LUKS_PASSPHRASE=""
 LUKS_PASSPHRASE_FILE=""
 LUKS_PASSPHRASE_STDIN=0
-LUKS_PASSPHRASE_PROMPT=0
+NO_PROMPT=0
 FLAKE_DIR=""
 
 while [[ $# -gt 0 ]]; do
@@ -59,7 +61,7 @@ while [[ $# -gt 0 ]]; do
     --luks-passphrase) LUKS_PASSPHRASE=${2:-}; shift 2;;
     --luks-passphrase-file) LUKS_PASSPHRASE_FILE=${2:-}; shift 2;;
     --luks-passphrase-stdin) LUKS_PASSPHRASE_STDIN=1; shift 1;;
-    --prompt-luks-passphrase) LUKS_PASSPHRASE_PROMPT=1; shift 1;;
+    --no-prompt) NO_PROMPT=1; shift 1;;
     *) die "Unknown argument: $1";;
   esac
 done
@@ -111,7 +113,7 @@ log "Formatting ESP (FAT32): $P1"
 mkfs.vfat -F32 -n NIXBOOT "$P1"
 
 log "Preparing LUKS2 passphrase"
-# Precedence: file > arg > stdin > prompt > generate
+# Precedence: file > arg > stdin > interactive prompt > generate
 if [[ -n "$LUKS_PASSPHRASE_FILE" ]]; then
   [[ -f "$LUKS_PASSPHRASE_FILE" ]] || die "Passphrase file not found: $LUKS_PASSPHRASE_FILE"
   LUKS_PASSPHRASE=$(cat "$LUKS_PASSPHRASE_FILE")
@@ -119,21 +121,20 @@ elif [[ -n "$LUKS_PASSPHRASE" ]]; then
   : # already set via --luks-passphrase
 elif [[ "$LUKS_PASSPHRASE_STDIN" -eq 1 ]]; then
   if [[ -t 0 ]]; then
-    die "--luks-passphrase-stdin requested but stdin is a TTY. Use --prompt-luks-passphrase for interactive entry."
+    die "--luks-passphrase-stdin requested but stdin is a TTY."
   fi
   IFS= read -r LUKS_PASSPHRASE || die "Failed reading passphrase from stdin"
-elif [[ "$LUKS_PASSPHRASE_PROMPT" -eq 1 ]]; then
+elif [[ "$NO_PROMPT" -eq 1 ]]; then
+  # Generate strong random passphrase
+  LUKS_PASSPHRASE=$(head -c 64 /dev/urandom | base64 -w0)
+  log "Generated LUKS passphrase (SAVE THIS NOW):"
+  echo "$LUKS_PASSPHRASE"
+else
+  # Default: prompt interactively
   read -rs -p "Enter LUKS passphrase: " LUKS_PASSPHRASE; echo
   read -rs -p "Confirm LUKS passphrase: " LUKS_PASSPHRASE_CONFIRM; echo
   [[ -n "$LUKS_PASSPHRASE" ]] || die "Empty passphrase not allowed"
   [[ "$LUKS_PASSPHRASE" == "$LUKS_PASSPHRASE_CONFIRM" ]] || die "Passphrases do not match"
-fi
-
-if [[ -z "$LUKS_PASSPHRASE" ]]; then
-  # Generate strong random passphrase (printed once for user to store)
-  LUKS_PASSPHRASE=$(head -c 64 /dev/urandom | base64 -w0)
-  log "Generated LUKS passphrase (SAVE THIS NOW):"
-  echo "$LUKS_PASSPHRASE"
 fi
 
 log "Setting up LUKS2 on $P2 (argon2id, high iteration time)"
@@ -185,6 +186,9 @@ fi
 log "Copying fresh hardware-configuration.nix into flake at $FLAKE_DIR"
 rm -f "$FLAKE_DIR/hardware-configuration.nix" || true
 cp "$HWC" "$FLAKE_DIR/hardware-configuration.nix"
+
+log "Genererer Secure Boot-nøkler for lanzaboote"
+nix-shell -p sbctl --run "sbctl create-keys --database-path /mnt/etc/secureboot --export /mnt/etc/secureboot"
 
 log "Installing NixOS from flake $FLAKE_DIR#nixlyos (no root password)"
 nixos-install --no-root-password --root /mnt --flake "$FLAKE_DIR#nixlyos"

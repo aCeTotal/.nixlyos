@@ -420,7 +420,7 @@ bind = ctrl+Right warptomonitor 3
 # ================= HTPC MODE =================
 # 1 = desktop only (normal window manager)
 # 2 = htpc only (controller/TV, starts directly in HTPC mode)
-nixlytile_mode = 2
+nixlytile_mode = 1
 
 # Wallpaper to display in HTPC mode (supports ~ and $HOME)
 htpc_wallpaper = ~/.nixlyos/wallpapers/htpc.jpg

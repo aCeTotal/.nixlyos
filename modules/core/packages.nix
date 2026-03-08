@@ -16,11 +16,16 @@ let
     speedtree
     claude
     nixlytile
+    # Screenshot
+    grim
+    slurp
+    wl-clipboard
     citrix-workspace-nixly
     spotify
     mpv
     vlc
     onlyoffice-desktopeditors
+    pavucontrol
   ];
 
   unstablePackages = with pkgs-unstable; [

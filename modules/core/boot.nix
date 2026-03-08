@@ -5,16 +5,27 @@
     loader = {
       efi = {
         canTouchEfiVariables = true;
-        efiSysMountPoint = "/boot"; # Ensure this mounts your ESP
+        efiSysMountPoint = "/boot";
       };
 
-      systemd-boot.enable = true;
-      systemd-boot.configurationLimit = 5;  # Behold maks 5 generasjoner i boot
+      # Deaktivert - lanzaboote tar over for systemd-boot
+      systemd-boot.enable = lib.mkForce false;
+    };
+
+    lanzaboote = {
+      enable = true;
+      pkiBundle = "/etc/secureboot";
     };
 
     initrd.systemd.enable = true;
     consoleLogLevel = 3;
     tmp.cleanOnBoot = true;
+
+    plymouth = {
+      enable = true;
+      theme = "matrix";
+      themePackages = [ pkgs.plymouth-matrix-theme ];
+    };
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
@@ -30,6 +41,7 @@
 
     kernelParams = [
       "quiet"
+      "splash"
       "loglevel=3"
       "rd.udev.log_level=3"
       "udev.log_priority=3"
@@ -38,13 +50,25 @@
     ];
   };
 
-    #  security = {
-    #apparmor.enable = true;
-    #sudo.wheelNeedsPassword = true;
-    #tpm2.enable = true;
-    #tpm2.pkcs11.enable = true;
-    #tpm2.tctiEnvironment.enable = true;
-    #};
+  # sbctl for å administrere Secure Boot-nøkler
+  environment.systemPackages = [ pkgs.sbctl ];
+
+  # Aktiver TPM2-støtte
+  security.tpm2 = {
+    enable = true;
+    pkcs11.enable = true;
+    tctiEnvironment.enable = true;
+  };
+
+  # Registrer Secure Boot-nøkler automatisk hvis systemet er i Setup Mode
+  # (bevarer Microsoft-nøkler)
+  system.activationScripts.secureboot-enroll = lib.stringAfter [ "etc" ] ''
+    SBCTL="${pkgs.sbctl}/bin/sbctl"
+    if $SBCTL status 2>/dev/null | grep -q "Setup Mode:.*Enabled"; then
+      echo "Setup Mode aktiv - registrerer nøkler med Microsoft-nøkler bevart..."
+      $SBCTL enroll-keys --microsoft
+    fi
+  '';
 
   boot.kernel.sysctl = {
     "kernel.sysrq" = 1;

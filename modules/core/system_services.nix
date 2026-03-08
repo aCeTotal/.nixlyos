@@ -110,8 +110,6 @@
     # Improve I/O responsiveness
     "kernel.io_delay_type" = 0;         # Udelay (faster but uses CPU)
 
-    # Hugepages for gaming
-    "vm.nr_hugepages" = 512;            # Pre-allocate 1GB of 2MB hugepages
   };
 
   # ========================================

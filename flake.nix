@@ -9,6 +9,8 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
     nixlypkgs.inputs.nixpkgs.follows = "nixpkgs-stable"; # overlay følger stable
+    lanzaboote.url = "github:nix-community/lanzaboote";
+    lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs@{
@@ -63,6 +65,7 @@
         ./configuration.nix
 
         nixos-hardware.nixosModules.common-pc
+        inputs.lanzaboote.nixosModules.lanzaboote
 
         home-manager.nixosModules.home-manager
         {
