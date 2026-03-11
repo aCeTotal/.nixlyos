@@ -86,7 +86,6 @@
   # ========================================
 
   # Xbox controller support
-  hardware.xone.enable = true;      # Xbox wireless USB dongle
   hardware.xpadneo.enable = true;   # Xbox Bluetooth (better than manual xpadneo)
 
   # ========================================
@@ -238,7 +237,6 @@
   boot = {
     extraModulePackages = with config.boot.kernelPackages; [
       xpadneo
-      xone
     ];
 
     # Kernel modules to load

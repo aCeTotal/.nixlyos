@@ -48,7 +48,7 @@
     wireplumber
     pavucontrol
     pwvucontrol
-    helvum
+    crosspipe
   ];
 
 }

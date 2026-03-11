@@ -54,7 +54,7 @@
     # GUI mixers and patchbays
     pavucontrol        # PulseAudio-style mixer (works with pipewire-pulse)
     pwvucontrol        # PipeWire native volume control
-    helvum             # GTK patchbay for PipeWire nodes
+    crosspipe          # PipeWire patchbay (replaces helvum)
     qpwgraph           # Qt patchbay for PipeWire/JACK
 
     # Audio utilities
