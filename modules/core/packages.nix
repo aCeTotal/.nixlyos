@@ -20,7 +20,7 @@ let
     grim
     slurp
     wl-clipboard
-    citrix-workspace-nixly
+
     spotify
     mpv
     vlc
