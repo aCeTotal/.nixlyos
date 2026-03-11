@@ -21,5 +21,6 @@
     ./gpu/nvidia.nix
     ./cpu/intel.nix
     ../system/msi-ec.nix
+    ./nixlytile.nix
   ];
 }

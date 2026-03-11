@@ -15,7 +15,6 @@ let
     (blender.override { cudaSupport = true; })
     speedtree
     claude
-    nixlytile
     # Screenshot
     grim
     slurp
