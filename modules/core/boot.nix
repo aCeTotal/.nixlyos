@@ -32,10 +32,11 @@
     kernelPackages = pkgs.linuxPackages_zen;
 
     kernelPatches = [{
-      name = "disable-nova-core";
+      name = "kernel-config-fixes";
       patch = null;
       structuredExtraConfig = {
         DRM_NOVA = lib.kernel.no;
+        PREEMPT_LAZY = lib.mkForce (lib.kernel.no);
       };
     }];
 
