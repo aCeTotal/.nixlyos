@@ -8,7 +8,7 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
-    nixlypkgs.inputs.nixpkgs.follows = "nixpkgs-stable"; # overlay følger stable
+    nixlypkgs.inputs.nixpkgs.follows = "nixpkgs-stable";
     lanzaboote.url = "github:nix-community/lanzaboote";
     lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -70,7 +70,7 @@
         home-manager.nixosModules.home-manager
         {
           home-manager = {
-            useGlobalPkgs = true;      # bruker stable+overlay
+            useGlobalPkgs = true;
             useUserPackages = true;
             backupFileExtension = "backup";
 

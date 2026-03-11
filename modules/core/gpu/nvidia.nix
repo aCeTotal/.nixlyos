@@ -49,8 +49,8 @@ in {
   };
 
   boot = {
-    kernelModules = [ "nvidia" "nvidia_uvm" "nvidia_modeset" "nvidia_drm" ];
-    kernelParams = [ "nvidia_drm.modeset=1" ];
+    initrd.kernelModules = [ "nvidia" "nvidia_uvm" "nvidia_modeset" "nvidia_drm" ];
+    kernelParams = [ "nvidia_drm.modeset=1" "nvidia_drm.fbdev=1" ];
   };
 
   environment.systemPackages =
