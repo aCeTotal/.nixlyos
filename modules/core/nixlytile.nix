@@ -16,6 +16,7 @@ let
   nixlytile-session = pkgs.symlinkJoin {
     name = "nixlytile-session";
     paths = [ nixlytile-launcher ];
+    passthru.providedSessions = [ "nixlytile" ];
     postBuild = ''
       mkdir -p $out/share
       ln -sf ${nixlytile}/share/wayland-sessions $out/share/wayland-sessions
