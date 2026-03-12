@@ -12,7 +12,7 @@ let
     pureref
     teams-for-linux
     codex
-    (blender.override { cudaSupport = true; })
+    #(blender.override { cudaSupport = true; })
     speedtree
     claude
     # Screenshot
