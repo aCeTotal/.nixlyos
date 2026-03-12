@@ -4,7 +4,6 @@
 
     security = {
         apparmor.enable = true;
-        audit.enable = true;
         auditd.enable = true;
         sudo.wheelNeedsPassword = true;
         tpm2.enable = true;

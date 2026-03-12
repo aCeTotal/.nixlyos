@@ -27,7 +27,6 @@
   security.apparmor.enable = true;
 
   # ── Audit ─────────────────────────────────────────────────────────
-  security.audit.enable = true;
   security.auditd.enable = true;
 
   # ── Firejail (applikasjonssandboxing) ─────────────────────────────
