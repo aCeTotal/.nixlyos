@@ -58,17 +58,15 @@ in {
       vulkan-tools
       libva-utils
       egl-wayland
+      nvidia-vaapi-driver
     ])
     ++ lib.optional (nvtopPkg != null) nvtopPkg;
 
   environment.sessionVariables = {
-    WLR_NO_HARDWARE_CURSORS = "1";
-    NIXOS_OZONE_WL = "1";
-    QT_QPA_PLATFORM = "wayland";
-    SDL_VIDEODRIVER = "wayland";
-    MOZ_ENABLE_WAYLAND = "1";
+    ELECTRON_OZONE_PLATFORM_HINT = "auto";
   } // lib.optionalAttrs (!isHybridLaptop) {
-    # Desktop-only: Set NVIDIA as default for everything
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    GBM_BACKEND = "nvidia-drm";
+    LIBVA_DRIVER_NAME = "nvidia";
   };
 }

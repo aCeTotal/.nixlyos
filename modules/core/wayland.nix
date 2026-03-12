@@ -18,7 +18,6 @@
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
     QT_QPA_PLATFORM = "wayland";
-    SDL_VIDEODRIVER = "wayland";
     MOZ_ENABLE_WAYLAND = "1";
     GTK_USE_PORTAL = "1";
   };
