@@ -15,6 +15,7 @@
     lanzaboote = {
       enable = true;
       pkiBundle = "/var/lib/sbctl";
+      configurationLimit = 1;
     };
 
     initrd.systemd.enable = true;

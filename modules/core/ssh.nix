@@ -5,8 +5,8 @@
     enable = true;
     settings = {
       PermitRootLogin = "no";
-      PasswordAuthentication = false;
-      KbdInteractiveAuthentication = false;
+      PasswordAuthentication = true;
+      KbdInteractiveAuthentication = true;
       PubkeyAuthentication = true;
       X11Forwarding = false;
       AllowTcpForwarding = "yes";
