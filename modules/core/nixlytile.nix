@@ -4,11 +4,14 @@ let
   nixlytile = pkgs-stable.nixlytile;
 
   # Launcher: takes the original wrapProgram wrapper script,
-  # replaces the exec target with the capability-wrapped binary
+  # replaces the exec target with the capability-wrapped binary,
+  # and adds LD_LIBRARY_PATH so XWayland can find libEGL.so.1 via libepoxy's dlopen
   nixlytile-launcher = pkgs.runCommand "nixlytile-launcher" {} ''
     mkdir -p $out/bin
     sed 's|"${nixlytile}/bin/.nixlytile-wrapped"|"/run/wrappers/bin/nixlytile"|' \
       ${nixlytile}/bin/nixlytile > $out/bin/nixlytile
+    sed -i '/^exec /i export LD_LIBRARY_PATH="${pkgs.libglvnd}/lib:/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"' \
+      $out/bin/nixlytile
     chmod +x $out/bin/nixlytile
   '';
 
