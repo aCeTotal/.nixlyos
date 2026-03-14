@@ -5,11 +5,16 @@ let
 
   # Launcher: takes the original wrapProgram wrapper script,
   # replaces the exec target with the capability-wrapped binary,
-  # and adds LD_LIBRARY_PATH so XWayland can find libEGL.so.1 via libepoxy's dlopen
+  # and sets EGL/GL vendor paths so Xwayland can find NVIDIA's EGL via libepoxy.
+  # Note: LD_LIBRARY_PATH is stripped by the kernel for capability-wrapped binaries
+  # (AT_SECURE), so we use __EGL_VENDOR_LIBRARY_DIRS and LD_LIBRARY_PATH both —
+  # the vendor dirs var survives the wrapper, LD_LIBRARY_PATH is a fallback.
   nixlytile-launcher = pkgs.runCommand "nixlytile-launcher" {} ''
     mkdir -p $out/bin
     sed 's|"${nixlytile}/bin/.nixlytile-wrapped"|"/run/wrappers/bin/nixlytile"|' \
       ${nixlytile}/bin/nixlytile > $out/bin/nixlytile
+    sed -i '/^exec /i export __EGL_VENDOR_LIBRARY_DIRS="/run/opengl-driver/share/glvnd/egl_vendor.d''${__EGL_VENDOR_LIBRARY_DIRS:+:$__EGL_VENDOR_LIBRARY_DIRS}"' \
+      $out/bin/nixlytile
     sed -i '/^exec /i export LD_LIBRARY_PATH="${pkgs.libglvnd}/lib:/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"' \
       $out/bin/nixlytile
     chmod +x $out/bin/nixlytile

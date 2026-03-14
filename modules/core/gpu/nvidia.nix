@@ -75,6 +75,8 @@ in {
     GBM_BACKEND = "nvidia-drm";
     LIBVA_DRIVER_NAME = "nvidia";
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
+    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    __EGL_VENDOR_LIBRARY_DIRS = "/run/opengl-driver/share/glvnd/egl_vendor.d";
     __GL_SHADER_DISK_CACHE_SKIP_CLEANUP = "1";  # Behold shader-cache mellom økter
     __GL_THREADED_OPTIMIZATIONS = "1";           # Trådede GL-optimaliseringer
   };
