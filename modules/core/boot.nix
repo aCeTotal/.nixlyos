@@ -8,15 +8,15 @@
         efiSysMountPoint = "/boot";
       };
 
-      # Deaktivert - lanzaboote tar over for systemd-boot
-      systemd-boot.enable = lib.mkForce false;
+      systemd-boot.enable = true;
+      systemd-boot.configurationLimit = 5;
     };
 
-    lanzaboote = {
-      enable = true;
-      pkiBundle = "/var/lib/sbctl";
-      configurationLimit = 1;
-    };
+    # lanzaboote = {
+    #   enable = true;
+    #   pkiBundle = "/var/lib/sbctl";
+    #   configurationLimit = 1;
+    # };
 
     initrd.systemd.enable = true;
     consoleLogLevel = 3;
