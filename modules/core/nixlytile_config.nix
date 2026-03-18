@@ -301,18 +301,24 @@ launcher = wmenu-run
 #   togglefullscreen        - Toggle fullscreen
 #   togglegaps              - Toggle gaps
 #   togglestatusbar         - Toggle statusbar
-#   focusmon <left/right>   - Focus monitor in direction
-#   tagmon <left/right>     - Move window to monitor
+#   focusmon <direction>    - Focus monitor (1=up, 2=down, 4=left, 8=right)
+#   tagmon <direction>      - Move window to monitor (1=up, 2=down, 4=left, 8=right)
 #   modal_show              - Open modal (apps tab)
 #   modal_show_files        - Open modal directly in file search
 #   modal_show_git          - Open modal directly in git projects
 #   nixpkgs_show            - Open nixpkgs package installer
 #   focusdir <up/down/left/right>     - Focus window in direction
-#   swapclients <up/down/left/right>  - Swap window in direction
+#   swapclients <0-3>       - Swap window (0=left, 1=right, 2=up, 3=down)
 #   setratio_h <+/-0.025>   - Adjust horizontal split ratio
 #   setratio_v <+/-0.025>   - Adjust vertical split ratio
 #   rotate_clients <+1/-1>  - Rotate windows in layout
-#   warptomonitor <direction> - Move cursor to monitor
+#   warptomonitor <direction> - Move cursor to monitor (1=up, 2=down, 4=left, 8=right)
+#   tagtomonitornum <0-3>   - Move focused window to monitor by number
+#   setlayout               - Set/cycle layout
+#   togglefullscreenadaptivesync - Toggle fullscreen adaptive sync
+#   togglemirror            - Toggle monitor mirroring
+#   htpc_mode_toggle        - Toggle HTPC mode
+#   gamepanel               - Toggle game performance panel
 #   chvt <1-12>             - Switch to virtual terminal
 
 # === Window management ===
@@ -332,10 +338,10 @@ bind = mod+Left focusdir left
 bind = mod+Right focusdir right
 
 # === Window movement ===
-bind = mod+shift+Up swapclients 0
-bind = mod+shift+Down swapclients 1
-bind = mod+shift+Left swapclients 2
-bind = mod+shift+Right swapclients 3
+bind = mod+shift+Up swapclients 2
+bind = mod+shift+Down swapclients 3
+bind = mod+shift+Left swapclients 0
+bind = mod+shift+Right swapclients 1
 bind = mod+shift+J rotate_clients +1
 bind = mod+shift+K rotate_clients -1
 
@@ -404,14 +410,14 @@ bind = mod+shift+0 tag all
 bind = mod+Tab view 0
 
 # === Monitor navigation ===
-bind = mod+comma focusmon -1
-bind = mod+period focusmon 1
-bind = mod+shift+less tagmon -1
-bind = mod+shift+greater tagmon 1
-bind = ctrl+Up warptomonitor 0
-bind = ctrl+Down warptomonitor 1
-bind = ctrl+Left warptomonitor 2
-bind = ctrl+Right warptomonitor 3
+bind = mod+comma focusmon 4
+bind = mod+period focusmon 8
+bind = mod+shift+less tagmon 4
+bind = mod+shift+greater tagmon 8
+bind = ctrl+Up warptomonitor 1
+bind = ctrl+Down warptomonitor 2
+bind = ctrl+Left warptomonitor 4
+bind = ctrl+Right warptomonitor 8
 
 # =============================================================================
 #                          HTPC (Home Theater PC)
