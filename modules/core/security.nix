@@ -24,7 +24,7 @@
   };
 
   # ── AppArmor (MAC) ───────────────────────────────────────────────
-  security.apparmor.enable = true;
+  security.apparmor.enable = false;
 
   # ── Audit ─────────────────────────────────────────────────────────
   security.auditd.enable = true;

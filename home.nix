@@ -26,7 +26,7 @@
       "update" = "nix flake update nixlypkgs --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "upgrade" = "nix flake update --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "nixly" = "cd $HOME/.nixlyos/";
-      "c" = "claude";
+      "c" = "claude --dangerously-skip-permissions";
     };
 
 

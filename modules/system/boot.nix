@@ -3,7 +3,7 @@
 {
 
     security = {
-        apparmor.enable = true;
+        apparmor.enable = false;
         auditd.enable = true;
         sudo.wheelNeedsPassword = true;
         tpm2.enable = true;
