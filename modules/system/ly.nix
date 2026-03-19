@@ -1,11 +1,11 @@
-{ pkgs, pkgs-stable, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 {
 
   services.displayManager.ly.enable = true;
 
   services.displayManager.sessionPackages = [
-    pkgs-stable.nixlytile
+    pkgs-unstable.nixlytile
 
   ];
 

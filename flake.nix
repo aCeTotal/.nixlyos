@@ -8,7 +8,7 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
-    nixlypkgs.inputs.nixpkgs.follows = "nixpkgs-stable";
+    nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
     lanzaboote.url = "github:nix-community/lanzaboote";
     lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -45,13 +45,14 @@
       overlays = [ nixlypkgs.overlays.default ];
     };
 
-    # Unstable-pakker
+    # Unstable-pakker med overlay fra nixlypkgs
     pkgs-unstable = import nixpkgs {
       inherit system;
       config = {
         allowUnfree = true;
         permittedInsecurePackages = permittedInsecure;
       };
+      overlays = [ nixlypkgs.overlays.default ];
     };
   in {
     nixosConfigurations.nixlyos = nixpkgs.lib.nixosSystem {

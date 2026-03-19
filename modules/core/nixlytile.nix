@@ -1,7 +1,7 @@
-{ pkgs, pkgs-stable, lib, ... }:
+{ pkgs, pkgs-unstable, lib, ... }:
 
 let
-  nixlytile = pkgs-stable.nixlytile;
+  nixlytile = pkgs-unstable.nixlytile;
 
   # Launcher: takes the original wrapProgram wrapper script,
   # replaces the exec target with the capability-wrapped binary,

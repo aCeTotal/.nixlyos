@@ -25,6 +25,8 @@ let
     vlc
     onlyoffice-desktopeditors
     pavucontrol
+    kitty
+    wezterm
   ];
 
   unstablePackages = with pkgs-unstable; [

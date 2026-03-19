@@ -22,7 +22,7 @@
             # Bytt fra GRUB til systemd-boot
             systemd-boot = {
                 enable = true;
-                configurationLimit = 3;
+                configurationLimit = 2;
                 editor = false;
             };
 

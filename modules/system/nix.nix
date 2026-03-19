@@ -6,7 +6,7 @@
       automatic = true;
       dates = "daily";
       randomizedDelaySec = "14m";
-      options = "--delete-older-than 30d";
+      options = "--delete-older-than 3d";
     };
     settings =
       {
