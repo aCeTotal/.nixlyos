@@ -16,6 +16,10 @@
   security.polkit.enable = true;
   services.dbus.enable = true;
 
+  environment.systemPackages = with pkgs; [
+    swaybg
+  ];
+
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
     QT_QPA_PLATFORM = "wayland";

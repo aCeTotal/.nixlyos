@@ -41,5 +41,7 @@
     LIBVA_DRIVER_NAME = "nvidia";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
+    GBM_BACKEND = "nvidia-drm";
+    __NV_PRIME_RENDER_OFFLOAD = "1";
   };
 }

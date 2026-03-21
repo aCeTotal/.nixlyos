@@ -25,6 +25,7 @@ let
     vlc
     onlyoffice-desktopeditors
     pavucontrol
+    ghostty
     kitty
     wezterm
   ];

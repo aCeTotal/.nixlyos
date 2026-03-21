@@ -261,13 +261,13 @@ monitorkey = ctrl
 # using "bind = ... spawn <program>".
 
 # Default terminal
-terminal = foot
+terminal = alacritty
 
 # Alternative terminal (for Shift+Enter)
-terminal_alt = alacritty
+terminal_alt = foot
 
 # Web browser
-browser = brave
+browser = google-chrome-stable
 
 # File manager
 filemanager = thunar
@@ -373,7 +373,7 @@ bind = mod+i nixpkgs_show
 bind = mod+e spawn thunar
 
 # Web browser
-bind = mod+BackSpace spawn brave
+bind = mod+BackSpace spawn google-chrome-stable
 
 # Example additional applications (uncomment to enable):
 # bind = mod+n spawn nm-connection-editor

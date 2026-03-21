@@ -27,7 +27,7 @@
         transparency = 12;          # X11 only; Wayland handled via Hyprland layerrule
         follow = "none";            # don’t move with focus
         browser = "xdg-open";
-        format = "<b>%s</b>\n%b";
+        format = "<b>%s</b>\\n%b";
         show_age_threshold = 60;
         icon_position = "left";
         max_icon_size = 48;

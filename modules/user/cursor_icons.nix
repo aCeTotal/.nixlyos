@@ -28,11 +28,9 @@
         "gtk-tooltip-browse-timeout" = 10;
         "gtk-tooltip-browse-mode-timeout" = 10;
       };
-      gtk4.extraConfig = {
-        "gtk-enable-tooltips" = 1;
-        "gtk-tooltip-timeout" = 10;
-        "gtk-tooltip-browse-timeout" = 10;
-        "gtk-tooltip-browse-mode-timeout" = 10;
-      };
     };
-} 
+
+    # Override home-manager's generated gtk-4.0/gtk.css that imports a
+    # non-existent Adwaita-dark CSS file (GTK4 has Adwaita built-in).
+    xdg.configFile."gtk-4.0/gtk.css".text = "";
+}
