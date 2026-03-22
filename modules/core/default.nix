@@ -23,5 +23,6 @@
     ../system/msi-ec.nix
     ./nixlytile.nix
     ./newsboat.nix
+    ./drawingtablet.nix
   ];
 }

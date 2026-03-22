@@ -11,23 +11,18 @@ let
     celluloid
     pureref
     teams-for-linux
-    codex
-    #(blender.override { cudaSupport = true; })
+    (blender.override { cudaSupport = true; })
     speedtree
     claude
     # Screenshot
     grim
     slurp
     wl-clipboard
-
     spotify
     mpv
     vlc
     onlyoffice-desktopeditors
     pavucontrol
-    ghostty
-    kitty
-    wezterm
   ];
 
   unstablePackages = with pkgs-unstable; [
