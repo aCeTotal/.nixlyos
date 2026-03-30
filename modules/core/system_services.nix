@@ -1,18 +1,6 @@
 { pkgs, ... }:
 
 {
-  # Gnome keyring secret agent for NetworkManager VPN passwords
-  systemd.user.services.gnome-keyring-secrets = {
-    description = "GNOME Keyring secrets component";
-    partOf = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = "${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --foreground --components=secrets";
-      Restart = "on-failure";
-    };
-  };
-
   # Packages needed for secret agent functionality
   environment.systemPackages = with pkgs; [
     gcr        # Secret agent and password prompting

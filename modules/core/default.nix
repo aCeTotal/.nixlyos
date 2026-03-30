@@ -10,7 +10,7 @@
     ./ssh.nix
     ./gaming.nix
     ./packages.nix
-    ./neovim/default.nix
+    ./totalvim.nix
     ./users.nix
     ./timezone_locale.nix
     ./system_services.nix
@@ -24,5 +24,6 @@
     ./nixlytile.nix
     ./newsboat.nix
     ./drawingtablet.nix
+    #./kde.nix
   ];
 }

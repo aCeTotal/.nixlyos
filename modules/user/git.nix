@@ -10,6 +10,7 @@
     programs.git = {
         enable = true;
         package = pkgs.gitFull;
+        signing.format = null;
         settings.user = {
             name = "aCeTotal";
             email = "lars.oksendal@gmail.com";

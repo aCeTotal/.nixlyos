@@ -11,7 +11,6 @@ let
     celluloid
     pureref
     teams-for-linux
-    (blender.override { cudaSupport = true; })
     speedtree
     claude
     # Screenshot
@@ -26,6 +25,7 @@ let
   ];
 
   unstablePackages = with pkgs-unstable; [
+  (blender_nixly.override { cudaSupport = true; })
   ];
 in
 {

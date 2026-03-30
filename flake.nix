@@ -2,13 +2,18 @@
   description = "NixlyOS";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs = {
+    url = "github:NixOS/nixpkgs/nixos-unstable";
+    #rev = "d1e2f3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8p9q";
+    };  
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
     nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
+    totalvim.url = "github:aCeTotal/totalvim";
+    totalvim.inputs.nixpkgs.follows = "nixpkgs";
     lanzaboote.url = "github:nix-community/lanzaboote";
     lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   };
