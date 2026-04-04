@@ -319,6 +319,7 @@ launcher = wmenu-run
 #   togglemirror            - Toggle monitor mirroring
 #   htpc_mode_toggle        - Toggle HTPC mode
 #   gamepanel               - Toggle game performance panel
+#   screenshot_begin        - Enter screenshot selection mode
 #   chvt <1-12>             - Switch to virtual terminal
 
 # === Window management ===
@@ -375,11 +376,14 @@ bind = mod+e spawn thunar
 # Web browser
 bind = mod+BackSpace spawn google-chrome-stable
 
+# Screenshot (select region, copies PNG to clipboard)
+bind = mod+s screenshot_begin
+bind = Print screenshot_begin
+
 # Example additional applications (uncomment to enable):
 # bind = mod+n spawn nm-connection-editor
 # bind = mod+v spawn pavucontrol
 # bind = mod+c spawn code
-# bind = mod+s spawn spotify
 
 # Frame pacing statistics panel (slides in from right, shows FPS, latency, etc.)
 bind = mod+ctrl+Return gamepanel
@@ -471,7 +475,49 @@ gaming_heroic_enabled = 1
 gaming_lutris_enabled = 1
 
 # Enable Bottles scanning (future support)
-gaming_bottles_enabled = 1
+gaming_bottles_enabled = 0
+
+# ================= RETRO GAMING EMULATORS =================
+# Maps server emulator tags to launch commands.
+# Format: emulator = <tag> <command with %s for ROM path>
+# Tags must match what the server returns (nes, snes, n64, etc.)
+
+# Nintendo
+emulator = nes Mesen "%s"
+emulator = snes Mesen "%s"
+emulator = n64 RMG "%s" -f
+emulator = gamecube dolphin-emu -e "%s" -b
+emulator = wii dolphin-emu -e "%s" -b
+emulator = gb mgba -f "%s"
+emulator = gbc mgba -f "%s"
+emulator = gba mgba -f "%s"
+emulator = ds melonDS "%s"
+emulator = 3ds azahar "%s"
+emulator = wiiu cemu -g "%s" -f
+emulator = switch Ryujinx "%s"
+
+# PlayStation
+emulator = ps1 mednafen -video.fs 1 -psx.stretch aspect_mult2 -psx.videoip 0 -force_module psx "%s"
+emulator = ps2 pcsx2-qt -fullscreen -bigpicture -- "%s"
+emulator = ps3 rpcs3 --no-gui --fullscreen "%s"
+emulator = psp ppsspp --fullscreen "%s"
+
+# Xbox
+emulator = xbox xemu -dvd_path "%s" -full-screen
+emulator = xbox360 xenia_canary "%s"
+
+# Sega
+emulator = genesis blastem -f "%s"
+emulator = mastersystem blastem -m sms -f "%s"
+emulator = saturn mednafen -video.fs 1 -ss.stretch aspect_mult2 -ss.videoip 0 -force_module ss "%s"
+emulator = dreamcast flycast "%s"
+emulator = segacd ares --system "Mega CD" "%s" --fullscreen --no-file-prompt
+emulator = gamegear Mesen "%s"
+emulator = 32x ares --system "Mega 32X" "%s" --fullscreen --no-file-prompt
+
+# Other
+emulator = atari2600 stella -fullscreen "%s"
+emulator = tgfx16 Mesen "%s"
 
 
         '';

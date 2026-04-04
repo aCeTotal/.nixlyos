@@ -11,7 +11,7 @@ let
   # the vendor dirs var survives the wrapper, LD_LIBRARY_PATH is a fallback.
   nixlytile-launcher = pkgs.runCommand "nixlytile-launcher" {} ''
     mkdir -p $out/bin
-    sed 's|"${nixlytile}/bin/.nixlytile-wrapped"|"/run/wrappers/bin/nixlytile"|' \
+    sed 's|"${nixlytile}/bin/.nixlytile-wrapped"|"/run/wrappers/bin/nixlytile-cap"|' \
       ${nixlytile}/bin/nixlytile > $out/bin/nixlytile
     sed -i '/^exec /i export __EGL_VENDOR_LIBRARY_DIRS="/run/opengl-driver/share/glvnd/egl_vendor.d''${__EGL_VENDOR_LIBRARY_DIRS:+:$__EGL_VENDOR_LIBRARY_DIRS}"' \
       $out/bin/nixlytile
@@ -33,8 +33,12 @@ let
     '';
   };
 in {
-  # Capability-wrapped binary at /run/wrappers/bin/nixlytile
-  security.wrappers.nixlytile = {
+  # Capability-wrapped binary at /run/wrappers/bin/nixlytile-cap
+  # Named nixlytile-cap (not nixlytile) to avoid shadowing the launcher
+  # script in /run/current-system/sw/bin/nixlytile — /run/wrappers/bin
+  # comes first in PATH, so a same-named wrapper would bypass the
+  # wrapProgram PATH setup (fd, findutils, swaybg, etc.).
+  security.wrappers.nixlytile-cap = {
     source = "${nixlytile}/bin/.nixlytile-wrapped";
     capabilities = "cap_sys_nice,cap_sys_admin,cap_sys_rawio,cap_dac_override+ep";
     owner = "root";

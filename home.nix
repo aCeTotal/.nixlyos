@@ -14,6 +14,7 @@
       ./modules/user/thunar_exo.nix
       ./modules/user/dunst.nix
       ./modules/core/nixlytile_config.nix
+      ./modules/core/emulator_config.nix
     ];
 
     home = {

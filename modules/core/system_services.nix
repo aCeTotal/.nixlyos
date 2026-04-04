@@ -64,6 +64,14 @@
   services.irqbalance.enable = true;
 
   # ========================================
+  # SCX LAVD - Latency-Aware Virtual Deadline CPU Scheduler
+  # ========================================
+  services.scx = {
+    enable = true;
+    scheduler = "scx_lavd";
+  };
+
+  # ========================================
   # EARLYOOM - Early OOM killer (backup to systemd-oomd)
   # ========================================
   services.earlyoom = {
@@ -81,11 +89,9 @@
   # KERNEL SYSCTL FOR RESPONSIVENESS
   # ========================================
   boot.kernel.sysctl = {
-    # Reduce latency - important for gaming and responsiveness
-    "kernel.sched_min_granularity_ns" = 500000;   # 0.5ms min scheduling granularity
-    "kernel.sched_wakeup_granularity_ns" = 250000; # 0.25ms wakeup granularity
-    "kernel.sched_migration_cost_ns" = 250000;    # Reduce migration cost
-    "kernel.sched_nr_migrate" = 128;              # Migrate more tasks at once
+    # Note: sched_min_granularity_ns, sched_wakeup_granularity_ns,
+    # sched_migration_cost_ns, sched_nr_migrate do not exist in the
+    # zen kernel (EEVDF scheduler replaced CFS).
     "kernel.sched_autogroup_enabled" = 1;         # Group processes for fairness
 
     # Memory management for responsiveness

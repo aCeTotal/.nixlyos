@@ -37,6 +37,7 @@ family = "JetBrainsMono Nerd Font"
 style = "Regular"
 
 [window]
+dynamic_padding = true
 opacity = 0.75
 
 [selection]

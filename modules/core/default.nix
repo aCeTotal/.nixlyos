@@ -22,6 +22,7 @@
     ./cpu/intel.nix
     ../system/msi-ec.nix
     ./nixlytile.nix
+    ./emulators.nix
     ./newsboat.nix
     ./drawingtablet.nix
     #./kde.nix

@@ -56,7 +56,6 @@
     vkbasalt
     lutris
     heroic
-    bottles
     protonup-ng
     protontricks
     wineWow64Packages.staging
@@ -99,39 +98,29 @@
         Experimental = true;
         KernelExperimental = true;
         ControllerMode = "dual";
-
-        # Improved auto-connect settings
-        AutoEnable = true;
         FastConnectable = true;
-        ReconnectAttempts = 15;
-        ReconnectIntervals = "1,2,4,8,16,32,64,128";
 
         # Controller pairing
         Privacy = "device";
         JustWorksRepairing = "always";
         Class = "0x000100";
-
-        # BLE stability improvements
-        MinConnectionInterval = 6;
-        MaxConnectionInterval = 9;
-        ConnectionLatency = 44;
-        SupervisionTimeout = 216;
       };
       Policy = {
         AutoEnable = true;
+        ReconnectAttempts = 15;
+        ReconnectIntervals = "1,2,4,8,16,32,64,128";
         ReconnectUUIDs = "00001124-0000-1000-8000-00805f9b34fb,00001200-0000-1000-8000-00805f9b34fb";
       };
       LE = {
-        MinAdvertisementInterval = 30;
+        MinAdvertisementInterval = 32;
         MaxAdvertisementInterval = 50;
-        AdvertisementDuration = 2;
         ScanIntervalAutoConnect = 30;
         ScanWindowAutoConnect = 30;
       };
       GATT = {
         Cache = "yes";
         Channels = 3;
-        KeySize = 0;
+        KeySize = 7;
       };
     };
   };
