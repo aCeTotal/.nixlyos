@@ -80,7 +80,6 @@
 
   environment.systemPackages = with pkgs; [
     networkmanagerapplet
-    kdePackages.plasma-nm
 
     # VPN-klienter
     openvpn

@@ -15,7 +15,7 @@
     mgba               # binary: mgba
 
     # ── Nintendo DS ──
-    melonDS            # binary: melonDS
+    melonds            # binary: melonDS
 
     # ── Nintendo 3DS ──
     azahar             # binary: azahar  (Citra community fork)

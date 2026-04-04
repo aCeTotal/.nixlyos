@@ -3,14 +3,12 @@
 let
   stablePackages = with pkgs-stable; [
     discord
-    freecad
     brave
     firefox
     google-chrome
     gimp
     celluloid
     pureref
-    teams-for-linux
     speedtree
     claude
     # Screenshot

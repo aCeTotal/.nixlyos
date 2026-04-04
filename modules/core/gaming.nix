@@ -55,7 +55,6 @@
     goverlay
     vkbasalt
     lutris
-    heroic
     protonup-ng
     protontricks
     wineWow64Packages.staging
