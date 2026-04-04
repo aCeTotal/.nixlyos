@@ -1,5 +1,8 @@
 { pkgs, lib, ... }:
 
+let
+  opts = import ./nixlytile_options.nix;
+in
 {
 
     home.file.".config/nixlytile/config.conf".text = ''
@@ -430,7 +433,7 @@ bind = ctrl+Right warptomonitor 8
 # ================= HTPC MODE =================
 # 1 = desktop only (normal window manager)
 # 2 = htpc only (controller/TV, starts directly in HTPC mode)
-nixlytile_mode = 1
+nixlytile_mode = ${toString opts.nixlytileMode}
 
 # Wallpaper to display in HTPC mode (supports ~ and $HOME)
 htpc_wallpaper = ~/.nixlyos/wallpapers/htpc.jpg

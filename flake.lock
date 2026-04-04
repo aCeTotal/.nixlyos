@@ -139,11 +139,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1775175400,
-        "narHash": "sha256-C0uU+VyEaL1EeS1DhrdhFOlSwGxwJvf90aS7cxLpCHg=",
+        "lastModified": 1775324129,
+        "narHash": "sha256-BPol42LPE3LJuQlBWiv2WvPXdNSlvNXGetGlCW/IIgc=",
         "owner": "aCeTotal",
         "repo": "nixlypkgs",
-        "rev": "e4b7091346d39837d932b3df8aef2f2fd410c411",
+        "rev": "743bcdbfb311606dd472105462799ca0cda526b4",
         "type": "github"
       },
       "original": {

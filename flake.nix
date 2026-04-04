@@ -71,6 +71,7 @@
         ./configuration.nix
 
         nixos-hardware.nixosModules.common-pc
+        nixlypkgs.nixosModules.nixlypkgs
         inputs.lanzaboote.nixosModules.lanzaboote
 
         home-manager.nixosModules.home-manager

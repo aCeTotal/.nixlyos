@@ -4,24 +4,11 @@
   # ── Firewall ──────────────────────────────────────────────────────
   networking.firewall.enable = true;
 
-  # ── Fail2ban ──────────────────────────────────────────────────────
-  services.fail2ban = {
-    enable = true;
-    maxretry = 5;
-    bantime = "1h";
-    bantime-increment = {
-      enable = true;
-      maxtime = "48h";
-    };
-    jails.sshd = {
-      settings = {
-        enabled = true;
-        port = "ssh";
-        filter = "sshd";
-        maxretry = 3;
-      };
-    };
-  };
+  # Deluge BitTorrent
+  networking.firewall.allowedTCPPorts = [ 6881 ];
+  networking.firewall.allowedUDPPorts = [ 6881 ];
+  networking.firewall.allowedTCPPortRanges = [ { from = 57000; to = 57010; } ];
+  networking.firewall.allowedUDPPortRanges = [ { from = 57000; to = 57010; } ];
 
   # ── AppArmor (MAC) ───────────────────────────────────────────────
   security.apparmor.enable = false;
