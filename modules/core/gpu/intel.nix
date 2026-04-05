@@ -5,16 +5,22 @@
     enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
+      vulkan-loader
       intel-media-driver
-      vaapiVdpau
+      vpl-gpu-rt
+      intel-compute-runtime
+      ocl-icd
       libvdpau-va-gl
     ];
     extraPackages32 = with pkgs.pkgsi686Linux; [
       vulkan-loader
       intel-media-driver
-      vaapiVdpau
       libvdpau-va-gl
     ];
+  };
+
+  boot = {
+    initrd.kernelModules = [ "xe" ];
   };
 
   environment.systemPackages = with pkgs; [

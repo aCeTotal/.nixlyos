@@ -58,7 +58,6 @@
     qpwgraph           # Qt patchbay for PipeWire/JACK
 
     # Audio utilities
-    easyeffects        # per-app/system effects on PipeWire
     alsa-utils         # includes alsamixer and basic ALSA tools
   ];
 }
