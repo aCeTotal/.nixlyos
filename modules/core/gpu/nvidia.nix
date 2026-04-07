@@ -35,6 +35,7 @@
     egl-wayland
     nvidia-vaapi-driver
     nvtopPackages.full
+    nvfancontrol
   ];
 
   environment.sessionVariables = {
@@ -43,5 +44,41 @@
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
     GBM_BACKEND = "nvidia-drm";
     __NV_PRIME_RENDER_OFFLOAD = "1";
+  };
+
+  # GPU fan curve config for nvfancontrol
+  # Format: temperature(°C)  fan_speed(%)
+  # Designed for silence at idle, aggressive ramp before 85°C
+  environment.etc."xdg/nvfancontrol.conf".text = ''
+    # NixlyOS GPU Fan Curve - RTX 2080 Ti
+    # Goal: Maximum silence, hard cap at 85°C
+    #
+    # Temp(°C)  Fan(%)
+    20  0
+    35  0
+    40  25
+    45  30
+    50  35
+    55  40
+    60  50
+    65  60
+    70  70
+    75  80
+    80  95
+    83  100
+  '';
+
+  # nvfancontrol systemd service - starts at boot
+  systemd.services.nvfancontrol = {
+    description = "NVIDIA GPU Fan Control";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "nvidia-persistenced.service" ];
+    requires = [ "nvidia-persistenced.service" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.nvfancontrol}/bin/nvfancontrol -l 0,100 -f";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
   };
 }

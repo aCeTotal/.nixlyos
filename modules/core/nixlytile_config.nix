@@ -244,10 +244,10 @@ modal_file_search_minlen = 1
 # monitor = HDMI-A-2 top-right
 # monitor = VGA-1 auto disabled
 
-# Uncomment and adjust for your setup:
-# monitor = HDMI-A-1 master
-# monitor = DP-1 left
-# monitor = DP-2 right
+# Monitor setup:
+monitor = HDMI-A-1 master
+monitor = DP-1 left
+monitor = DP-2 right
 
 # ================= MODIFIER KEYS =================
 

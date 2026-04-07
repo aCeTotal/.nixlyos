@@ -249,6 +249,9 @@
     '';
   };
 
+  # Allow anticheat (EAC, BattlEye) to inspect game processes
+  boot.kernel.sysctl."kernel.yama.ptrace_scope" = 1;
+
   # Ensure user is in input group for controller access
   users.groups.input = {};
 }

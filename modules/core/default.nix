@@ -18,11 +18,9 @@
     ./sound.nix
     ./zram.nix
     ./security.nix
-    ./gpu/nvidia_intel.nix
+    ./gpu/nvidia.nix
     ./cpu/intel.nix
-    ../system/msi-ec.nix
     ./nixlytile.nix
-    ./emulators.nix
     ./newsboat.nix
     ./drawingtablet.nix
     #./kde.nix
