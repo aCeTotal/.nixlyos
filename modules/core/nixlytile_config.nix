@@ -205,50 +205,6 @@ resize_ratio_epsilon = 0.002
 # Minimum characters before starting file search
 modal_file_search_minlen = 1
 
-# ================= MONITORS =================
-# Configure monitor positions, resolution, and refresh rate.
-# Format: monitor = <name> <position> [WxH@Hz] [options...]
-#
-# <name>: Output name (e.g., HDMI-A-1, DP-1, eDP-1) or pattern (DP-* matches DP-1, DP-2)
-#         Use * to match all monitors as a fallback
-#
-# <position>: Where to place the monitor:
-#   master (or 1) - Primary monitor at origin (0,0)
-#   left (or 2)   - Left of master
-#   right (or 3)  - Right of master
-#   top-left (4)  - Above left monitor
-#   top-right (5) - Above right monitor
-#   bottom-left   - Below left monitor
-#   bottom-right  - Below right monitor
-#   auto          - Let compositor auto-arrange
-#
-# [WxH@Hz]: Optional resolution and refresh rate (e.g., 1920x1080@144, 2560x1440@60)
-#           Omit for auto (highest resolution and refresh rate)
-#
-# [options]: Optional settings:
-#   scale=X      - Display scale factor (e.g., scale=1.5 for HiDPI)
-#   transform=X  - Rotation: normal, 90, 180, 270, flipped, flipped-90, etc.
-#   mfact=X      - Master area ratio (0.1-0.9, default 0.55)
-#   nmaster=X    - Number of master windows (default 1)
-#   disabled     - Disable this monitor
-#
-# Default behavior (when no monitors are configured):
-#   First HDMI or DP = master, second = left, third = right,
-#   fourth = top-left, fifth = top-right
-#
-# Examples:
-# monitor = HDMI-A-1 master
-# monitor = DP-1 left 2560x1440@144
-# monitor = DP-2 right 1920x1080@60 scale=1.0
-# monitor = eDP-1 master 2560x1600@120 scale=1.5
-# monitor = HDMI-A-2 top-right
-# monitor = VGA-1 auto disabled
-
-# Monitor setup:
-monitor = HDMI-A-1 master
-monitor = DP-1 left
-monitor = DP-2 right
-
 # ================= MODIFIER KEYS =================
 
 # Main modifier key: super (Windows key), alt, ctrl, shift
