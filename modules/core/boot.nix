@@ -98,7 +98,7 @@
     "net.ipv4.conf.default.log_martians" = 1;
 
     # Kernel anti-exploit hardening
-    "kernel.yama.ptrace_scope" = 2;                    # begrenser ptrace
+    "kernel.yama.ptrace_scope" = 1;                    # begrenser ptrace
     "fs.suid_dumpable" = 0;                            # ingen core dumps fra SUID
 
     # Gaming

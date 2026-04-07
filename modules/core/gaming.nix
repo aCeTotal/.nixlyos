@@ -85,6 +85,7 @@
 
   # Xbox controller support
   hardware.xpadneo.enable = true;   # Xbox Bluetooth (better than manual xpadneo)
+  hardware.xone.enable = true;      # Xbox USB-dongle og kablede kontrollere
 
   # ========================================
   # BLUETOOTH CONFIGURATION FOR CONTROLLERS
@@ -225,6 +226,7 @@
   boot = {
     extraModulePackages = with config.boot.kernelPackages; [
       xpadneo
+      xone
     ];
 
     # Kernel modules to load
@@ -249,8 +251,6 @@
     '';
   };
 
-  # Allow anticheat (EAC, BattlEye) to inspect game processes
-  boot.kernel.sysctl."kernel.yama.ptrace_scope" = 1;
 
   # Ensure user is in input group for controller access
   users.groups.input = {};

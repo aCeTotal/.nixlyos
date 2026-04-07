@@ -34,6 +34,22 @@
       # Tillat USB-huber
       allow with-interface one-of { 09:*:* }
 
+      # Tillat Xbox-kontrollere (Microsoft)
+      allow id 045e:*:* with-interface one-of { ff:*:* 03:*:* }
+
+      # Tillat generiske gamepads/joysticks (HID gamepad subclass)
+      allow with-interface one-of { 03:00:05 }
+
+      # Tillat andre vanlige kontroller-produsenter
+      # Sony (PlayStation)
+      allow id 054c:*:* with-interface one-of { 03:*:* ff:*:* }
+      # Nintendo
+      allow id 057e:*:* with-interface one-of { 03:*:* ff:*:* }
+      # Valve (Steam Controller/Deck)
+      allow id 28de:*:* with-interface one-of { 03:*:* ff:*:* }
+      # 8BitDo
+      allow id 2dc8:*:* with-interface one-of { 03:*:* ff:*:* }
+
       # Blokker alt annet som standard
     '';
   };
