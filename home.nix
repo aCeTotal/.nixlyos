@@ -15,6 +15,7 @@
       ./modules/user/dunst.nix
       ./modules/core/nixlytile_config.nix
       ./modules/core/emulator_config.nix
+      ./modules/user/caveman.nix
     ];
 
     home = {

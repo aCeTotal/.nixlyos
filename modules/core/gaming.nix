@@ -11,6 +11,8 @@
     ];
     extraPackages = with pkgs; [
       gamemode
+      libGL
+      libglvnd
     ];
   };
 

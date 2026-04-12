@@ -18,7 +18,7 @@
     ./sound.nix
     ./zram.nix
     ./security.nix
-    ./gpu/nvidia.nix
+    ./gpu/nvidia_intel.nix
     ./cpu/intel.nix
     ./nixlytile.nix
     ./newsboat.nix

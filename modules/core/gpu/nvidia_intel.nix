@@ -1,72 +1,69 @@
-{ config, system, inputs, lib, pkgs, pkgs-unstable, ... }:
+{ config, lib, pkgs, ... }:
 
-let
-  nvtopPkg = (pkgs.nvtopPackages.full or (pkgs.nvtopPackages.nvidia or (pkgs.nvtop or null)));
-
-  # ============================================
-  # GPU CONFIGURATION OPTIONS
-  # Set these based on your hardware:
-  # ============================================
-
-  # Set to true for hybrid laptop (Intel + NVIDIA), false for desktop with only NVIDIA
-  isHybridLaptop = true;
-
-  # Only needed if isHybridLaptop = true
-  # Find your bus IDs with: lspci | grep -E "VGA|3D"
-  # Format: "PCI:bus:device:function" (convert hex to decimal)
-  intelBusId = "PCI:0:2:0";
-  nvidiaBusId = "PCI:1:0:0";
-
-in {
-  # Ensure X picks the NVIDIA driver explicitly (Xwayland uses this too)
+{
   services.xserver.videoDrivers = [ "nvidia" ];
+
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
+    extraPackages = with pkgs; [
+      vulkan-loader
+      libGL
+      libglvnd
+    ];
     extraPackages32 = with pkgs.pkgsi686Linux; [
       vulkan-loader
+      libGL
+      libglvnd
     ];
   };
 
   hardware.nvidia = {
     modesetting.enable = true;
-    nvidiaPersistenced = !isHybridLaptop;  # Enable on desktop, disable on laptop
-    powerManagement.enable = isHybridLaptop;
-    powerManagement.finegrained = isHybridLaptop;  # Only for hybrid laptops
+    nvidiaPersistenced = true;
+    powerManagement.enable = false;
+    powerManagement.finegrained = false;
     open = false;
-    nvidiaSettings = true;
+    nvidiaSettings = false;
     package = config.boot.kernelPackages.nvidiaPackages.latest;
 
-    # Prime configuration - only for hybrid laptops
-    prime = lib.mkIf isHybridLaptop {
+    # PRIME offload: Intel renders compositor, games offloaded to NVIDIA
+    # via set_dgpu_env() in the compositor (gaming.c).
+    # sync.enable would conflict — compositor sets __NV_PRIME_RENDER_OFFLOAD
+    # which requires the offload infrastructure, not sync mode.
+    prime = {
       offload = {
         enable = true;
-        enableOffloadCmd = true;  # Provides "nvidia-offload" command
+        enableOffloadCmd = true;
       };
-      intelBusId = intelBusId;
-      nvidiaBusId = nvidiaBusId;
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
     };
   };
 
   boot = {
     initrd.kernelModules = [ "nvidia" "nvidia_uvm" "nvidia_modeset" "nvidia_drm" ];
-    kernelParams = [ "nvidia_drm.modeset=1" "nvidia_drm.fbdev=1" ];
+    kernelParams = [
+      "nvidia_drm.modeset=1"
+      "nvidia_drm.fbdev=1"
+    ];
   };
 
-  environment.systemPackages =
-    (with pkgs; [
-      vulkan-tools
-      libva-utils
-      egl-wayland
-      nvidia-vaapi-driver
-    ])
-    ++ lib.optional (nvtopPkg != null) nvtopPkg;
+  environment.systemPackages = with pkgs; [
+    vulkan-tools
+    libva-utils
+    egl-wayland
+    nvidia-vaapi-driver
+    nvtopPackages.full
+  ];
 
   environment.sessionVariables = {
+    # LIBVA_DRIVER_NAME removed — compositor uses Intel iHD for VA-API decode;
+    # games get LIBVA_DRIVER_NAME=nvidia per-process from set_dgpu_env()
+    # WLR_NO_HARDWARE_CURSORS removed — compositor handles HW cursor via
+    # CpuCursorBuffer (dumb DRM buffer + DMA-BUF, bypasses broken Nvidia GBM)
+    __GL_VRR_ALLOWED = "1";
+    WLR_RENDERER = "vulkan";
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
-  } // lib.optionalAttrs (!isHybridLaptop) {
-    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
-    GBM_BACKEND = "nvidia-drm";
-    LIBVA_DRIVER_NAME = "nvidia";
   };
 }

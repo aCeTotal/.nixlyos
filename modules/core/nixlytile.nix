@@ -6,16 +6,15 @@ let
   # Launcher factory: takes the original wrapProgram wrapper script from the
   # nixlytile derivation, replaces the exec target with the capability-wrapped
   # binary, and sets EGL/GL vendor paths so Xwayland can find NVIDIA's EGL via
-  # libepoxy. Optionally pins WLR_RENDERER so the display-manager session
-  # entries can pick a specific wlroots backend.
+  # libepoxy.
   #
   # Note: LD_LIBRARY_PATH is stripped by the kernel for capability-wrapped
   # binaries (AT_SECURE), so __EGL_VENDOR_LIBRARY_DIRS is the one that
-  # actually survives the cap-wrapper; LD_LIBRARY_PATH is a fallback.
+  # actually survives the cap-wrapper; LD_LIBRARY_PATH is a fallback for
+  # Xwayland GL clients.
   #
-  # `name`     — basename of the produced binary in $out/bin/
-  # `renderer` — null (wlroots auto), "vulkan", or "gles2"
-  mkLauncher = { name, renderer ? null }:
+  # `name` — basename of the produced binary in $out/bin/
+  mkLauncher = { name }:
     pkgs.runCommand "nixlytile-launcher-${name}" {} ''
       mkdir -p $out/bin
       sed 's|"${nixlytile}/bin/.nixlytile-wrapped"|"/run/wrappers/bin/nixlytile-cap"|' \
@@ -24,49 +23,32 @@ let
         $out/bin/${name}
       sed -i '/^exec /i export LD_LIBRARY_PATH="${pkgs.libglvnd}/lib:/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"' \
         $out/bin/${name}
-      ${lib.optionalString (renderer != null) ''
-        sed -i '/^exec /i export WLR_RENDERER="${renderer}"' $out/bin/${name}
-      ''}
       chmod +x $out/bin/${name}
     '';
 
-  nixlytile-launcher      = mkLauncher { name = "nixlytile"; };                              # auto (terminal use)
-  nixlytile-launcher-vk   = mkLauncher { name = "nixlytile-vk";   renderer = "vulkan"; };
-  nixlytile-launcher-gles = mkLauncher { name = "nixlytile-gles"; renderer = "gles2"; };
+  nixlytile-launcher = mkLauncher { name = "nixlytile"; };
 
-  # Two display-manager session entries: Nixly (VK) and Nixly (GLES).
-  # The Exec= names match the launcher binaries above (resolved via PATH at
-  # session start by the display manager).
+  # Display-manager session entry
   sessionDesktops = pkgs.runCommand "nixlytile-session-desktops" {} ''
     mkdir -p $out/share/wayland-sessions
 
-    cat > $out/share/wayland-sessions/nixlytile-vk.desktop <<'EOF'
+    cat > $out/share/wayland-sessions/nixlytile.desktop <<'EOF'
     [Desktop Entry]
-    Name=Nixly (VK)
+    Name=Nixly
     Comment=Tiling Wayland compositor (Vulkan renderer)
-    Exec=nixlytile-vk
-    Type=Application
-    EOF
-
-    cat > $out/share/wayland-sessions/nixlytile-gles.desktop <<'EOF'
-    [Desktop Entry]
-    Name=Nixly (GLES)
-    Comment=Tiling Wayland compositor (GLES2 renderer)
-    Exec=nixlytile-gles
+    Exec=nixlytile
     Type=Application
     EOF
   '';
 
-  # Session package: launchers + desktop files + data from original package
+  # Session package: launcher + desktop file + data from original package
   nixlytile-session = pkgs.symlinkJoin {
     name = "nixlytile-session";
     paths = [
       nixlytile-launcher
-      nixlytile-launcher-vk
-      nixlytile-launcher-gles
       sessionDesktops
     ];
-    passthru.providedSessions = [ "nixlytile-vk" "nixlytile-gles" ];
+    passthru.providedSessions = [ "nixlytile" ];
     postBuild = ''
       mkdir -p $out/share
       ln -sf ${nixlytile}/share/nixlytile $out/share/nixlytile
