@@ -23,6 +23,7 @@
     ./nixlytile.nix
     ./newsboat.nix
     ./drawingtablet.nix
+    ../system/htpc.nix
     #./kde.nix
   ];
 }

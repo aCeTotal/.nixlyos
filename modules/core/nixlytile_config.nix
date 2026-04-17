@@ -411,7 +411,7 @@ htpc_page_quit = 1
 # media_server = 192.168.1.100:8080
 # media_server = http://10.0.0.8:8080
 # media_server = myserver.local:8080
-media_server = aceclan.no:8080
+media_server = https://jellyfin.aceclan.no
 
 # Client download bandwidth limit in Mbps (for transcoded streaming)
 # client_download_mbps = 100

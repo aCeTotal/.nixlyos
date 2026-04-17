@@ -79,6 +79,7 @@
         tmp.cleanOnBoot = true;
         modprobeConfig.enable = true;
         extraModprobeConfig = ''
+            options iwlwifi disable_6ghz=1
         '';
     };
 
