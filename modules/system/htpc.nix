@@ -7,32 +7,7 @@ in
 lib.mkIf htpcEnabled {
 
   # ─────────────────────────────────────────
-  #   Jellyfin media server
-  # ─────────────────────────────────────────
-  services.jellyfin = {
-    enable = true;
-    openFirewall = true;
-  };
-
-  # Server-side theme: better-jellyfin-ui (tromoSM) via branding.xml.
-  # Regenerated on every jellyfin start — stays declarative even if someone
-  # edits Branding in the dashboard.
-  systemd.services.jellyfin.preStart = ''
-    mkdir -p /var/lib/jellyfin/config
-    cat > /var/lib/jellyfin/config/branding.xml <<'EOF'
-    <?xml version="1.0" encoding="utf-8"?>
-    <BrandingOptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-      <LoginDisclaimer></LoginDisclaimer>
-      <CustomCss>@import url("https://cdn.jsdelivr.net/gh/tromoSM/better-jellyfin-ui@main/theme.css");</CustomCss>
-      <SplashscreenEnabled>true</SplashscreenEnabled>
-    </BrandingOptions>
-    EOF
-    chown jellyfin:jellyfin /var/lib/jellyfin/config/branding.xml
-    chmod 0644 /var/lib/jellyfin/config/branding.xml
-  '';
-
-  # ─────────────────────────────────────────
-  #   System packages (retroarch + jellyfin client)
+  #   System packages (retroarch only — mpv via home-manager)
   # ─────────────────────────────────────────
   environment.systemPackages =
     (with pkgs-stable; [
@@ -57,10 +32,11 @@ lib.mkIf htpcEnabled {
       retroarch-assets
       retroarch-joypad-autoconfig
       libretro-shaders-slang
-    ])
-    ++ (with pkgs; [
-      jellyfin-media-player
     ]);
+
+  # Note: Intel Arc VAAPI/Vulkan stack (intel-media-driver, vpl-gpu-rt,
+  # iHD driver env) lives in modules/core/gpu/intel.nix — mpv hwdec on
+  # A770 uses that already.
 
   # ─────────────────────────────────────────
   #   Home-manager configs for the user
@@ -141,81 +117,99 @@ lib.mkIf htpcEnabled {
       joypad_autoconfig_dir = "${pkgs-stable.retroarch-joypad-autoconfig}/share/libretro/autoconfig"
     '';
 
-    # Jellyfin Media Player — fullscreen HTPC defaults.
-    # userWebClient + webClient make JMP skip the server-chooser
-    # wizard on first launch and load jellyfin.aceclan.no directly.
-    xdg.configFile."jellyfinmediaplayer/jellyfinmediaplayer.conf".text = ''
-      [main]
-      fullscreen=true
-      alwaysOnTop=false
-      disableOsScreensaver=true
-      userWebClient=true
-      webClient=https://jellyfin.aceclan.no/web/index.html
+    # ─────────────────────────────────────────
+    #   mpv — ultra-smooth 4K60 on Intel Arc A770
+    # ─────────────────────────────────────────
+    # gpu-next + Vulkan + VAAPI hwdec on Arc. display-resample +
+    # interpolation (tscale=oversample) eliminates 24/25/30p judder
+    # against the 60Hz panel. EWA Lanczos sharp upscale to 4K.
+    # Huge demuxer cache eats local-server files whole for zero stalls.
+    # HDR settings are no-ops on SDR displays.
+    programs.mpv = {
+      enable = true;
 
-      [connections]
-      defaultServer=https://jellyfin.aceclan.no/
-      skipServerSelection=true
+      config = {
+        # ── Output: Vulkan + gpu-next on Arc A770 ──
+        vo = "gpu-next";
+        gpu-api = "vulkan";
+        gpu-context = "auto";
+        hwdec = "vaapi";
+        vd-lavc-dr = "yes";
+        hwdec-codecs = "all";
+        vulkan-swap-mode = "fifo";
+        swapchain-depth = 6;
+        gpu-shader-cache-dir = "~/.cache/mpv/shaders";
 
-      [video]
-      hardwareDecoding=true
-      useRefreshRateSwitching=true
-      useDisplayFpsFromOs=true
+        # ── Display: fullscreen 4K@60 on TV ──
+        fullscreen = "yes";
+        keep-open = "yes";
+        cursor-autohide = 500;
+        display-fps-override = 60;
 
-      [audio]
-      passthrough.ac3=true
-      passthrough.dts=true
-      passthrough.eac3=true
-      passthrough.truehd=true
-    '';
+        # ── Frame timing: ultra-smooth motion at 60Hz ──
+        # display-resample retimes audio to display refresh.
+        # interpolation + tscale=oversample fixes 24->60 judder
+        # (oversample = non-blurry phase-blend, ideal for 24/25/30 -> 60).
+        video-sync = "display-resample";
+        interpolation = "yes";
+        tscale = "oversample";
+        framedrop = "vo";
+        video-latency-hacks = "no";
+        hr-seek-framedrop = "no";
 
-    # mpv backend for Jellyfin Media Player — HDR passthrough +
-    # display-locked interpolation + Intel Arc hwdec. gpu-next is the
-    # only mpv output that supports HDR and interpolation together.
-    home.file.".local/share/jellyfinmediaplayer/mpv/mpv.conf".text = ''
-      # ── Output: Vulkan, Intel Arc, Wayland ──
-      vo=gpu-next
-      gpu-api=vulkan
-      gpu-context=auto
-      hwdec=auto-safe
-      vd-lavc-dr=yes
+        # ── Scaling: high-quality upscale to 4K on Arc ──
+        scale = "ewa_lanczossharp";
+        cscale = "ewa_lanczossoft";
+        dscale = "mitchell";
+        correct-downscaling = "yes";
+        linear-downscaling = "yes";
+        sigmoid-upscaling = "yes";
+        dither-depth = "auto";
+        deband = "yes";
+        deband-iterations = 2;
+        deband-threshold = 35;
+        deband-range = 16;
+        deband-grain = 4;
 
-      # ── HDR passthrough ──
-      # target-colorspace-hint signals HDR metadata to the Wayland
-      # compositor (nixlytile) so the display enters HDR mode.
-      # target-peak=auto reads the display's EDID peak luminance.
-      target-colorspace-hint=yes
-      target-peak=auto
-      hdr-compute-peak=yes
-      tone-mapping=bt.2446a
-      gamut-mapping-mode=perceptual
+        # ── HDR passthrough (no-op on SDR TV) ──
+        target-colorspace-hint = "yes";
+        target-peak = "auto";
+        hdr-compute-peak = "yes";
+        tone-mapping = "bt.2446a";
+        gamut-mapping-mode = "perceptual";
 
-      # ── Frame timing: refresh-rate locked, interpolated (HDR-safe
-      # with gpu-next) ──
-      video-sync=display-resample
-      interpolation=yes
-      tscale=oversample
-      framedrop=vo
-      video-latency-hacks=no
+        # ── Audio: bit-perfect passthrough to TV/AVR ──
+        audio-channels = "auto";
+        audio-exclusive = "yes";
+        audio-spdif = "ac3,dts,eac3,truehd";
 
-      # ── Scaling: efficient on Arc, high quality upscale to 4K ──
-      scale=ewa_lanczossharp
-      cscale=ewa_lanczossoft
-      dscale=mitchell
-      correct-downscaling=yes
-      linear-downscaling=yes
-      sigmoid-upscaling=yes
-      dither-depth=auto
-      deband=no
+        # ── Cache: fat local-server buffer, never stall ──
+        # 4 GiB forward + 512 MiB back = minutes of 4K readahead,
+        # instant seek-back. Local NFS/SMB fills this in seconds.
+        cache = "yes";
+        cache-secs = 600;
+        cache-pause = "yes";
+        cache-pause-wait = 1;
+        cache-pause-initial = "no";
+        cache-on-disk = "no";
+        demuxer-max-bytes = "4GiB";
+        demuxer-max-back-bytes = "512MiB";
+        demuxer-readahead-secs = 600;
+        demuxer-seekable-cache = "yes";
+        demuxer-hysteresis-secs = 30;
+        stream-buffer-size = "64MiB";
+        network-timeout = 60;
+        prefetch-playlist = "yes";
 
-      # ── Audio: bit-perfect passthrough to AVR/TV ──
-      audio-channels=auto
-      audio-exclusive=yes
-      audio-spdif=ac3,dts,eac3,truehd
+        # ── Subs / audio language priority ──
+        sub-auto = "fuzzy";
+        slang = "no,nob,en,eng";
+        alang = "no,nob,en,eng";
 
-      # ── Cache for smooth network playback ──
-      cache=yes
-      demuxer-max-bytes=512MiB
-      demuxer-readahead-secs=30
-    '';
+        # ── Screenshots ──
+        screenshot-format = "png";
+        screenshot-directory = "~/Pictures/mpv";
+      };
+    };
   };
 }

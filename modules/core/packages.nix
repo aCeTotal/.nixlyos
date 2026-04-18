@@ -16,7 +16,6 @@ let
     slurp
     wl-clipboard
     spotify
-    mpv
     vlc
     onlyoffice-desktopeditors
     pavucontrol
