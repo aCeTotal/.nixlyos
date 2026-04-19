@@ -216,7 +216,7 @@ lib.mkIf htpcEnabled {
         # ── Subtitle styling (smaller text) ──
         sub-font-size = 30;
         sub-border-size = 2;
-        sub-shadow-offset = 1;
+        sub-shadow-offset = 0;
 
         # ── Screenshots ──
         screenshot-format = "png";
