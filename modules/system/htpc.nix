@@ -78,10 +78,12 @@ lib.mkIf htpcEnabled {
       video_shader = "${pkgs-stable.libretro-shaders-slang}/share/libretro/shaders/shaders_slang/edge-smoothing/xbr/xbr-lv2.slangp"
 
       # ── Audio ──
+      # audio_volume in dB, 0.0 = unity = 100%
       audio_driver = "pipewire"
       audio_enable = "true"
       audio_sync = "true"
       audio_volume = "0.0"
+      audio_mute_enable = "false"
       audio_latency = "32"
 
       # ── Menu: XMB (PS3-style) with neoactive icons, electric blue ──
@@ -178,10 +180,15 @@ lib.mkIf htpcEnabled {
         tone-mapping = "bt.2446a";
         gamut-mapping-mode = "perceptual";
 
-        # ── Audio: bit-perfect passthrough to TV/AVR ──
+        # ── Audio ──
+        # Decode to PCM (never bitstream) — works on laptop analog and
+        # HDMI-to-TV alike. audio-exclusive disabled so other apps can
+        # share the sink and WirePlumber route changes don't silence mpv.
+        # Volume pinned to 100% on every load.
         audio-channels = "auto";
-        audio-exclusive = "yes";
-        audio-spdif = "ac3,dts,eac3,truehd";
+        audio-exclusive = "no";
+        volume = "100";
+        volume-max = "100";
 
         # ── Cache: fat local-server buffer, never stall ──
         # 4 GiB forward + 512 MiB back = minutes of 4K readahead,
@@ -209,6 +216,83 @@ lib.mkIf htpcEnabled {
         # ── Screenshots ──
         screenshot-format = "png";
         screenshot-directory = "~/Pictures/mpv";
+      };
+    };
+
+    # Force every audio sink to 100% unmuted on HTPC session start. Runs
+    # after graphical-session is up so WirePlumber is already live.
+    systemd.user.services.htpc-audio-unmute =
+      let
+        setAllSinks = pkgs.writeShellScript "htpc-audio-set-all-sinks-100" ''
+          set -u
+          WPCTL=${pkgs.wireplumber}/bin/wpctl
+          "$WPCTL" status | ${pkgs.gawk}/bin/awk '
+            /Sinks:/ {insinks=1; next}
+            /Sources:/ {insinks=0}
+            insinks && match($0, /[0-9]+\./) {
+              id=substr($0, RSTART, RLENGTH-1); print id
+            }
+          ' | while read -r id; do
+            "$WPCTL" set-mute   "$id" 0   || true
+            "$WPCTL" set-volume "$id" 1.0 || true
+          done
+        '';
+      in {
+        Unit = {
+          Description = "HTPC: unmute all sinks and set volume to 100%";
+          After = [ "graphical-session.target" "wireplumber.service" ];
+          PartOf = [ "graphical-session.target" ];
+        };
+        Install.WantedBy = [ "graphical-session.target" ];
+        Service = {
+          Type = "oneshot";
+          ExecStart = pkgs.writeShellScript "htpc-audio-unmute" ''
+            set -u
+            WPCTL=${pkgs.wireplumber}/bin/wpctl
+            for _ in 1 2 3 4 5; do
+              "$WPCTL" get-volume @DEFAULT_AUDIO_SINK@ >/dev/null 2>&1 && break
+              sleep 1
+            done
+            ${setAllSinks}
+          '';
+        };
+      };
+
+    # Watch for new sinks (HDMI hotplug, Bluetooth connect) and force
+    # them to 100% unmuted. Only reacts to *new* sinks, so manual volume
+    # changes mid-session are not clobbered.
+    systemd.user.services.htpc-audio-watch = {
+      Unit = {
+        Description = "HTPC: force new audio sinks to 100% unmuted";
+        After = [ "htpc-audio-unmute.service" "pipewire.service" ];
+        PartOf = [ "graphical-session.target" ];
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+      Service = {
+        Type = "simple";
+        Restart = "on-failure";
+        RestartSec = 2;
+        ExecStart = pkgs.writeShellScript "htpc-audio-watch" ''
+          set -u
+          WPCTL=${pkgs.wireplumber}/bin/wpctl
+          ${pkgs.pulseaudio}/bin/pactl subscribe 2>/dev/null | while IFS= read -r line; do
+            case "$line" in
+              "Event 'new' on sink "*)
+                sleep 0.3
+                "$WPCTL" status | ${pkgs.gawk}/bin/awk '
+                  /Sinks:/ {insinks=1; next}
+                  /Sources:/ {insinks=0}
+                  insinks && match($0, /[0-9]+\./) {
+                    id=substr($0, RSTART, RLENGTH-1); print id
+                  }
+                ' | while read -r id; do
+                  "$WPCTL" set-mute   "$id" 0   || true
+                  "$WPCTL" set-volume "$id" 1.0 || true
+                done
+                ;;
+            esac
+          done
+        '';
       };
     };
   };
