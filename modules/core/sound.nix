@@ -19,6 +19,33 @@
           "default.audio.source" = "alsa_input.pci-0000_00_1f.3.analog-stereo";
         };
       };
+
+      # WirePlumber 0.5 introduced a hard passthrough check: if the
+      # client requests spdif-<codec> and the target route's
+      # iec958Codecs list does not contain <codec>, linking is
+      # rejected with "no target node available". WP 0.4 did not
+      # enforce this, so upgrades inherited a stale codec list from
+      # persisted state and silently broke passthrough.
+      #
+      # Samsung TV on the Arc A770 HDMI output advertises PCM, AC-3
+      # and E-AC-3 in its ELD. Pin the card's iec958 codec list to
+      # exactly those so WP 0.5 accepts AC3/EAC3 passthrough from
+      # mpv/retroarch regardless of whatever the default-routes
+      # state file happens to contain.
+      "51-hdmi-iec958-codecs" = {
+        "monitor.alsa.rules" = [
+          {
+            matches = [
+              { "device.name" = "alsa_card.pci-0000_04_00.0"; }
+            ];
+            actions = {
+              update-props = {
+                "api.alsa.iec958.codecs" = [ "PCM" "AC3" "EAC3" ];
+              };
+            };
+          }
+        ];
+      };
     };
 
     extraConfig = {
@@ -42,6 +69,31 @@
           "resample.quality" = 9;
         };
       };
+    };
+  };
+
+  # Migrate stale WP-0.4 persisted route state on first WP-0.5 start.
+  # The old state commonly held iec958Codecs=[PCM,DTS,DTS-HD] on the
+  # Arc A770 HDMI output even though the TV only supports [PCM,AC3,
+  # EAC3]; WP 0.5 then refuses passthrough. This oneshot rewrites the
+  # offending entry before wireplumber starts. Idempotent — if the
+  # list is already correct the sed is a no-op.
+  systemd.user.services.wireplumber-route-migrate = {
+    description = "Rewrite stale WirePlumber 0.4 route state for WP 0.5";
+    before = [ "wireplumber.service" ];
+    partOf = [ "wireplumber.service" ];
+    wantedBy = [ "wireplumber.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "wp-route-migrate" ''
+        set -u
+        STATE="''${XDG_STATE_HOME:-$HOME/.local/state}/wireplumber/default-routes"
+        [ -f "$STATE" ] || exit 0
+        ${pkgs.gnused}/bin/sed -i \
+          's|"iec958Codecs":\[\s*"PCM",\s*"DTS",\s*"DTS-HD"\s*\]|"iec958Codecs":["PCM", "AC3", "EAC3"]|g' \
+          "$STATE"
+      '';
     };
   };
 
