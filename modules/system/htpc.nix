@@ -136,17 +136,18 @@ lib.mkIf htpcEnabled {
         gpu-api = "vulkan";
         gpu-context = "auto";
         hwdec = "vaapi";
-        vd-lavc-dr = "yes";
+        # DR off: direct render shares decoder/renderer buffer pool.
+        # On Arc vaapi, pool starvation caused short frame-drop bursts.
+        vd-lavc-dr = "no";
         hwdec-codecs = "all";
         vulkan-swap-mode = "fifo";
-        swapchain-depth = 6;
+        swapchain-depth = 3;
         gpu-shader-cache-dir = "~/.cache/mpv/shaders";
 
         # ── Display: fullscreen 4K@60 on TV ──
         fullscreen = "yes";
         keep-open = "yes";
         cursor-autohide = 500;
-        display-fps-override = 60;
 
         # ── Frame timing: ultra-smooth motion at 60Hz ──
         # display-resample retimes audio to display refresh.
@@ -155,7 +156,7 @@ lib.mkIf htpcEnabled {
         video-sync = "display-resample";
         interpolation = "yes";
         tscale = "oversample";
-        framedrop = "vo";
+        framedrop = "no";
         video-latency-hacks = "no";
         hr-seek-framedrop = "no";
 
@@ -168,7 +169,7 @@ lib.mkIf htpcEnabled {
         sigmoid-upscaling = "yes";
         dither-depth = "auto";
         deband = "yes";
-        deband-iterations = 2;
+        deband-iterations = 1;
         deband-threshold = 35;
         deband-range = 16;
         deband-grain = 4;
@@ -176,7 +177,7 @@ lib.mkIf htpcEnabled {
         # ── HDR passthrough (no-op on SDR TV) ──
         target-colorspace-hint = "yes";
         target-peak = "auto";
-        hdr-compute-peak = "yes";
+        hdr-compute-peak = "no";
         tone-mapping = "bt.2446a";
         gamut-mapping-mode = "perceptual";
 
@@ -190,21 +191,19 @@ lib.mkIf htpcEnabled {
         volume = "100";
         volume-max = "100";
 
-        # ── Cache: fat local-server buffer, never stall ──
-        # 4 GiB forward + 512 MiB back = minutes of 4K readahead,
-        # instant seek-back. Local NFS/SMB fills this in seconds.
+        # ── Cache: slow-disk buffer, no auto-pause ──
+        # 3 min runway absorbs I/O stalls. cache-pause disabled: if disk
+        # can't keep up, mpv plays what's there — no forced pause.
         cache = "yes";
-        cache-secs = 600;
-        cache-pause = "yes";
-        cache-pause-wait = 1;
+        cache-secs = 180;
+        cache-pause = "no";
         cache-pause-initial = "no";
         cache-on-disk = "no";
-        demuxer-max-bytes = "4GiB";
-        demuxer-max-back-bytes = "512MiB";
-        demuxer-readahead-secs = 600;
+        demuxer-max-bytes = "1GiB";
+        demuxer-max-back-bytes = "128MiB";
+        demuxer-readahead-secs = 60;
         demuxer-seekable-cache = "yes";
-        demuxer-hysteresis-secs = 30;
-        stream-buffer-size = "64MiB";
+        demuxer-hysteresis-secs = 10;
         network-timeout = 60;
         prefetch-playlist = "yes";
 
