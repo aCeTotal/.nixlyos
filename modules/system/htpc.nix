@@ -213,6 +213,11 @@ lib.mkIf htpcEnabled {
         slang = "no,nob,en,eng";
         alang = "no,nob,en,eng";
 
+        # ── Subtitle styling (smaller text) ──
+        sub-font-size = 30;
+        sub-border-size = 2;
+        sub-shadow-offset = 1;
+
         # ── Screenshots ──
         screenshot-format = "png";
         screenshot-directory = "~/Pictures/mpv";
