@@ -131,6 +131,20 @@ lib.mkIf htpcEnabled {
       enable = true;
 
       config = {
+        # ── Operational (replaces flags previously hardcoded in
+        #    nixlytile's mpv_launcher.c — launcher now passes only the
+        #    IPC socket + URL, so mpv.conf drives 100% of config). ──
+        idle = "no";
+        terminal = "no";
+        force-window = "immediate";
+        osc = "yes";
+        pause = "no";
+        hr-seek = "yes";
+        save-position-on-quit = "no";
+        msg-level = "all=v";
+        log-file = "/tmp/nixlytile/mpv.log";
+        ao = "pipewire";
+
         # ── Output: Vulkan + gpu-next on Arc A770 ──
         vo = "gpu-next";
         gpu-api = "vulkan";
