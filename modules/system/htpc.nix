@@ -135,9 +135,10 @@ lib.mkIf htpcEnabled {
         vo = "gpu-next";
         gpu-api = "vulkan";
         gpu-context = "auto";
-        hwdec = "vaapi";
-        # DR off: direct render shares decoder/renderer buffer pool.
-        # On Arc vaapi, pool starvation caused short frame-drop bursts.
+        # vaapi-copy: decoder writes to its own pool, frame copied to
+        # system RAM then re-uploaded for render. Eliminates pool
+        # contention that caused motion-scene hakk on Arc A770.
+        hwdec = "vaapi-copy";
         vd-lavc-dr = "no";
         hwdec-codecs = "all";
         vulkan-swap-mode = "fifo";
@@ -191,12 +192,14 @@ lib.mkIf htpcEnabled {
         volume = "100";
         volume-max = "100";
 
-        # ── Cache: slow-disk buffer, no auto-pause ──
-        # 3 min runway absorbs I/O stalls. cache-pause disabled: if disk
-        # can't keep up, mpv plays what's there — no forced pause.
+        # ── Cache: HTTP stream from nixlymediaserver ──
+        # stream-buffer-size: TCP receive buffer. Default ~128KiB starves
+        # on 4K bitrates — 64MiB absorbs network jitter. cache-pause=yes
+        # + short wait: brief clean pause on stall beats dropped frames.
         cache = "yes";
         cache-secs = 180;
-        cache-pause = "no";
+        cache-pause = "yes";
+        cache-pause-wait = 1;
         cache-pause-initial = "no";
         cache-on-disk = "no";
         demuxer-max-bytes = "1GiB";
@@ -204,6 +207,7 @@ lib.mkIf htpcEnabled {
         demuxer-readahead-secs = 60;
         demuxer-seekable-cache = "yes";
         demuxer-hysteresis-secs = 10;
+        stream-buffer-size = "64MiB";
         network-timeout = 60;
         prefetch-playlist = "yes";
 
