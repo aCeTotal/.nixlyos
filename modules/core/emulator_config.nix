@@ -431,7 +431,7 @@ RPCS3YML
     # start with --fullscreen via the launch command.
     # On first launch, Ryujinx generates Config.json with
     # sensible defaults. The launch command in
-    # nixlytile_config.nix already passes the ROM directly.
+    # The launch command in modules/core/emulators.nix already passes the ROM directly.
     #
 
 

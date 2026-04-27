@@ -1,8 +1,8 @@
 { pkgs, pkgs-stable, lib, config, ... }:
 
 let
-  opts = import ../core/nixlytile_options.nix;
-  htpcEnabled = (opts.nixlytileMode or 1) == 2;
+  opts = import ../core/options.nix;
+  htpcEnabled = (opts.systemMode or 1) == 2;
 in
 lib.mkIf htpcEnabled {
 
@@ -131,9 +131,7 @@ lib.mkIf htpcEnabled {
       enable = true;
 
       config = {
-        # ── Operational (replaces flags previously hardcoded in
-        #    nixlytile's mpv_launcher.c — launcher now passes only the
-        #    IPC socket + URL, so mpv.conf drives 100% of config). ──
+        # ── Operational ──
         idle = "no";
         terminal = "no";
         force-window = "immediate";
@@ -142,7 +140,7 @@ lib.mkIf htpcEnabled {
         hr-seek = "yes";
         save-position-on-quit = "no";
         msg-level = "all=v";
-        log-file = "/tmp/nixlytile/mpv.log";
+        log-file = "/tmp/mpv.log";
         ao = "pipewire";
 
         # ── Output: Vulkan + gpu-next on Arc A770 ──

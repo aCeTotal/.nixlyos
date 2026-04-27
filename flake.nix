@@ -4,9 +4,9 @@
   inputs = {
     nixpkgs = {
     url = "github:NixOS/nixpkgs/nixos-unstable";
-    #rev = "d1e2f3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8p9q";
     };  
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs-hyprland.url = "github:NixOS/nixpkgs/16aacb40e80d4a84d11a31a16c9093c8817159a2";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -22,6 +22,7 @@
     self,
     nixpkgs,
     nixpkgs-stable,
+    nixpkgs-hyprland,
     nixlypkgs,
     home-manager,
     nixos-hardware,
@@ -29,6 +30,11 @@
   }:
   let
     system = "x86_64-linux";
+
+    pkgs-hyprland = import nixpkgs-hyprland {
+      inherit system;
+      config.allowUnfree = true;
+    };
 
     permittedInsecure = [
       "freeimage-unstable-2021-11-01"
@@ -50,6 +56,11 @@
       overlays = [ nixlypkgs.overlays.default ];
     };
 
+    # Skip flaky openldap syncrepl test
+    openldapNoCheck = final: prev: {
+      openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
+    };
+
     # Unstable-pakker med overlay fra nixlypkgs
     pkgs-unstable = import nixpkgs {
       inherit system;
@@ -57,18 +68,19 @@
         allowUnfree = true;
         permittedInsecurePackages = permittedInsecure;
       };
-      overlays = [ nixlypkgs.overlays.default ];
+      overlays = [ nixlypkgs.overlays.default openldapNoCheck ];
     };
   in {
     nixosConfigurations.nixlyos = nixpkgs.lib.nixosSystem {
       inherit system;
 
       specialArgs = {
-        inherit inputs system pkgs-stable pkgs-unstable;
+        inherit inputs system pkgs-stable pkgs-unstable pkgs-hyprland;
       };
 
       modules = [
         ./configuration.nix
+        { nixpkgs.overlays = [ openldapNoCheck ]; }
 
         nixos-hardware.nixosModules.common-pc
         nixlypkgs.nixosModules.nixlypkgs
@@ -82,7 +94,7 @@
             backupFileExtension = "backup";
 
             extraSpecialArgs = {
-              inherit inputs system pkgs-stable pkgs-unstable;
+              inherit inputs system pkgs-stable pkgs-unstable pkgs-hyprland;
             };
 
             users.total = import ./home.nix;

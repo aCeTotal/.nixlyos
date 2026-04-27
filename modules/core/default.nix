@@ -3,7 +3,7 @@
 {
   imports = [
     ./boot.nix
-    ./ly.nix
+    ../system/SDDM.nix
     ./networking.nix
     ./nix.nix
     ./nfs.nix
@@ -20,10 +20,13 @@
     ./security.nix
     ./gpu/nvidia_intel.nix
     ./cpu/intel.nix
-    ./nixlytile.nix
+    ../system/hyprland.nix
     ./newsboat.nix
+    ./w3m.nix
+    ./mpv.nix
     ./drawingtablet.nix
     ../system/htpc.nix
+    ../system/msi-ec.nix
     #./kde.nix
   ];
 }

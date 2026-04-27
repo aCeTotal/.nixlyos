@@ -1,11 +1,12 @@
-{ pkgs, ... }:
+{ pkgs, pkgs-hyprland, ... }:
 
 {
-# HYPRLAND
+# HYPRLAND — version pinned at 0.54.3 via nixpkgs-hyprland flake input
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
-    portalPackage = pkgs.xdg-desktop-portal-hyprland;
+    package = pkgs-hyprland.hyprland;
+    portalPackage = pkgs-hyprland.xdg-desktop-portal-hyprland;
   };
 
   environment.sessionVariables = {

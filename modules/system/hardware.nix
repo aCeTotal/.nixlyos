@@ -14,11 +14,6 @@
   hardware.bluetooth.powerOnBoot = true;
   services.blueman.enable = true;
 
-  #opentabletdriver for drawing/graphics tablets
-  hardware.opentabletdriver = {
-    enable = true;
-    daemon.enable = true;
-    blacklistedKernelModules = [  "hid-uclogic" "wacom"];
-  };
+  # opentabletdriver: configured in modules/core/drawingtablet.nix
 
 }

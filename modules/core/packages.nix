@@ -11,10 +11,6 @@ let
     pureref
     speedtree
     claude
-    # Screenshot
-    grim
-    slurp
-    wl-clipboard
     spotify
     vlc
     onlyoffice-desktopeditors

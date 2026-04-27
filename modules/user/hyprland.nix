@@ -36,7 +36,7 @@
 
 # See https://wiki.hyprland.org/Configuring/Monitors/
 monitor = DP-1, 3440x1440@165,0x0,1
-monitor = eDP-1, 1920x1080@300, auto, 1
+monitor = eDP-2, 1920x1080@300, auto, 1
 monitor = HDMI-A-1, preferred, auto, 1, mirror, eDP-1
 monitor = , preferred, auto, 1
 
@@ -51,7 +51,7 @@ $terminal = alacritty
 $fileManager = thunar
 $browser = google-chrome-stable
 $screenshot = grimshot copy area
-$launcher = rofi -show drun
+$launcher = fuzzel
 
 
 #################
@@ -231,10 +231,9 @@ input {
     }
 }
 
-# https://wiki.hyprland.org/Configuring/Variables/#gestures
-gestures {
-    workspace_swipe = false
-}
+# Gestures: gestures{} block removed in Hyprland 0.51. Use `gesture =` keyword.
+# Default: no swipe. Example to enable 3-finger workspace swipe:
+# gesture = 3, horizontal, workspace
 
 # Example per-device config
 # See https://wiki.hyprland.org/Configuring/Keywords/#per-device-input-configs for more
@@ -251,31 +250,60 @@ device {
 # See https://wiki.hyprland.org/Configuring/Keywords/
 $mainMod = SUPER # Sets "Windows" key as main modifier
 
-# Example binds, see https://wiki.hyprland.org/Configuring/Binds/ for more
-
 binds {
  workspace_back_and_forth = true
 }
 
-bind = $mainMod, RETURN, exec, $terminal
+# === Window management ===
 bind = $mainMod, Q, killactive,
-bind = $mainMod, P, exec, $launcher
-bind = $mainMod, BACKSPACE, exec, $browser
+bind = $mainMod SHIFT, Q, exit,
+bind = $mainMod SHIFT, SPACE, togglefloating,
 bind = $mainMod, F, fullscreen,
-bind = $mainMod, E, exec, $fileManager
-bind = $mainMod, V, togglefloating,
+bind = $mainMod, B, exec, pkill -SIGUSR1 waybar
+
+# === Focus navigation ===
+bind = $mainMod, J, cyclenext,
+bind = $mainMod, K, cyclenext, prev
+bind = $mainMod, UP, movefocus, u
+bind = $mainMod, DOWN, movefocus, d
+bind = $mainMod, LEFT, movefocus, l
+bind = $mainMod, RIGHT, movefocus, r
+
+# === Window movement ===
+bind = $mainMod SHIFT, UP, swapwindow, u
+bind = $mainMod SHIFT, DOWN, swapwindow, d
+bind = $mainMod SHIFT, LEFT, swapwindow, l
+bind = $mainMod SHIFT, RIGHT, swapwindow, r
+bind = $mainMod SHIFT, J, swapnext,
+bind = $mainMod SHIFT, K, swapnext, prev
+
+# === Layout adjustment (dwindle splitratio) ===
+bind = $mainMod, H, splitratio, -0.05
+bind = $mainMod, L, splitratio, +0.05
 bind = $mainMod, D, pseudo,
-bind = $mainMod, J, togglesplit,
+bind = $mainMod CTRL, LEFT, splitratio, -0.025
+bind = $mainMod CTRL, RIGHT, splitratio, +0.025
+bind = $mainMod CTRL, UP, splitratio, exact 0.475
+bind = $mainMod CTRL, DOWN, splitratio, exact 0.525
+
+# === Applications ===
+bind = $mainMod, RETURN, exec, $terminal
+bind = $mainMod SHIFT, RETURN, exec, foot
+bind = $mainMod, P, exec, $launcher
+bind = $mainMod, V, exec, $fileManager
+bind = $mainMod, G, exec, fuzzel
+bind = $mainMod, I, exec, fuzzel
+bind = $mainMod, E, exec, $fileManager
+bind = $mainMod, BACKSPACE, exec, $browser
+
+# Screenshot (select region, copies PNG to clipboard)
 bind = $mainMod, S, exec, $screenshot
-bind = , Print, exec, $screenshot
-bind = $mainMod, W, exec, sh -c 'p=$(clipman pick -t rofi); [ -n "$p" ] && printf "%s" "$p" | wl-copy && printf "%s" "$p" | wl-copy --primary'
+bind = , PRINT, exec, $screenshot
 
-bind = $mainMod, left, movefocus, l
-bind = $mainMod, right, movefocus, r
-bind = $mainMod, up, movefocus, u
-bind = $mainMod, down, movefocus, d
+# Clipboard history
+bind = $mainMod, W, exec, sh -c 'p=$(clipman pick -t CUSTOM --tool="fuzzel" --tool-args="--dmenu --prompt=  "); [ -n "$p" ] && printf "%s" "$p" | wl-copy && printf "%s" "$p" | wl-copy --primary'
 
-# Switch workspaces with mainMod + [0-9]
+# === Workspaces ===
 bind = $mainMod, 1, workspace, 1
 bind = $mainMod, 2, workspace, 2
 bind = $mainMod, 3, workspace, 3
@@ -299,9 +327,21 @@ bind = $mainMod SHIFT, 8, movetoworkspace, 8
 bind = $mainMod SHIFT, 9, movetoworkspace, 9
 bind = $mainMod SHIFT, 0, movetoworkspace, 10
 
-# Example special workspace (scratchpad)
+# Last workspace toggle (mod+Tab)
+bind = $mainMod, TAB, workspace, previous
+
+# === Monitor navigation ===
+bind = $mainMod, COMMA, focusmonitor, l
+bind = $mainMod, PERIOD, focusmonitor, r
+bind = $mainMod SHIFT, LESS, movecurrentworkspacetomonitor, l
+bind = $mainMod SHIFT, GREATER, movecurrentworkspacetomonitor, r
+bind = CTRL, UP, focusmonitor, u
+bind = CTRL, DOWN, focusmonitor, d
+bind = CTRL, LEFT, focusmonitor, l
+bind = CTRL, RIGHT, focusmonitor, r
+
+# Special workspace (scratchpad)
 bind = $mainMod, M, togglespecialworkspace, magic
-bind = $mainMod SHIFT, S, movetoworkspace, special:magic
 
 # Scroll through existing workspaces with mainMod + scroll
 bind = $mainMod, mouse_down, workspace, e+1
@@ -338,14 +378,34 @@ bindl = , XF86AudioPrev, exec, playerctl previous
 # windowrule = float,class:^(kitty)$,title:^(kitty)$
 
 # Fix some dragging issues with XWayland
-windowrule = nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0
+windowrule {
+    name = fix-xwayland-drags
+    match:class = ^$
+    match:title = ^$
+    match:xwayland = true
+    match:float = true
+    match:fullscreen = false
+    match:pin = false
 
-windowrulev2 = workspace 4 silent,class:^(pol.exe)$
-windowrulev2 = float,class:^(pol.exe)$
-windowrulev2 = stayfocused,class:^(pol.exe)$
+    no_focus = true
+}
+
+windowrule {
+    name = pol-exe
+    match:class = ^(pol\.exe)$
+
+    workspace = 4 silent
+    float = true
+    stay_focused = true
+}
 
 # Make Dunst notifications semi-transparent (affects whole window)
-windowrulev2 = opacity 0.92 0.92,class:^(dunst)$
+windowrule {
+    name = dunst-opacity
+    match:class = ^(dunst)$
+
+    opacity = 0.92 0.92
+}
 
 
 

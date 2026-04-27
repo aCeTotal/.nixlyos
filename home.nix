@@ -13,7 +13,8 @@
       ./modules/user/env.nix
       ./modules/user/thunar_exo.nix
       ./modules/user/dunst.nix
-      ./modules/core/nixlytile_config.nix
+      ./modules/user/fuzzel.nix
+      ./modules/user/hyprland.nix
       ./modules/core/emulator_config.nix
       ./modules/user/caveman.nix
     ];

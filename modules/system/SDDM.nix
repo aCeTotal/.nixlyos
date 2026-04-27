@@ -1,29 +1,21 @@
-{ config, pkgs, pkgs-stable, inputs, ... }:
+{ config, pkgs, pkgs-stable, lib, inputs, ... }:
 
+let
+  opts = import ../core/options.nix;
+  isHtpc = opts.systemMode == 2;
+in
 {
 
-  # Enable the KDE Plasma Desktop Environment.
   services.displayManager.sddm = {
     enable = true;
     wayland.enable = true;
     autoNumlock = true;
-    theme = "tokyo-night-sddm";
   };
 
-
-
-  environment.systemPackages = 
-
-# Unstable packages
-    (with pkgs; [
-    ])
-
-    ++
-
-#Stable packages
-    (with pkgs-stable; [
-
-    ]);
-
+  # Auto-login when HTPC mode is active (options.nix systemMode = 2)
+  services.displayManager.autoLogin = lib.mkIf isHtpc {
+    enable = true;
+    user = "total";
+  };
 
 }

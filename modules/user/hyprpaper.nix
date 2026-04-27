@@ -1,16 +1,16 @@
-{ pkgs, ... }:
+{ pkgs, pkgs-hyprland, ... }:
 
 {
 
-     home.packages = with pkgs; [
-        hyprpaper
+     home.packages = [
+        pkgs-hyprland.hyprpaper
     ];
 
 
     home.file.".config/hypr/hyprpaper.conf".text = ''
 
-    preload = ~/.dotfiles/wallpapers/current.jpg
-    wallpaper = , ~/.dotfiles/wallpapers/current.jpg
+    preload = /home/total/.nixlyos/wallpapers/beach.jpg
+    wallpaper = , /home/total/.nixlyos/wallpapers/beach.jpg
 
     '';
 
