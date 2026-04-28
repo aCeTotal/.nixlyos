@@ -52,9 +52,9 @@
   environment.systemPackages = with pkgs; [
     vulkan-tools
     libva-utils
+    nvtopPackages.full
     egl-wayland
     nvidia-vaapi-driver
-    nvtopPackages.full
   ];
 
   environment.sessionVariables = {

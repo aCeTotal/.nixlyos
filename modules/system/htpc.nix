@@ -1,4 +1,4 @@
-{ pkgs, pkgs-stable, lib, config, ... }:
+{ pkgs, lib, config, ... }:
 
 let
   opts = import ../core/options.nix;
@@ -10,7 +10,7 @@ lib.mkIf htpcEnabled {
   #   System packages (retroarch only — mpv via home-manager)
   # ─────────────────────────────────────────
   environment.systemPackages =
-    (with pkgs-stable; [
+    (with pkgs; [
       (retroarch.withCores (cores: with cores; [
         nestopia
         snes9x
@@ -74,8 +74,8 @@ lib.mkIf htpcEnabled {
       # ── Default shader for smoother pixel art on all cores ──
       # xBR Lv2 edge-smoothing upscaler (flip off per-core if perf drops)
       video_shader_enable = "true"
-      video_shader_dir = "${pkgs-stable.libretro-shaders-slang}/share/libretro/shaders/shaders_slang"
-      video_shader = "${pkgs-stable.libretro-shaders-slang}/share/libretro/shaders/shaders_slang/edge-smoothing/xbr/xbr-lv2.slangp"
+      video_shader_dir = "${pkgs.libretro-shaders-slang}/share/libretro/shaders/shaders_slang"
+      video_shader = "${pkgs.libretro-shaders-slang}/share/libretro/shaders/shaders_slang/edge-smoothing/xbr/xbr-lv2.slangp"
 
       # ── Audio ──
       # audio_volume in dB, 0.0 = unity = 100%
@@ -115,8 +115,8 @@ lib.mkIf htpcEnabled {
       fps_show = "false"
 
       # ── Asset / autoconfig paths ──
-      assets_directory = "${pkgs-stable.retroarch-assets}/share/retroarch/assets"
-      joypad_autoconfig_dir = "${pkgs-stable.retroarch-joypad-autoconfig}/share/libretro/autoconfig"
+      assets_directory = "${pkgs.retroarch-assets}/share/retroarch/assets"
+      joypad_autoconfig_dir = "${pkgs.retroarch-joypad-autoconfig}/share/libretro/autoconfig"
     '';
 
     # ─────────────────────────────────────────

@@ -20,13 +20,12 @@
     ./security.nix
     ./gpu/nvidia_intel.nix
     ./cpu/intel.nix
-    ../system/hyprland.nix
+    ./kde.nix
     ./newsboat.nix
     ./w3m.nix
     ./mpv.nix
     ./drawingtablet.nix
     ../system/htpc.nix
     ../system/msi-ec.nix
-    #./kde.nix
   ];
 }

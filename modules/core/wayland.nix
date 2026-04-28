@@ -1,4 +1,4 @@
-{ config, lib, pkgs, pkgs-stable, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   xdg.portal = {
@@ -11,7 +11,7 @@
   };
 
   programs.xwayland.enable = true;
-  programs.xwayland.package = pkgs-stable.xwayland;
+  programs.xwayland.package = pkgs.xwayland;
 
   security.polkit.enable = true;
   services.dbus.enable = true;

@@ -1,15 +1,9 @@
-{ lib, config, pkgs, pkgs-unstable ? null, ... }:
+{ lib, config, pkgs, ... }:
 
 let
   kp = config.boot.kernelPackages;
-  # Try both common attribute spellings to avoid eval failure if one is missing
   msiEcPkg = if kp ? msi-ec then kp.msi-ec else if kp ? msi_ec then kp.msi_ec else null;
-  # Prefer stable if available; fall back to unstable if needed
-  unstablePkgs = pkgs-unstable;
-  mccPkg =
-    if pkgs ? mcontrolcenter then pkgs.mcontrolcenter
-    else if unstablePkgs ? mcontrolcenter then unstablePkgs.mcontrolcenter
-    else null;
+  mccPkg = if pkgs ? mcontrolcenter then pkgs.mcontrolcenter else null;
 in
 {
   # Build the msi-ec kernel module for the running kernel, if available

@@ -34,29 +34,29 @@ stdenv.mkDerivation rec {
     dbus
 
     # X11 / XCB stack
-    xorg.libX11
-    xorg.libXext
-    xorg.libXrender
-    xorg.libXrandr
-    xorg.libXinerama
-    xorg.libXxf86vm
-    xorg.libSM
-    xorg.libICE
-    xorg.libXi
-    xorg.libXcursor
-    xorg.libXfixes
-    xorg.libXdamage
-    xorg.libXcomposite
-    xorg.libxcb
-    xorg.libXau
-    xorg.libXdmcp
+    libx11
+    libxext
+    libxrender
+    libxrandr
+    libxinerama
+    libxxf86vm
+    libsm
+    libice
+    libxi
+    libxcursor
+    libxfixes
+    libxdamage
+    libxcomposite
+    libxcb
+    libxau
+    libxdmcp
     libxkbcommon
-    xorg.xcbutil
-    xorg.xcbutilimage
-    xorg.xcbutilkeysyms
-    xorg.xcbutilrenderutil
-    xorg.xcbutilwm
-    xorg.xcbutilcursor
+    libxcb-util
+    libxcb-image
+    libxcb-keysyms
+    libxcb-render-util
+    libxcb-wm
+    libxcb-cursor
 
     # Qt 6 runtime for plugins needing Qt libs
     # We rely on bundled Qt; include system libs only

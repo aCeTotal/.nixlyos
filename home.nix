@@ -11,10 +11,7 @@
       ./modules/user/starship.nix
       ./modules/user/alacritty.nix
       ./modules/user/env.nix
-      ./modules/user/thunar_exo.nix
-      ./modules/user/dunst.nix
-      ./modules/user/fuzzel.nix
-      ./modules/user/hyprland.nix
+      ./modules/user/gtk.nix
       ./modules/core/emulator_config.nix
       ./modules/user/caveman.nix
     ];
@@ -28,6 +25,7 @@
     programs.bash.shellAliases = {
       "update" = "nix flake update nixlypkgs --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "upgrade" = "nix flake update --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
+      "pin-nixpkgs" = "sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "nixly" = "cd $HOME/.nixlyos/";
       "c" = "claude --dangerously-skip-permissions";
     };
@@ -46,9 +44,6 @@
 
     # Let Home Manager install and manage itself.
     programs.home-manager.enable = true;
-
-    # Overwrites existing home-manager file
-    xdg.configFile."mimeapps.list".force = true;
 
     # Set login keyring as default (auto-unlocked via PAM on login)
     home.file.".local/share/keyrings/default".text = "login";

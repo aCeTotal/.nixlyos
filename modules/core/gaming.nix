@@ -1,4 +1,4 @@
-{ config, pkgs, pkgs-stable, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   programs.steam = {
@@ -48,9 +48,9 @@
     };
   };
 
-  environment.systemPackages = [
-    pkgs-stable.nixly_steam
-  ] ++ (with pkgs; [
+  environment.systemPackages = with pkgs; [
+    nixly_steam
+
     steamcmd
     gamescope
     mangohud
@@ -79,7 +79,7 @@
     # Media playback
     mpv
     yt-dlp
-  ]);
+  ];
 
   # ========================================
   # CONTROLLER HARDWARE SUPPORT

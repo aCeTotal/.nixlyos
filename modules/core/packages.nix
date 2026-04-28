@@ -1,30 +1,26 @@
-{ lib, pkgs-stable, pkgs-unstable, system, inputs, ... }:
+{ pkgs, ... }:
 
 let
-  stablePackages = with pkgs-stable; [
-    discord
-    brave
-    firefox
-    google-chrome
-    gimp
-    celluloid
-    pureref
-    speedtree
-    claude
-    spotify
-    vlc
-    onlyoffice-desktopeditors
-    pavucontrol
-  ];
-
-  unstablePackages = with pkgs-unstable; [
-  (blender_nixly.override { cudaSupport = true; })
-  ];
+  speedtree = import ../derivations/speedtree.nix { inherit pkgs; };
 in
 {
   config.home-manager.sharedModules = [
     {
-      home.packages = stablePackages ++ unstablePackages;
+      home.packages = (with pkgs; [
+        discord
+        brave
+        firefox
+        google-chrome
+        gimp
+        celluloid
+        pureref
+        claude
+        spotify
+        vlc
+        onlyoffice-desktopeditors
+        pavucontrol
+        (blender_nixly.override { cudaSupport = true; })
+      ]) ++ [ speedtree ];
     }
   ];
 }

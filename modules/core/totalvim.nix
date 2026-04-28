@@ -1,11 +1,9 @@
-{ inputs, system, ... }:
+{ totalvimPkg, ... }:
 
 {
   home-manager.sharedModules = [
     {
-      home.packages = [
-        inputs.totalvim.packages.${system}.default
-      ];
+      home.packages = [ totalvimPkg ];
     }
   ];
 }

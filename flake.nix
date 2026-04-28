@@ -1,40 +1,50 @@
 {
   description = "NixlyOS";
 
+  # nixpkgs unstable + stable commits leses direkte fra nixpkgs.txt.
+  # Format: `key=commit` pr. linje. Endre rev og rebuild.
+  # nixlypkgs-overlay overstyrer pakker med identisk navn.
+  # Kun totalvim bruker stable; alt annet bruker unstable.
   inputs = {
-    nixpkgs = {
-    url = "github:NixOS/nixpkgs/nixos-unstable";
-    };  
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
-    nixpkgs-hyprland.url = "github:NixOS/nixpkgs/16aacb40e80d4a84d11a31a16c9093c8817159a2";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager.url = "github:nix-community/home-manager/master";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
-    nixlypkgs.inputs.nixpkgs.follows = "nixpkgs";
     totalvim.url = "github:aCeTotal/totalvim";
-    totalvim.inputs.nixpkgs.follows = "nixpkgs";
+    mnw.url = "github:Gerg-L/mnw";
     lanzaboote.url = "github:nix-community/lanzaboote";
-    lanzaboote.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs@{
     self,
-    nixpkgs,
-    nixpkgs-stable,
-    nixpkgs-hyprland,
+    nixos-hardware,
     nixlypkgs,
     home-manager,
-    nixos-hardware,
     ...
   }:
   let
     system = "x86_64-linux";
 
-    pkgs-hyprland = import nixpkgs-hyprland {
-      inherit system;
-      config.allowUnfree = true;
+    # Parse nixpkgs.txt → { unstable = "<rev>"; stable = "<rev>"; }
+    revs =
+      let
+        content = builtins.readFile ./nixpkgs.txt;
+        lines = builtins.filter builtins.isString (builtins.split "\n" content);
+        parseLine = line:
+          let m = builtins.match "[[:space:]]*([a-zA-Z]+)[[:space:]]*=[[:space:]]*([a-f0-9]+)[[:space:]]*" line;
+          in if m == null then null
+             else { name = builtins.elemAt m 0; value = builtins.elemAt m 1; };
+        pairs = builtins.filter (x: x != null) (map parseLine lines);
+      in builtins.listToAttrs pairs;
+
+    fetchNixpkgs = rev: builtins.fetchTree {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
+      inherit rev;
     };
+
+    nixpkgsUnstableSrc = fetchNixpkgs revs.unstable;
+    nixpkgsStableSrc   = fetchNixpkgs revs.stable;
 
     permittedInsecure = [
       "freeimage-unstable-2021-11-01"
@@ -46,23 +56,12 @@
       "libsoup-2.74.3"
     ];
 
-    # Stable-pakker med overlay fra nixlypkgs
-    pkgs-stable = import nixpkgs-stable {
-      inherit system;
-      config = {
-        allowUnfree = true;
-        permittedInsecurePackages = permittedInsecure;
-      };
-      overlays = [ nixlypkgs.overlays.default ];
-    };
-
-    # Skip flaky openldap syncrepl test
+    # Skipper flaky openldap syncrepl-test
     openldapNoCheck = final: prev: {
       openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
     };
 
-    # Unstable-pakker med overlay fra nixlypkgs
-    pkgs-unstable = import nixpkgs {
+    pkgs = import nixpkgsUnstableSrc {
       inherit system;
       config = {
         allowUnfree = true;
@@ -70,17 +69,36 @@
       };
       overlays = [ nixlypkgs.overlays.default openldapNoCheck ];
     };
-  in {
-    nixosConfigurations.nixlyos = nixpkgs.lib.nixosSystem {
-      inherit system;
 
-      specialArgs = {
-        inherit inputs system pkgs-stable pkgs-unstable pkgs-hyprland;
+    pkgsStable = import nixpkgsStableSrc {
+      inherit system;
+      config = {
+        allowUnfree = true;
+        permittedInsecurePackages = permittedInsecure;
       };
+    };
+
+    # Bygg totalvim manuelt med stable pkgs (mnw.lib.wrap aksepterer ekstern pkgs).
+    totalvimVimPlugin = pkgsStable.callPackage (inputs.totalvim + "/plugins/totalvim") {};
+
+    totalvimPkg = inputs.mnw.lib.wrap {
+      pkgs = pkgsStable;
+      inputs = {
+        self.legacyPackages.${system}.vimPlugins.totalvim = totalvimVimPlugin;
+      };
+    } (inputs.totalvim + "/nix/mnw");
+
+    lib = pkgs.lib;
+  in {
+    nixosConfigurations.nixlyos = import (nixpkgsUnstableSrc + "/nixos/lib/eval-config.nix") {
+      inherit system lib;
+
+      specialArgs = { inherit inputs system totalvimPkg; };
 
       modules = [
+        ({ ... }: { nixpkgs.pkgs = pkgs; })
+
         ./configuration.nix
-        { nixpkgs.overlays = [ openldapNoCheck ]; }
 
         nixos-hardware.nixosModules.common-pc
         nixlypkgs.nixosModules.nixlypkgs
@@ -93,9 +111,7 @@
             useUserPackages = true;
             backupFileExtension = "backup";
 
-            extraSpecialArgs = {
-              inherit inputs system pkgs-stable pkgs-unstable pkgs-hyprland;
-            };
+            extraSpecialArgs = { inherit inputs system totalvimPkg; };
 
             users.total = import ./home.nix;
           };
@@ -104,4 +120,3 @@
     };
   };
 }
-

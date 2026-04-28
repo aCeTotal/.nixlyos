@@ -1,4 +1,4 @@
-{ config, pkgs, pkgs-stable, lib, inputs, ... }:
+{ config, pkgs, lib, inputs, ... }:
 
 let
   opts = import ../core/options.nix;
