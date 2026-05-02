@@ -14,18 +14,20 @@
     ./users.nix
     ./timezone_locale.nix
     ./system_services.nix
+    ./perf.nix
     ./wayland.nix
     ./sound.nix
     ./zram.nix
     ./security.nix
     ./gpu/nvidia_intel.nix
     ./cpu/intel.nix
-    ./kde.nix
+    ../system/niri.nix
     ./newsboat.nix
     ./w3m.nix
     ./mpv.nix
     ./drawingtablet.nix
     ../system/htpc.nix
     ../system/msi-ec.nix
+    ../services/nixly-ai
   ];
 }

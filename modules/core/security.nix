@@ -61,6 +61,8 @@
     allowReboot = false;
     dates = "04:00";
     randomizedDelaySec = "30min";
-    persistent = true;
+    # persistent=false: skip missed runs instead of firing nixos-rebuild
+    # right after boot (multi-minute CPU/IO storm during early desktop).
+    persistent = false;
   };
 }

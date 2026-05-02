@@ -10,6 +10,7 @@
 
       systemd-boot.enable = true;
       systemd-boot.configurationLimit = 2;
+      timeout = 0;
     };
 
     # lanzaboote = {
@@ -22,11 +23,7 @@
     consoleLogLevel = 3;
     tmp.cleanOnBoot = true;
 
-    plymouth = {
-      enable = true;
-      theme = "matrix";
-      themePackages = [ pkgs.plymouth-matrix-theme ];
-    };
+    plymouth.enable = false;
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
@@ -43,13 +40,21 @@
 
     kernelParams = [
       "quiet"
-      "splash"
       "loglevel=3"
       "rd.udev.log_level=3"
       "udev.log_priority=3"
       "systemd.show_status=false"
       "rd.systemd.show_status=false"
+      # Skip serial port probing (saves ~5.6s on hardware without serial ports)
+      "8250.nr_uarts=0"
+      # CachyOS-style perf params
+      "transparent_hugepage=madvise"  # THP only on madvise — best for desktops/games
+      "random.trust_cpu=on"            # use RDRAND for early entropy (faster boot)
+      "nowatchdog"                     # disable hardware watchdog (CPU savings)
+      "nmi_watchdog=0"                 # disable NMI watchdog (CPU savings)
     ];
+
+    blacklistedKernelModules = [ "8250_pci" ];
   };
 
   # sbctl for å administrere Secure Boot-nøkler
@@ -62,15 +67,8 @@
     tctiEnvironment.enable = true;
   };
 
-  # Registrer Secure Boot-nøkler automatisk hvis systemet er i Setup Mode
-  # (bevarer Microsoft-nøkler)
-  system.activationScripts.secureboot-enroll = lib.stringAfter [ "etc" ] ''
-    SBCTL="${pkgs.sbctl}/bin/sbctl"
-    if $SBCTL status 2>/dev/null | grep -q "Setup Mode:.*Enabled"; then
-      echo "Setup Mode aktiv - registrerer nøkler med Microsoft-nøkler bevart..."
-      $SBCTL enroll-keys --microsoft
-    fi
-  '';
+  # Skip while lanzaboote disabled — sbctl status fork+grep on every
+  # activation costs ~hundreds of ms for nothing. Re-enable when needed.
 
   boot.kernel.sysctl = {
     "kernel.sysrq" = 1;

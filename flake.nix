@@ -109,7 +109,9 @@
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
-            backupFileExtension = "backup";
+            # mv -f overskriver eksisterende .backup — unngår at en gammel
+            # backup blokkerer activation når samme fil endres flere ganger.
+            backupCommand = ''mv --force "$1" "$1.backup"'';
 
             extraSpecialArgs = { inherit inputs system totalvimPkg; };
 

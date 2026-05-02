@@ -13,7 +13,8 @@
   programs.neovim.defaultEditor = true;
 
   # Power Management
-  powerManagement.cpuFreqGovernor = "powersave";
+  # schedutil cooperates with scx_lavd; powersave was leaving perf on the table.
+  powerManagement.cpuFreqGovernor = "schedutil";
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

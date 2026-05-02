@@ -10,10 +10,12 @@
       ./modules/user/btop.nix
       ./modules/user/starship.nix
       ./modules/user/alacritty.nix
+      ./modules/user/niri.nix
       ./modules/user/env.nix
       ./modules/user/gtk.nix
       ./modules/core/emulator_config.nix
       ./modules/user/caveman.nix
+      ./modules/user/claude.nix
     ];
 
     home = {
@@ -28,6 +30,7 @@
       "pin-nixpkgs" = "sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "nixly" = "cd $HOME/.nixlyos/";
       "c" = "claude --dangerously-skip-permissions";
+      "ai" = "nixly-ai";
     };
 
 

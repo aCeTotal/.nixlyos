@@ -14,9 +14,9 @@
         #   tscale=oversample           → frame doubling for integer ratios uten tap
         # mpv auto-detekterer hvilken skjerm vinduet er på og bruker dens FPS.
         config = {
-          # ── Video output (Nvidia + Wayland/Hyprland) ────────────
+          # ── Video output (Nvidia + Wayland/Niri) ────────────────
           # gpu-next + vulkan = beste kvalitet/ytelse på moderne hw
-          # gpu-context auto-detekteres (waylandvk på Hyprland, x11vk på X11)
+          # gpu-context auto-detekteres (waylandvk på Niri, x11vk på X11)
           vo = "gpu-next";
           gpu-api = "vulkan";
           hwdec = "auto-safe";

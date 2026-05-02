@@ -33,9 +33,9 @@
   /*background-color: rgba(29,31,46, 0.95);*/
   background-color: rgba(15,27,53,0.6);
   padding: 4px 6px; /* 保持内部间距 */
-  margin-top: 4px; /* 外部间距与 Hyprland gaps_out 匹配 */
-  margin-left: 4px; /* 外部间距与 Hyprland gaps_out 匹配 */
-  margin-right: 4px; /* 外部间距与 Hyprland gaps_out 匹配 */
+  margin-top: 4px; /* matche niri layout.gaps */
+  margin-left: 4px; /* matche niri layout.gaps */
+  margin-right: 4px; /* matche niri layout.gaps */
   border-radius: 2%;
   border-width: 0px;
   }
@@ -43,7 +43,7 @@
 #clock,
 #custom-power {
   background-color: rgba(15,27,53,0.6);
-  margin-top: 4px; /* 与 Hyprland 外间距对齐 */
+  margin-top: 4px; /* matche niri layout.gaps */
   margin-left: 4px; /* base gap */
   /*margin-bottom: 4px;*/
   padding: 4px 6px; /* 增加水平内边距，避免图标被裁切 */
@@ -71,7 +71,7 @@
 #custom-menu-files,
 #custom-menu-term{
   background-color: rgba(15,27,53,0.6);
-  margin-top: 4px; /* 与 Hyprland 外间距对齐 */
+  margin-top: 4px; /* matche niri layout.gaps */
   margin-left: 4px;
   /*margin-bottom: 4px;*/
   padding: 4px 6px; /* 保持内部间距并避免裁切 */
@@ -88,7 +88,7 @@
 #memory,
 #cpu{
   background-color: rgba(15,27,53,0.6);
-  margin-top: 4px; /* 与 Hyprland 外间距对齐 */
+  margin-top: 4px; /* matche niri layout.gaps */
   margin-left: 4px; /* normalize right-side gap to 4px */
   /*margin-bottom: 4px;*/
   padding: 4px 6px; /* 保持内部间距并避免裁切 */
@@ -198,7 +198,7 @@
   "height": 32,
   "spacing": 0,
   "modules-left": [
-    "hyprland/workspaces",
+    "niri/workspaces",
     "tray"
   ],
   "modules-right": [
@@ -216,14 +216,8 @@
     "custom/menu-poweroff",
     "custom/menu"
   ],
-  "hyprland/workspaces": {
-    "disable-scroll": false,
-    "all-outputs": true,
+  "niri/workspaces": {
     "format": "{icon}",
-    "on-click": "activate",
-    "persistent-workspaces": {
-    "*":[1,]
-    },
     "format-icons": {
       "1": "1",
     }
@@ -334,12 +328,12 @@
     "format": "<span color='#8A2BE2'>    </span>{used:0.1f}G/{total:0.1f}G ",
     "tooltip": true,
     "tooltip-format": "Memory used: {used:0.2f}G/{total:0.2f}G",
-    "on-click": "sh -c \"hyprctl dispatch exec 'alacritty -e btop'\""
+    "on-click": "alacritty -e btop"
   },
   "cpu": {
     "format": "<span color='#FF9F0A'>    </span>{usage}% ",
     "tooltip": true,
-    "on-click": "sh -c \"hyprctl dispatch exec 'alacritty -e btop'\""
+    "on-click": "alacritty -e btop"
   },
   "clock": {
     "interval": 1,
@@ -650,19 +644,8 @@ MENU_ITEMS=$(cat <<'EOF'
 EOF
 )
 
-# Try to get cursor position (x y) from Hyprland
+# Niri har ingen IPC for cursorpos. Bruk safe default.
 get_cursor_pos() {
-  local cx cy line
-  if line=$(hyprctl cursorpos 2>/dev/null | head -n1); then
-    # Extract first two integers found
-    cx=$(sed -n 's/[^0-9]*\([0-9]\+\)[^0-9]\+\([0-9]\+\).*/\1/p' <<<"$line")
-    cy=$(sed -n 's/[^0-9]*\([0-9]\+\)[^0-9]\+\([0-9]\+\).*/\2/p' <<<"$line")
-    if [[ -n "$cx" && -n "$cy" ]]; then
-      printf '%s %s\n' "$cx" "$cy"
-      return 0
-    fi
-  fi
-  # Fallback to safe defaults if detection fails
   printf '200 40\n'
 }
 
@@ -689,11 +672,11 @@ choice=$(printf '%s\n' "$MENU_ITEMS" \
 
 case "''${choice%% *}" in
   )
-    hyprctl dispatch exec hyprlock >/dev/null 2>&1 & ;;
+    swaylock -f >/dev/null 2>&1 & ;;
   )
-    hyprctl dispatch exec "systemctl reboot" >/dev/null 2>&1 & ;;
+    systemctl reboot >/dev/null 2>&1 & ;;
   )
-    hyprctl dispatch exec "systemctl poweroff" >/dev/null 2>&1 & ;;
+    systemctl poweroff >/dev/null 2>&1 & ;;
   *)
     : ;;  # ignore
 esac
@@ -816,11 +799,11 @@ action="''${1:-}"
 
 case "$action" in
   lock)
-    hyprctl dispatch exec hyprlock >/dev/null 2>&1 & ;;
+    swaylock -f >/dev/null 2>&1 & ;;
   reboot)
-    hyprctl dispatch exec "systemctl reboot" >/dev/null 2>&1 & ;;
+    systemctl reboot >/dev/null 2>&1 & ;;
   poweroff|power)
-    hyprctl dispatch exec "systemctl poweroff" >/dev/null 2>&1 & ;;
+    systemctl poweroff >/dev/null 2>&1 & ;;
   *) ;;
 esac
 

@@ -170,26 +170,23 @@
   # SYSTEMD SERVICE FOR CONTROLLER AUTO-CONNECT
   # ========================================
 
-  # Service runs only once after boot/resume, not periodically
+  # Off critical path: runs after graphical.target so it never blocks
+  # userspace boot. No leading sleep — bluetoothctl wait-loop is enough.
   systemd.services.bluetooth-controller-connect = {
     description = "Auto-connect paired Bluetooth controllers";
-    after = [ "bluetooth.service" "bluetooth.target" ];
+    after = [ "bluetooth.service" "bluetooth.target" "graphical.target" ];
     wants = [ "bluetooth.service" ];
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = [ "graphical.target" ];
 
     serviceConfig = {
       Type = "oneshot";
-      ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
       ExecStart = pkgs.writeShellScript "bt-connect" ''
-        # Wait for Bluetooth to be ready
         for i in {1..10}; do
           ${pkgs.bluez}/bin/bluetoothctl show | grep -q "Powered: yes" && break
           sleep 1
         done
 
-        # Get paired devices and connect
         ${pkgs.bluez}/bin/bluetoothctl devices Paired | while read -r _ mac name; do
-          echo "Attempting to connect: $name ($mac)"
           ${pkgs.bluez}/bin/bluetoothctl connect "$mac" &
         done
         wait
