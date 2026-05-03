@@ -25,6 +25,7 @@
     ./newsboat.nix
     ./w3m.nix
     ./mpv.nix
+    ./retroarch.nix
     ./drawingtablet.nix
     ../system/htpc.nix
     ../system/msi-ec.nix
