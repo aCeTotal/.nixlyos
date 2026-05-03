@@ -132,6 +132,10 @@
         border {
             off
         }
+
+        insert-hint {
+            color "#00beff80"
+        }
     }
 
     cursor {
@@ -166,6 +170,7 @@
         Mod+Q { close-window; }
         Mod+Shift+Q { quit; }
         Mod+Shift+Space { toggle-window-floating; }
+        Mod+C { toggle-window-floating; }
         Mod+F { maximize-column; }
         Mod+B { spawn "pkill" "-SIGUSR1" "waybar"; }
 
@@ -174,8 +179,8 @@
         Mod+L     { focus-column-right; }
         Mod+J     { focus-window-down; }
         Mod+K     { focus-window-up; }
-        Mod+Left  { focus-column-left; }
-        Mod+Right { focus-column-right; }
+        Mod+Left  { focus-column-or-monitor-left; }
+        Mod+Right { focus-column-or-monitor-right; }
         Mod+Up    { focus-workspace-up; }
         Mod+Down  { focus-workspace-down; }
 
@@ -191,7 +196,8 @@
 
         // Column width / consume / expel
         Mod+R     { switch-preset-column-width; }
-        Mod+A     { consume-window-into-column; }
+        Mod+A     { swap-window-left; }
+        Mod+D     { swap-window-right; }
         Mod+X     { expel-window-from-column; }
         Mod+Ctrl+Left  { switch-preset-column-width; }
         Mod+Ctrl+Right { switch-preset-column-width; }
@@ -286,6 +292,7 @@
     layer-rule {
         match namespace="^notifications$"
         place-within-backdrop false
+        block-out-from "screencast"
     }
   '';
 }

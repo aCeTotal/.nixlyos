@@ -49,8 +49,6 @@
   };
 
   environment.systemPackages = with pkgs; [
-    nixly_steam
-
     steamcmd
     gamescope
     mangohud
