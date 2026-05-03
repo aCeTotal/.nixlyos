@@ -29,6 +29,7 @@
     ./drawingtablet.nix
     ../system/htpc.nix
     ../system/msi-ec.nix
+    ../system/idle.nix
     ../services/nixly-ai
   ];
 }

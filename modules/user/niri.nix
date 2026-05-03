@@ -4,6 +4,8 @@
   imports = [
     ./waybar.nix
     ./clipman.nix
+    ./dolphin.nix
+    ./idle-lock.nix
   ];
 
   home.packages = with pkgs; [
@@ -19,7 +21,19 @@
     blueman
     clipman
     fuzzel
-    thunar
+    kdePackages.dolphin
+    kdePackages.dolphin-plugins
+    kdePackages.kio
+    kdePackages.kio-extras
+    kdePackages.kio-fuse
+    kdePackages.kio-admin
+    kdePackages.ark
+    kdePackages.kdegraphics-thumbnailers
+    kdePackages.ffmpegthumbs
+    kdePackages.breeze-icons
+    kdePackages.qtwayland
+    samba
+    cifs-utils
     foot
     dunst
     brightnessctl
@@ -28,6 +42,7 @@
     xwayland-satellite
     socat
     jq
+    nixly_launcher
   ]
   ++ lib.optionals (pkgs ? mcontrolcenter) [ pkgs.mcontrolcenter ];
 
@@ -154,10 +169,10 @@
     spawn-at-startup "waybar"
     spawn-at-startup "nm-applet" "--indicator"
     spawn-at-startup "blueman-applet"
-    spawn-at-startup "thunar" "--daemon"
     spawn-at-startup "xwayland-satellite"
     spawn-at-startup "sh" "-c" "wl-paste --type text --watch clipman store --no-persist"
     spawn-at-startup "sh" "-c" "wl-paste --primary --type text --watch clipman store --no-persist"
+    spawn-at-startup "appd"
 
     screenshot-path "~/Pictures/screenshots/screenshot-%Y-%m-%d_%H-%M-%S.png"
 
@@ -207,10 +222,11 @@
         // Applications
         Mod+Return       { spawn "alacritty"; }
         Mod+Shift+Return { spawn "foot"; }
-        Mod+P            { spawn "fuzzel"; }
+        Mod+P            { spawn "apptoggle"; }
         Mod+G            { spawn "fuzzel"; }
         Mod+I            { spawn "fuzzel"; }
-        Mod+E            { spawn "thunar"; }
+        Mod+E            { spawn "dolphin"; }
+        Mod+Escape       { spawn "hyprlock"; }
         Mod+BackSpace    { spawn "google-chrome-stable"; }
 
         // Overview (all tiles across all workspaces)
@@ -282,6 +298,13 @@
         match app-id="^pol\\.exe$"
         open-on-workspace "4"
         open-floating true
+    }
+
+    window-rule {
+        match app-id="^rusty-rain-screensaver$"
+        open-fullscreen true
+        border { off; }
+        focus-ring { off; }
     }
 
     window-rule {

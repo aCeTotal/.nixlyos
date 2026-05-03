@@ -59,6 +59,7 @@
   # Enable NetworkManager here instead, per request
   networking.networkmanager.enable = true;
   networking.networkmanager.dns = lib.mkDefault "systemd-resolved";
+  networking.networkmanager.wifi.powersave = false;
 
   # NetworkManager VPN plugins
   networking.networkmanager.plugins = with pkgs; [

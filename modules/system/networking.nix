@@ -22,9 +22,9 @@
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
-  networking.tempAddresses = "default";
+  networking.tempAddresses = "disabled";
   networking.firewall.enable = true;
-  networking.enableIPv6 = true;
+  networking.enableIPv6 = false;
 
     
 

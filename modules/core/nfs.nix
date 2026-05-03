@@ -26,7 +26,7 @@
 
   # Rask tilgjengelighetsjekk - feiler umiddelbart (~1s) når NFS-server er utilgjengelig.
   # Mount-enheten avhenger av denne, så mount prøver aldri å koble til en
-  # utilgjengelig server (som ville blokkert Thunar i minutter pga TCP SYN-timeout).
+  # utilgjengelig server (som ville blokkert Dolphin i minutter pga TCP SYN-timeout).
   systemd.services.nfs-bigdisk1-check = {
     description = "Check NFS server 10.0.0.8 reachability";
     serviceConfig = {
@@ -40,7 +40,7 @@
 
   # NFS mount-enhet med avhengighet til tilgjengelighetssjekken.
   # Flyten: aksess → automount trigger → mount krever ping-sjekk →
-  #   Server nede: ping feiler (~1s) → mount feiler → Thunar fortsetter
+  #   Server nede: ping feiler (~1s) → mount feiler → Dolphin fortsetter
   #   Server oppe: ping OK → mount kjører normalt
   systemd.mounts = [{
     what = "10.0.0.8:/bigdisk1";

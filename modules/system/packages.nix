@@ -24,6 +24,7 @@
     fira-code-symbols
     dina-font
     proggyfonts
+    nerd-fonts.jetbrains-mono
   ];
 
   # Systempakker: først nixpkgs-unstable, så nixpkgs-stable, så Argon
