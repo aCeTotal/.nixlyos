@@ -2,7 +2,7 @@
 
 {
   # Skjerm skal aldri slå seg av og maskinen skal aldri suspende automatisk.
-  # Brukeren orkestrerer screensaver+lock i userspace via swayidle/hyprlock.
+  # Idle-lock håndteres av nixly_lockscreen sin nixly-idled user-service.
   services.logind.settings.Login = {
     IdleAction = "ignore";
     IdleActionSec = 0;

@@ -157,23 +157,34 @@
         "type": "path"
       }
     },
+    "nixly_lockscreen_src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778096603,
+        "narHash": "sha256-YXifciUCuvRxro/KAccElw5ej2jA0HNU78SOx2dGLYE=",
+        "path": "/home/total/nixly_lockscreen",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/total/nixly_lockscreen",
+        "type": "path"
+      }
+    },
     "nixlypkgs": {
       "inputs": {
         "nixly_launcher_src": "nixly_launcher_src",
+        "nixly_lockscreen_src": "nixly_lockscreen_src",
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1777839527,
-        "narHash": "sha256-L/B0q2KjW/1FKx1RrUF47jpVkUVVfmGDdZcOm8XZGbc=",
-        "owner": "aCeTotal",
-        "repo": "nixlypkgs",
-        "rev": "37544788a30179fbe63be902d524c7689485ac91",
-        "type": "github"
+        "lastModified": 1778097679,
+        "narHash": "sha256-Had4mVoh761zEP8XxEe0oKNgHHISF0P/QausHfBwQe8=",
+        "path": "/home/total/nixlypkgs",
+        "type": "path"
       },
       "original": {
-        "owner": "aCeTotal",
-        "repo": "nixlypkgs",
-        "type": "github"
+        "path": "/home/total/nixlypkgs",
+        "type": "path"
       }
     },
     "nixos-hardware": {

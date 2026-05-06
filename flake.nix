@@ -8,7 +8,9 @@
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.url = "github:nix-community/home-manager/master";
-    nixlypkgs.url = "github:aCeTotal/nixlypkgs";
+    # Local path while shipping unpushed nixly_lockscreen derivation. Switch
+    # back to "github:aCeTotal/nixlypkgs" after pushing the derivation.
+    nixlypkgs.url = "path:/home/total/nixlypkgs";
     totalvim.url = "github:aCeTotal/totalvim";
     mnw.url = "github:Gerg-L/mnw";
     lanzaboote.url = "github:nix-community/lanzaboote";

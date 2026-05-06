@@ -5,7 +5,6 @@
     ./waybar.nix
     ./clipman.nix
     ./dolphin.nix
-    ./idle-lock.nix
   ];
 
   home.packages = with pkgs; [
@@ -226,7 +225,7 @@
         Mod+G            { spawn "fuzzel"; }
         Mod+I            { spawn "fuzzel"; }
         Mod+E            { spawn "dolphin"; }
-        Mod+Escape       { spawn "hyprlock"; }
+        Mod+Escape       { spawn "nixly-lockscreen"; }
         Mod+BackSpace    { spawn "google-chrome-stable"; }
 
         // Overview (all tiles across all workspaces)
@@ -298,13 +297,6 @@
         match app-id="^pol\\.exe$"
         open-on-workspace "4"
         open-floating true
-    }
-
-    window-rule {
-        match app-id="^rusty-rain-screensaver$"
-        open-fullscreen true
-        border { off; }
-        focus-ring { off; }
     }
 
     window-rule {

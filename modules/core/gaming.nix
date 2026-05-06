@@ -6,6 +6,12 @@
     gamescopeSession.enable = true;
     remotePlay.openFirewall = false;
     dedicatedServer.openFirewall = false;
+    # CEF GPU compositing crashes through rootless XWayland (xwayland-satellite
+    # on Niri); UI renders black. Disabling only the compositing layer keeps
+    # CEF GPU rendering and is vendor-agnostic (Intel/AMD/Nvidia).
+    package = pkgs.steam.override {
+      extraArgs = "-cef-disable-gpu-compositing";
+    };
     extraCompatPackages = with pkgs; [
       proton-ge-bin
     ];

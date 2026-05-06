@@ -62,5 +62,9 @@
     Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
     5. Never commit or push changes.
+
+    6. File and Folder Organization
+
+    Split all code into single files with short, descriptive filenames. One thing per file. Group related files into subfolders. Folder names must be short and descriptive.
   '';
 }
