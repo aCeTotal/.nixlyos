@@ -38,12 +38,26 @@
     nvfancontrol
   ];
 
-  environment.sessionVariables = {
+  # System-wide vars (read by SDDM and other system services, not just user
+  # sessions). SDDM Wayland on NVIDIA proprietary needs GBM_BACKEND and
+  # __GLX_VENDOR_LIBRARY_NAME set in the display-manager environment, else
+  # the greeter cannot pick the NVIDIA GBM/EGL impl and renders black.
+  environment.variables = {
     LIBVA_DRIVER_NAME = "nvidia";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
-    ELECTRON_OZONE_PLATFORM_HINT = "auto";
     GBM_BACKEND = "nvidia-drm";
-    __NV_PRIME_RENDER_OFFLOAD = "1";
+  };
+
+  environment.sessionVariables = {
+    ELECTRON_OZONE_PLATFORM_HINT = "auto";
+  };
+
+  # Belt-and-braces: set the same vars on the display-manager unit so SDDM's
+  # systemd environment carries them even if PAM env import races.
+  systemd.services.display-manager.environment = {
+    GBM_BACKEND = "nvidia-drm";
+    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    LIBVA_DRIVER_NAME = "nvidia";
   };
 
   # GPU fan curve config for nvfancontrol

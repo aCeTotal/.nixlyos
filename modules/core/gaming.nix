@@ -14,6 +14,7 @@
     };
     extraCompatPackages = with pkgs; [
       proton-ge-bin
+      proton-cachyos
     ];
     extraPackages = with pkgs; [
       gamemode
@@ -48,8 +49,14 @@
         pin_cores = "yes";        # Pin game to specific cores
       };
       custom = {
-        start = "${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på'";
-        end = "${pkgs.libnotify}/bin/notify-send 'GameMode' 'Deaktivert - Tilbake til normal'";
+        start = "${pkgs.writeShellScript "gamemode-start" ''
+          ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance || true
+          ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på'
+        ''}";
+        end = "${pkgs.writeShellScript "gamemode-end" ''
+          ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced || true
+          ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Deaktivert - Tilbake til normal'
+        ''}";
       };
     };
   };

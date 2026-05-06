@@ -5,9 +5,11 @@
   # Kernel & sysctl already covered: ananicy-cpp + cachyos rules, scx_lavd,
   # earlyoom, irqbalance, zram, BBR+fq, gamemode, btrfs noatime+zstd+ssd.
 
-  # Per-device IO scheduler: NVMe→none, SSD→mq-deadline, HDD→bfq.
+  # Per-device IO scheduler: NVMe→kyber (CachyOS default; better mixed
+  # read/write fairness than `none` for game-load patterns), SSD→mq-deadline,
+  # HDD→bfq.
   services.udev.extraRules = ''
-    ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="none"
+    ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="kyber"
     ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
     ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
   '';

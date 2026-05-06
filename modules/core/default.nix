@@ -31,5 +31,6 @@
     ../system/msi-ec.nix
     ../system/idle.nix
     ../services/nixly-ai
+    ../services/on-demand
   ];
 }

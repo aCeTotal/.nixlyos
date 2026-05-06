@@ -14,6 +14,8 @@
     totalvim.url = "github:aCeTotal/totalvim";
     mnw.url = "github:Gerg-L/mnw";
     lanzaboote.url = "github:nix-community/lanzaboote";
+    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
+    proton-cachyos.url = "github:powerofthe69/proton-cachyos-nix";
   };
 
   outputs = inputs@{
@@ -69,7 +71,12 @@
         allowUnfree = true;
         permittedInsecurePackages = permittedInsecure;
       };
-      overlays = [ nixlypkgs.overlays.default openldapNoCheck ];
+      overlays = [
+        nixlypkgs.overlays.default
+        openldapNoCheck
+        inputs.nix-cachyos-kernel.overlays.default
+        inputs.proton-cachyos.overlays.default
+      ];
     };
 
     pkgsStable = import nixpkgsStableSrc {

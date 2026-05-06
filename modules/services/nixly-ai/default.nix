@@ -31,8 +31,19 @@ let
     export NIXLY_RAG_URL="''${NIXLY_RAG_URL:-${ragUrl}}"
     export NIXLY_OLLAMA_URL="''${NIXLY_OLLAMA_URL:-http://127.0.0.1:${toString ollamaPort}}"
     export NIXLY_AI_MODEL="''${NIXLY_AI_MODEL:-${model}}"
-    # Force UTF-8 so the rounded box-drawing glyphs render under any locale.
     export PYTHONIOENCODING="''${PYTHONIOENCODING:-utf-8}"
+
+    if ! ${pkgs.systemd}/bin/systemctl is-active --quiet ollama.service; then
+      ${pkgs.systemd}/bin/systemctl start ollama.service
+    fi
+    for _ in $(${pkgs.coreutils}/bin/seq 1 100); do
+      if ${pkgs.curl}/bin/curl -fsS -o /dev/null --max-time 1 \
+          "http://127.0.0.1:${toString ollamaPort}/api/tags"; then
+        break
+      fi
+      ${pkgs.coreutils}/bin/sleep 0.2
+    done
+
     exec ${cliPython}/bin/python ${cliScript}/share/nixly-ai/cli.py "$@"
   '';
 in

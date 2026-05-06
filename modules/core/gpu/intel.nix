@@ -19,9 +19,23 @@
     ];
   };
 
-  boot = {
-    initrd.kernelModules = [ "xe" ];
-  };
+  # Intel Arc A770 (DG2-512 / Alchemist / Xe-HPG). xe is the supported path
+  # on kernel ≥6.13 and matches/exceeds i915 with Mesa 25+. Always uses GuC
+  # submission, supports HuC firmware → AV1 / VP9 hardware media intact.
+  boot.initrd.kernelModules = [ "xe" ];
+
+  # force_probe=* makes xe claim Arc devices regardless of driver-priority
+  # tie-break with i915. Belt-and-braces — most 6.13+ kernels do it anyway.
+  boot.kernelParams = [
+    "xe.force_probe=*"
+  ];
+
+  services.xserver.videoDrivers = [ "modesetting" ];
+
+  # GuC/HuC firmware blobs live in linux-firmware. nixos-hardware/common-pc
+  # already enables redistributable firmware; explicit here so an Intel-only
+  # host stays self-contained.
+  hardware.enableRedistributableFirmware = true;
 
   environment.systemPackages = with pkgs; [
     vulkan-tools

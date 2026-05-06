@@ -63,6 +63,11 @@
     # WLR_NO_HARDWARE_CURSORS removed — compositor handles HW cursor via
     # CpuCursorBuffer (dumb DRM buffer + DMA-BUF, bypasses broken Nvidia GBM)
     __GL_VRR_ALLOWED = "1";
+    __GL_GSYNC_ALLOWED = "1";
+    __GL_THREADED_OPTIMIZATIONS = "1";
+    __GL_SHADER_DISK_CACHE = "1";
+    __GL_SHADER_DISK_CACHE_SIZE = "10737418240";   # 10 GiB shader cache
+    MESA_SHADER_CACHE_MAX_SIZE = "10G";
     WLR_RENDERER = "vulkan";
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
   };

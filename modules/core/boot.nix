@@ -27,16 +27,10 @@
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
-    kernelPackages = pkgs.linuxPackages_zen;
-
-    kernelPatches = [{
-      name = "kernel-config-fixes";
-      patch = null;
-      structuredExtraConfig = {
-        DRM_NOVA = lib.kernel.no;
-        PREEMPT_LAZY = lib.mkForce (lib.kernel.no);
-      };
-    }];
+    # CachyOS kernel — BORE-EEVDF, ThinLTO, AutoFDO, x86-64-v3 build.
+    # Comet Lake i7-10870H is x86-64-v3 (AVX2, no AVX-512). LTO build pulls
+    # from the lantian binary cache (substituter wired in nix.nix).
+    kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-x86_64-v3;
 
     kernelParams = [
       "quiet"
@@ -45,13 +39,16 @@
       "udev.log_priority=3"
       "systemd.show_status=false"
       "rd.systemd.show_status=false"
-      # Skip serial port probing (saves ~5.6s on hardware without serial ports)
       "8250.nr_uarts=0"
-      # CachyOS-style perf params
-      "transparent_hugepage=madvise"  # THP only on madvise — best for desktops/games
-      "random.trust_cpu=on"            # use RDRAND for early entropy (faster boot)
-      "nowatchdog"                     # disable hardware watchdog (CPU savings)
-      "nmi_watchdog=0"                 # disable NMI watchdog (CPU savings)
+      "transparent_hugepage=madvise"
+      "random.trust_cpu=on"
+      "nowatchdog"
+      "nmi_watchdog=0"
+      # Single-user desktop: disable Spectre/MDS/Retbleed/etc speculation
+      # mitigations. ~10-15% perf on Comet Lake. Trade-off accepted —
+      # local-attacker model only relevant for multi-tenant hosts.
+      "mitigations=off"
+      "split_lock_detect=off"
     ];
 
     blacklistedKernelModules = [ "8250_pci" ];

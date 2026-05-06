@@ -14,11 +14,13 @@
     "vm.page-cluster" = 0;        # Disable readahead for zram (random access is fast)
     "vm.vfs_cache_pressure" = 50; # Keep dentries/inodes in cache longer
 
-    # Writeback tuning for responsiveness
-    "vm.dirty_background_ratio" = 5;     # Start background writeback at 5% dirty
-    "vm.dirty_ratio" = 15;               # Throttle writes at 15% dirty
-    "vm.dirty_expire_centisecs" = 3000;  # Expire dirty pages after 30s
-    "vm.dirty_writeback_centisecs" = 1500; # Writeback interval 15s
+    # CachyOS-style: byte-based dirty thresholds give consistent burst-write
+    # behavior regardless of how RAM is currently allocated. Ratio-mode shifts
+    # under memory pressure and can stall game writes.
+    "vm.dirty_background_bytes" = 67108864;   # 64 MiB
+    "vm.dirty_bytes" = 268435456;             # 256 MiB
+    "vm.dirty_expire_centisecs" = 3000;
+    "vm.dirty_writeback_centisecs" = 1500;
 
     # Memory overcommit for gaming
     "vm.overcommit_memory" = 1;   # Always allow overcommit (games often over-allocate)
