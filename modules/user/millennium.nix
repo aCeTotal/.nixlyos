@@ -51,15 +51,6 @@ let
   };
 in
 {
-  # Hide the system steam.desktop so the launcher shows only nixly_steam
-  # (which wraps Millennium-Steam with gamemoderun + gaming env). Both
-  # entries are named "Steam"; without this, the user sees two duplicates.
-  xdg.desktopEntries.steam = {
-    name = "Steam";
-    exec = "true";
-    noDisplay = true;
-  };
-
   # Theme: read-only symlink into Steam's skins dir. Millennium reads
   # skin.json + CSS from here; per-user choices (Conditions, colors) are
   # stored in ~/.config/millennium/config.json, not in the theme dir.

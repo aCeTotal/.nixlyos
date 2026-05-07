@@ -71,15 +71,13 @@
         inputs.proton-cachyos.overlays.default
         inputs.millennium.overlays.default
         # Inject Millennium into nixly_steam's underlying steam so the wrapper
-        # launches the Millennium-patched client. CEF black-window flag from
-        # the niri/xwayland-satellite memory is preserved on the inner steam.
+        # launches the Millennium-patched client. extraSteamArgs adds the
+        # CEF GPU-compositing flag (Niri/xwayland-satellite black-window fix)
+        # directly into nixly_steam's launcher.
         (final: prev: {
           nixly_steam = prev.nixly_steam.override {
-            steam = final.millennium-steam.override {
-              steam = final.steam.override {
-                extraArgs = "-cef-disable-gpu-compositing";
-              };
-            };
+            steam = final.millennium-steam;
+            extraSteamArgs = [ "-cef-disable-gpu-compositing" ];
           };
         })
       ];

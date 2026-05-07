@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   # Pakker som utvider Dolphin med moderne KDE-features.
@@ -82,8 +82,15 @@
 
   # Dolphin: ingen forhåndsvisning av remote-filer (smb/sftp/nfs).
   # MaximumRemoteSize=0 → previews skrus av på alt som ikke er lokalt.
-  xdg.configFile."dolphinrc".text = ''
-    [PreviewSettings]
-    MaximumRemoteSize=0
+  # Seed fil i stedet for symlink — Dolphin må kunne skrive vindustilstand selv.
+  home.activation.dolphinrcSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    target="$HOME/.config/dolphinrc"
+    if [ -L "$target" ] || [ ! -e "$target" ]; then
+      run rm -f "$target"
+      run install -m 644 ${pkgs.writeText "dolphinrc-seed" ''
+        [PreviewSettings]
+        MaximumRemoteSize=0
+      ''} "$target"
+    fi
   '';
 }
