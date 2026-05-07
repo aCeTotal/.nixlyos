@@ -3,6 +3,9 @@
 {
   # ── Firewall ──────────────────────────────────────────────────────
   networking.firewall.enable = true;
+  # nftables backend: single-transaction rule load, ~hundreds of ms faster
+  # than iptables-restore at boot.
+  networking.nftables.enable = true;
 
   # Deluge BitTorrent
   networking.firewall.allowedTCPPorts = [ 6881 ];

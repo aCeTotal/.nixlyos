@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 {
-  # CachyOS-style performance tunings layered on linux-zen.
+  # Performance tunings on top of linux-cachyos (LTO, x86-64-v3).
   # Kernel & sysctl already covered: ananicy-cpp + cachyos rules, scx_lavd,
   # earlyoom, irqbalance, zram, BBR+fq, gamemode, btrfs noatime+zstd+ssd.
 

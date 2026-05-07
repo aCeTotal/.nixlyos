@@ -34,7 +34,16 @@
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ];
+
       };
+
+    # GitHub API rate-limit fix for `nix flake update`. Token kept out of
+    # the nix store: create /etc/nix/access-tokens.conf (root:root, 0600)
+    # containing a single line:
+    #   access-tokens = github.com=ghp_xxx
+    extraOptions = ''
+      !include /etc/nix/access-tokens.conf
+    '';
   };
 
     environment.systemPackages = [pkgs.cachix];

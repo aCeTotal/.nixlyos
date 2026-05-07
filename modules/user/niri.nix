@@ -112,16 +112,17 @@
     output "DP-1" {
         position x=0 y=0
         scale 1.0
-        variable-refresh-rate
+        variable-refresh-rate on-demand=true
     }
 
     output "eDP-2" {
         scale 1.0
-        variable-refresh-rate
+        variable-refresh-rate on-demand=true
     }
 
     output "HDMI-A-1" {
         scale 1.0
+        variable-refresh-rate on-demand=true
     }
 
     layout {
@@ -172,6 +173,7 @@
     spawn-at-startup "sh" "-c" "wl-paste --type text --watch clipman store --no-persist"
     spawn-at-startup "sh" "-c" "wl-paste --primary --type text --watch clipman store --no-persist"
     spawn-at-startup "appd"
+    spawn-at-startup "nixly_steam" "-silent"
 
     screenshot-path "~/Pictures/screenshots/screenshot-%Y-%m-%d_%H-%M-%S.png"
 
@@ -226,6 +228,7 @@
         Mod+I            { spawn "fuzzel"; }
         Mod+E            { spawn "dolphin"; }
         Mod+Escape       { spawn "nixly-lockscreen"; }
+        Mod+F12          { spawn "nixly-lockscreen"; }
         Mod+BackSpace    { spawn "google-chrome-stable"; }
 
         // Overview (all tiles across all workspaces)

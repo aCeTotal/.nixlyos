@@ -10,6 +10,7 @@
     lanzaboote.url = "github:nix-community/lanzaboote";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
     proton-cachyos.url = "github:powerofthe69/proton-cachyos-nix";
+    millennium.url = "github:SteamClientHomebrew/Millennium?dir=packages/nix";
   };
 
   outputs = inputs@{
@@ -68,6 +69,19 @@
         openldapNoCheck
         inputs.nix-cachyos-kernel.overlays.default
         inputs.proton-cachyos.overlays.default
+        inputs.millennium.overlays.default
+        # Inject Millennium into nixly_steam's underlying steam so the wrapper
+        # launches the Millennium-patched client. CEF black-window flag from
+        # the niri/xwayland-satellite memory is preserved on the inner steam.
+        (final: prev: {
+          nixly_steam = prev.nixly_steam.override {
+            steam = final.millennium-steam.override {
+              steam = final.steam.override {
+                extraArgs = "-cef-disable-gpu-compositing";
+              };
+            };
+          };
+        })
       ];
     };
 

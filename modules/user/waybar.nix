@@ -629,60 +629,6 @@ fi
 '';
     };
 
-    # Waybar click-to-open menu popup under cursor (rofi)
-    home.file.".config/waybar/menu_popup.sh" = {
-      executable = true;
-      text = ''
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Basic menu entries: icon + label (reuse existing glyphs)
-MENU_ITEMS=$(cat <<'EOF'
-  Lås skjerm
-  Omstart
-  Slå av
-EOF
-)
-
-# Niri har ingen IPC for cursorpos. Bruk safe default.
-get_cursor_pos() {
-  printf '200 40\n'
-}
-
-read -r CUR_X CUR_Y < <(get_cursor_pos)
-
-# Popup geometry
-WIDTH=240
-ROW_H=36
-COUNT=3
-HEIGHT=$((COUNT * ROW_H + 10))
-
-# Place slightly below click point
-POS_X=$(( CUR_X - WIDTH / 2 ))
-POS_Y=$(( CUR_Y + 28 ))
-
-choice=$(printf '%s\n' "$MENU_ITEMS" \
-  | rofi -dmenu \
-          -i \
-          -p "" \
-          -theme-str "window { width: ''${WIDTH}px; location: north; anchor: north; x-offset: ''${POS_X}; y-offset: ''${POS_Y}; } listview { lines: ''${COUNT}; }")
-
-# Exit if nothing selected
-[[ -n "$choice" ]] || exit 0
-
-case "''${choice%% *}" in
-  )
-    swaylock -f >/dev/null 2>&1 & ;;
-  )
-    systemctl reboot >/dev/null 2>&1 & ;;
-  )
-    systemctl poweroff >/dev/null 2>&1 & ;;
-  *)
-    : ;;  # ignore
-esac
-'';
-    };
-
     # Inline power menu: main toggle button (prints JSON)
     home.file.".config/waybar/menu_main.sh" = {
       executable = true;
@@ -799,7 +745,7 @@ action="''${1:-}"
 
 case "$action" in
   lock)
-    swaylock -f >/dev/null 2>&1 & ;;
+    nixly-lockscreen >/dev/null 2>&1 & ;;
   reboot)
     systemctl reboot >/dev/null 2>&1 & ;;
   poweroff|power)

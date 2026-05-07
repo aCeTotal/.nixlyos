@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   programs.niri = {
@@ -7,15 +7,13 @@
   };
 
   xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gnome
-      xdg-desktop-portal-gtk
-    ];
-    config.niri = {
-      default = [ "gnome" "gtk" ];
-    };
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
+    config.niri.default = lib.mkForce [ "gtk" "wlr" ];
   };
+
+  systemd.suppressedSystemUnits = [
+    "systemd-backlight@backlight:intel_backlight.service"
+  ];
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";

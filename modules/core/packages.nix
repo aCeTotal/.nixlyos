@@ -19,7 +19,7 @@ in
         vlc
         onlyoffice-desktopeditors
         pavucontrol
-        (blender_nixly.override { cudaSupport = true; })
+        blender_nvidia
       ]) ++ [ speedtree ];
     }
   ];

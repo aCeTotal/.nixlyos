@@ -6,11 +6,13 @@
     gamescopeSession.enable = true;
     remotePlay.openFirewall = false;
     dedicatedServer.openFirewall = false;
-    # CEF GPU compositing crashes through rootless XWayland (xwayland-satellite
-    # on Niri); UI renders black. Disabling only the compositing layer keeps
-    # CEF GPU rendering and is vendor-agnostic (Intel/AMD/Nvidia).
-    package = pkgs.steam.override {
-      extraArgs = "-cef-disable-gpu-compositing";
+    # Millennium-patched Steam (theme/plugin loader). Inner steam keeps
+    # `-cef-disable-gpu-compositing` for the niri+xwayland-satellite black-
+    # window fix; the flag is vendor-agnostic (Intel/AMD/Nvidia).
+    package = pkgs.millennium-steam.override {
+      steam = pkgs.steam.override {
+        extraArgs = "-cef-disable-gpu-compositing";
+      };
     };
     extraCompatPackages = with pkgs; [
       proton-ge-bin
@@ -62,6 +64,10 @@
   };
 
   environment.systemPackages = with pkgs; [
+    # User-facing Steam launcher: wraps Millennium-Steam with gamemoderun
+    # + gaming env. This is the ONLY Steam .desktop that should appear in
+    # the launcher (system steam.desktop is hidden via home-manager).
+    nixly_steam
     steamcmd
     gamescope
     mangohud
@@ -169,6 +175,15 @@
     # 8BitDo Controllers
     SUBSYSTEM=="usb", ATTR{idVendor}=="2dc8", MODE="0666"
 
+    # Valve Steam Controller (legacy + Steam Controller 2 / Frame).
+    # steam-hardware-modulen leverer hovedreglene; dette er fallback med
+    # uaccess-tag så aktiv logind-sesjon alltid får tilgang (USB + hidraw +
+    # Bluetooth-LE). Dekker alle Valve-PIDer (1101/1102/1142/1201/1205/12xx
+    # samt nye Frame-PIDer).
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="28de", MODE="0660", TAG+="uaccess"
+    KERNEL=="hidraw*", ATTRS{idVendor}=="28de", MODE="0660", TAG+="uaccess"
+    KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0660", TAG+="uaccess"
+
     # Generic game controllers - set correct permissions
     KERNEL=="js[0-9]*", MODE="0666"
     KERNEL=="event[0-9]*", SUBSYSTEM=="input", MODE="0666", GROUP="input"
@@ -181,16 +196,17 @@
   # SYSTEMD SERVICE FOR CONTROLLER AUTO-CONNECT
   # ========================================
 
-  # Off critical path: runs after graphical.target so it never blocks
-  # userspace boot. No leading sleep — bluetoothctl wait-loop is enough.
+  # Async: Type=simple so service is "active" once forked. Does NOT block
+  # graphical.target's wait. wantedBy bluetooth.target so it ties to BT
+  # lifecycle, not boot. Saved ~10s of synthetic graphical.target wait.
   systemd.services.bluetooth-controller-connect = {
     description = "Auto-connect paired Bluetooth controllers";
-    after = [ "bluetooth.service" "bluetooth.target" "graphical.target" ];
+    after = [ "bluetooth.service" ];
     wants = [ "bluetooth.service" ];
-    wantedBy = [ "graphical.target" ];
+    wantedBy = [ "bluetooth.target" ];
 
     serviceConfig = {
-      Type = "oneshot";
+      Type = "simple";
       ExecStart = pkgs.writeShellScript "bt-connect" ''
         for i in {1..10}; do
           ${pkgs.bluez}/bin/bluetoothctl show | grep -q "Powered: yes" && break
@@ -202,7 +218,6 @@
         done
         wait
       '';
-      RemainAfterExit = false;
     };
   };
 

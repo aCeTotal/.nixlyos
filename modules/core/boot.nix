@@ -20,6 +20,10 @@
     # };
 
     initrd.systemd.enable = true;
+    # Preload NVMe + btrfs in initrd so disk + root FS come up immediately
+    # (hardware-configuration.nix omits these). Cuts ~seconds off device wait.
+    initrd.availableKernelModules = [ "nvme" "nvme_core" ];
+    initrd.kernelModules = [ "btrfs" ];
     consoleLogLevel = 3;
     tmp.cleanOnBoot = true;
 
@@ -40,7 +44,7 @@
       "systemd.show_status=false"
       "rd.systemd.show_status=false"
       "8250.nr_uarts=0"
-      "transparent_hugepage=madvise"
+      "transparent_hugepage=always"
       "random.trust_cpu=on"
       "nowatchdog"
       "nmi_watchdog=0"
@@ -97,8 +101,12 @@
     "fs.suid_dumpable" = 0;                            # ingen core dumps fra SUID
 
     # Gaming
-    "vm.max_map_count" = 16777216; # Kreves av mange spill (Star Citizen, etc.)
+    "vm.max_map_count" = 2147483642; # Steam Deck-default; trygt tak for nyere titler
   };
 
   services.fstrim.enable = true;
+
+  # systemd-backlight save/restore tar 1s på intel_backlight (EC-treg).
+  # Niri/userland setter brightness selv; ingen grunn til å blokkere boot.
+  systemd.services."systemd-backlight@backlight:intel_backlight".enable = lib.mkForce false;
 }
