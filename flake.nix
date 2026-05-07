@@ -1,16 +1,10 @@
 {
   description = "NixlyOS";
 
-  # nixpkgs unstable + stable commits leses direkte fra nixpkgs.txt.
-  # Format: `key=commit` pr. linje. Endre rev og rebuild.
-  # nixlypkgs-overlay overstyrer pakker med identisk navn.
-  # Kun totalvim bruker stable; alt annet bruker unstable.
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.url = "github:nix-community/home-manager/master";
-    # Local path while shipping unpushed nixly_lockscreen derivation. Switch
-    # back to "github:aCeTotal/nixlypkgs" after pushing the derivation.
-    nixlypkgs.url = "path:/home/total/nixlypkgs";
+    nixlypkgs.url = "github:aCeTotal/nixlypkgs";
     totalvim.url = "github:aCeTotal/totalvim";
     mnw.url = "github:Gerg-L/mnw";
     lanzaboote.url = "github:nix-community/lanzaboote";
@@ -28,7 +22,6 @@
   let
     system = "x86_64-linux";
 
-    # Parse nixpkgs.txt → { unstable = "<rev>"; stable = "<rev>"; }
     revs =
       let
         content = builtins.readFile ./nixpkgs.txt;
@@ -60,7 +53,6 @@
       "libsoup-2.74.3"
     ];
 
-    # Skipper flaky openldap syncrepl-test
     openldapNoCheck = final: prev: {
       openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
     };
@@ -87,7 +79,6 @@
       };
     };
 
-    # Bygg totalvim manuelt med stable pkgs (mnw.lib.wrap aksepterer ekstern pkgs).
     totalvimVimPlugin = pkgsStable.callPackage (inputs.totalvim + "/plugins/totalvim") {};
 
     totalvimPkg = inputs.mnw.lib.wrap {
@@ -112,18 +103,13 @@
         nixos-hardware.nixosModules.common-pc
         nixlypkgs.nixosModules.nixlypkgs
         inputs.lanzaboote.nixosModules.lanzaboote
-
         home-manager.nixosModules.home-manager
         {
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
-            # mv -f overskriver eksisterende .backup — unngår at en gammel
-            # backup blokkerer activation når samme fil endres flere ganger.
             backupCommand = ''mv --force "$1" "$1.backup"'';
-
             extraSpecialArgs = { inherit inputs system totalvimPkg; };
-
             users.total = import ./home.nix;
           };
         }

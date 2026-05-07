@@ -266,14 +266,17 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1778100515,
-        "narHash": "sha256-xCjThcyclWbhmIqpMKcNJfu51UvQN5dK74pBBSGKIxc=",
-        "path": "/home/total/nixlypkgs",
-        "type": "path"
+        "lastModified": 1778100509,
+        "narHash": "sha256-DjSQc06Qo8vlOnHSjNFq4tgZPDEs0AWKsPOcgtV5WJA=",
+        "owner": "aCeTotal",
+        "repo": "nixlypkgs",
+        "rev": "3edcb5b814e08a5a4a15e226fa0613de42136828",
+        "type": "github"
       },
       "original": {
-        "path": "/home/total/nixlypkgs",
-        "type": "path"
+        "owner": "aCeTotal",
+        "repo": "nixlypkgs",
+        "type": "github"
       }
     },
     "nixos-hardware": {
