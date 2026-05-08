@@ -8,7 +8,7 @@ let
     owner = "SaiyajinK";
     repo  = "Minimal-Dark-for-Steam";
     rev   = "root";
-    hash  = "sha256-KAWsbISQBInaIwRpKkmUfaQBnGg30zrgJNgt2xBi6xQ=";
+    hash  = "sha256-+0oo6a3nBj/uY7NEpFXWg4H5gignV32xj0SUo3GJxg4=";
   };
 
   # Plugin: Extendium v2.0.3 (Chrome-extension support — bundles SteamDB,
