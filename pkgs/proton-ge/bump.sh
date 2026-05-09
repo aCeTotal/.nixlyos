@@ -15,7 +15,7 @@ fi
 
 URL="https://github.com/${REPO}/releases/download/${VERSION}/${VERSION}.tar.gz"
 echo "proton-ge-bin: bumping to $VERSION"
-SHA=$(nix-prefetch-url --type sha256 "$URL" 2>/dev/null)
+SHA=$(nix-prefetch-url --unpack --type sha256 "$URL" 2>/dev/null)
 HASH=$(nix hash convert --hash-algo sha256 --to sri "$SHA")
 
 jq -n --arg v "$VERSION" --arg h "$HASH" '{version: $v, hash: $h}' > "$PIN"

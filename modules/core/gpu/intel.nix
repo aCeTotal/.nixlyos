@@ -50,4 +50,15 @@
     SDL_VIDEODRIVER = "wayland";
     MOZ_ENABLE_WAYLAND = "1";
   };
+
+  # Intel-only host: replace SDDM with ly + autologin into niri.
+  # SDDM.nix imports unconditionally in modules/core/default.nix, so force it off.
+  services.displayManager.sddm.enable = lib.mkForce false;
+
+  services.displayManager.ly.enable = true;
+
+  services.displayManager.autoLogin = {
+    enable = true;
+    user = "total";
+  };
 }
