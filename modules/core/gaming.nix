@@ -6,13 +6,10 @@
     gamescopeSession.enable = true;
     remotePlay.openFirewall = false;
     dedicatedServer.openFirewall = false;
-    # Millennium-patched Steam (theme/plugin loader). Inner steam keeps
     # `-cef-disable-gpu-compositing` for the niri+xwayland-satellite black-
     # window fix; the flag is vendor-agnostic (Intel/AMD/Nvidia).
-    package = pkgs.millennium-steam.override {
-      steam = pkgs.steam.override {
-        extraArgs = "-cef-disable-gpu-compositing";
-      };
+    package = pkgs.steam.override {
+      extraArgs = "-cef-disable-gpu-compositing";
     };
     extraCompatPackages = with pkgs; [
       proton-ge-bin

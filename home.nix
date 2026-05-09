@@ -4,7 +4,6 @@
 
     imports = [
       ./modules/user/steam.nix
-      ./modules/user/millennium.nix
       ./modules/user/blender_setup.nix
       # programs
       ./modules/user/git.nix
