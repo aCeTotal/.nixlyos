@@ -68,6 +68,7 @@
         openldapNoCheck
         inputs.nix-cachyos-kernel.overlays.default
         inputs.proton-cachyos.overlays.default
+        (import ./pkgs/proton-ge/overlay.nix)
       ];
     };
 
