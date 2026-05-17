@@ -1,14 +1,15 @@
 { pkgs, lib, ... }:
 
 {
-  programs.niri = {
-    enable = true;
-    package = pkgs.niri;
-  };
+  services.displayManager.sessionPackages = [ pkgs.nixlytile ];
+  services.displayManager.defaultSession = "nixlytile";
+
+  environment.systemPackages = [ pkgs.nixlytile ];
 
   xdg.portal = {
-    extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
-    config.niri.default = lib.mkForce [ "gtk" "wlr" ];
+    enable = true;
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
+    config.nixlytile.default = lib.mkForce [ "wlr" "gtk" ];
   };
 
   systemd.suppressedSystemUnits = [
@@ -17,11 +18,9 @@
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
-    XDG_CURRENT_DESKTOP = "niri";
-    XDG_SESSION_DESKTOP = "niri";
+    XDG_CURRENT_DESKTOP = "nixlytile";
+    XDG_SESSION_DESKTOP = "nixlytile";
   };
-
-  services.displayManager.defaultSession = "niri";
 
   services.xserver.enable = true;
 

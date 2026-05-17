@@ -15,6 +15,7 @@ in
         celluloid
         pureref
         claude
+        nixlymedia
         spotify
         vlc
         onlyoffice-desktopeditors

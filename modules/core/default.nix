@@ -21,7 +21,7 @@
     ./security.nix
     ./gpu/nvidia_intel.nix
     ./cpu/intel.nix
-    ../system/niri.nix
+    ../system/nixlytile.nix
     ./newsboat.nix
     ./w3m.nix
     ./mpv.nix

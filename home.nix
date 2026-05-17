@@ -11,7 +11,7 @@
       ./modules/user/btop.nix
       ./modules/user/starship.nix
       ./modules/user/alacritty.nix
-      ./modules/user/niri.nix
+      ./modules/user/nixlytile.nix
       ./modules/user/env.nix
       ./modules/user/gtk.nix
       ./modules/core/emulator_config.nix

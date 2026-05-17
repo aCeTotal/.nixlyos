@@ -1,6 +1,13 @@
-{ config, pkgs, lib, ... }:
+{ inputs, config, pkgs, lib, ... }:
 
 {
+  imports = [ inputs.nixlypkgs.nixosModules.nixly_steam ];
+
+  programs.nixly_steam = {
+    enable = true;
+    gpu = "auto";
+  };
+
   programs.steam = {
     enable = true;
     gamescopeSession.enable = true;
@@ -23,13 +30,27 @@
   };
 
   hardware.steam-hardware.enable = true;
+
+  # Tillat brukere i `gamemode`-gruppa å starte/stoppe ananicy.service uten
+  # passord — gamemode start/end-skript pauser ananicy under spill og restarter
+  # etterpå (unngår konflikt mellom ananicy's renice og gamemode's renice).
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.freedesktop.systemd1.manage-units" &&
+          action.lookup("unit") == "ananicy.service" &&
+          subject.isInGroup("gamemode")) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
+
   programs.gamemode = {
     enable = true;
     settings = {
       general = {
         renice = 10;
         ioprio = 0;               # Real-time I/O priority
-        inotify = 8192;
+        inotify = 131072;         # Upstream default; Unity-spill og store mods treffer 8192-taket
         inhibit_screensaver = 1;
         softrealtime = "auto";
         reaper_freq = 5;          # Check for game exit every 5s
@@ -42,6 +63,7 @@
         nv_powermizer_mode = 1;   # Prefer max performance for Nvidia
         nv_core_clock_mhz_offset = 0;
         nv_mem_clock_mhz_offset = 0;
+        amd_performance_level = "high"; # AMD DPM → max under spill (no-op på NVIDIA/Intel)
       };
       cpu = {
         park_cores = "no";
@@ -49,10 +71,12 @@
       };
       custom = {
         start = "${pkgs.writeShellScript "gamemode-start" ''
+          ${pkgs.systemd}/bin/systemctl stop ananicy.service || true
           ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance || true
-          ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på'
+          ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på (ananicy pauset)'
         ''}";
         end = "${pkgs.writeShellScript "gamemode-end" ''
+          ${pkgs.systemd}/bin/systemctl start ananicy.service || true
           ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced || true
           ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Deaktivert - Tilbake til normal'
         ''}";
@@ -72,7 +96,6 @@
       NoDisplay=true
       Exec=true
     ''))
-    nixly_steam
     (geforce-now.override { browserCommand = "google-chrome-stable"; })
     steamcmd
     gamescope

@@ -24,6 +24,7 @@
       "kvm"
       "input"
       "uinput"
+      "gamemode"
     ];
     openssh.authorizedKeys.keys = [];
   };
