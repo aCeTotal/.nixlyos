@@ -3,6 +3,7 @@
 let
   opts = import ../core/options.nix;
   isHtpc = opts.systemMode == 2;
+  autoLogin = opts.autoLogin or true;
 in
 {
 
@@ -21,8 +22,8 @@ in
 
   environment.systemPackages = [ pkgs.sddm-astronaut ];
 
-  # Auto-login when HTPC mode is active (options.nix systemMode = 2)
-  services.displayManager.autoLogin = lib.mkIf isHtpc {
+  # Auto-login when autoLogin = true OR HTPC mode (options.nix)
+  services.displayManager.autoLogin = lib.mkIf (autoLogin || isHtpc) {
     enable = true;
     user = "total";
   };
