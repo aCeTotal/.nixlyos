@@ -19,15 +19,16 @@
     ];
   };
 
-  # Intel Arc A770 (DG2-512 / Alchemist / Xe-HPG). xe is the supported path
-  # on kernel ≥6.13 and matches/exceeds i915 with Mesa 25+. Always uses GuC
-  # submission, supports HuC firmware → AV1 / VP9 hardware media intact.
-  boot.initrd.kernelModules = [ "xe" ];
+  # Intel Arc A770 (DG2-512 / Alchemist / Xe-HPG). Force i915, block xe.
+  # Why: xe is mature for Lunar Lake / Battlemage but DG2 path still ships
+  # Mesa "experimental" warning in 2026-05. iHD VA-API on Xe + DG2 SIGBUSes
+  # in mmap of GPU BOs (libigdgmm/iHD coredump). i915 + iHD on DG2 is the
+  # hardened combo since 2022 — HW decode via iHD works there.
+  boot.initrd.kernelModules = [ "i915" ];
 
-  # force_probe=* makes xe claim Arc devices regardless of driver-priority
-  # tie-break with i915. Belt-and-braces — most 6.13+ kernels do it anyway.
   boot.kernelParams = [
-    "xe.force_probe=*"
+    "i915.force_probe=56a0"
+    "xe.force_probe=!56a0"
   ];
 
   services.xserver.videoDrivers = [ "modesetting" ];
