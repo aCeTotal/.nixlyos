@@ -14,29 +14,21 @@
     wireplumber.enable = true;
 
     wireplumber.extraConfig = {
-      "10-default-source" = {
-        "wireplumber.settings" = {
-          "default.audio.source" = "alsa_input.pci-0000_00_1f.3.analog-stereo";
-        };
-      };
-
-      # WirePlumber 0.5 introduced a hard passthrough check: if the
-      # client requests spdif-<codec> and the target route's
-      # iec958Codecs list does not contain <codec>, linking is
-      # rejected with "no target node available". WP 0.4 did not
-      # enforce this, so upgrades inherited a stale codec list from
-      # persisted state and silently broke passthrough.
+      # WirePlumber 0.5 introduced a hard passthrough check: if the client
+      # requests spdif-<codec> and the target route's iec958Codecs list does
+      # not contain <codec>, linking is rejected with "no target node
+      # available". WP 0.4 did not enforce this, so upgrades inherited stale
+      # codec lists from persisted state and silently broke passthrough.
       #
-      # Samsung TV on the Arc A770 HDMI output advertises PCM, AC-3
-      # and E-AC-3 in its ELD. Pin the card's iec958 codec list to
-      # exactly those so WP 0.5 accepts AC3/EAC3 passthrough from
-      # mpv/retroarch regardless of whatever the default-routes
-      # state file happens to contain.
+      # Pin the iec958 codec list on every Intel HDMI codec to {PCM, AC3,
+      # EAC3} — the safe intersection that every HDMI-1.4+ TV understands.
+      # Matching by alsa.card_name regex makes this work on any host
+      # regardless of which PCI slot the Arc/iGPU lives in.
       "51-hdmi-iec958-codecs" = {
         "monitor.alsa.rules" = [
           {
             matches = [
-              { "device.name" = "alsa_card.pci-0000_04_00.0"; }
+              { "alsa.card_name" = "~HDA Intel HDMI"; }
             ];
             actions = {
               update-props = {
@@ -72,12 +64,12 @@
     };
   };
 
-  # Migrate stale WP-0.4 persisted route state on first WP-0.5 start.
-  # The old state commonly held iec958Codecs=[PCM,DTS,DTS-HD] on the
-  # Arc A770 HDMI output even though the TV only supports [PCM,AC3,
-  # EAC3]; WP 0.5 then refuses passthrough. This oneshot rewrites the
-  # offending entry before wireplumber starts. Idempotent — if the
-  # list is already correct the sed is a no-op.
+  # Migrate stale WP-0.4 persisted route state on first WP-0.5 start. WP
+  # otherwise keeps the old iec958Codecs list from the persisted file even
+  # though the rule above sets a new card-level list — WP merges the two and
+  # the persisted entry wins. Replace any iec958Codecs array in the state
+  # with the safe {PCM,AC3,EAC3} list so passthrough requests link cleanly.
+  # Idempotent: re-running over an already-rewritten file is a no-op.
   systemd.user.services.wireplumber-route-migrate = {
     description = "Rewrite stale WirePlumber 0.4 route state for WP 0.5";
     before = [ "wireplumber.service" ];
@@ -90,26 +82,22 @@
         set -u
         STATE="''${XDG_STATE_HOME:-$HOME/.local/state}/wireplumber/default-routes"
         [ -f "$STATE" ] || exit 0
-        ${pkgs.gnused}/bin/sed -i \
-          's|"iec958Codecs":\[\s*"PCM",\s*"DTS",\s*"DTS-HD"\s*\]|"iec958Codecs":["PCM", "AC3", "EAC3"]|g' \
+        ${pkgs.gnused}/bin/sed -i -E \
+          's|"iec958Codecs":\[[^]]*\]|"iec958Codecs":["PCM", "AC3", "EAC3"]|g' \
           "$STATE"
       '';
     };
   };
 
-  # Handy tools for controlling PipeWire and routing audio between apps/devices
   environment.systemPackages = with pkgs; [
-    # PipeWire + control CLIs
     pipewire           # provides pw-cli, pw-top, pw-dump, pw-link
     wireplumber        # provides wpctl
 
-    # GUI mixers and patchbays
-    pavucontrol        # PulseAudio-style mixer (works with pipewire-pulse)
-    pwvucontrol        # PipeWire native volume control
-    crosspipe          # PipeWire patchbay (replaces helvum)
-    qpwgraph           # Qt patchbay for PipeWire/JACK
+    pavucontrol
+    pwvucontrol
+    crosspipe
+    qpwgraph
 
-    # Audio utilities
-    alsa-utils         # includes alsamixer and basic ALSA tools
+    alsa-utils
   ];
 }

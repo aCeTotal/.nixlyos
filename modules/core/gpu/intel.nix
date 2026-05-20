@@ -6,9 +6,9 @@
     enable32Bit = true;
     extraPackages = with pkgs; [
       vulkan-loader
-      intel-media-driver
-      vpl-gpu-rt
-      intel-compute-runtime
+      intel-media-driver       # iHD VA-API driver (HW decode/encode)
+      vpl-gpu-rt               # oneVPL runtime (AV1 / VP9 / HEVC on DG2)
+      intel-compute-runtime    # OpenCL / Level Zero
       ocl-icd
       libvdpau-va-gl
     ];
@@ -19,16 +19,29 @@
     ];
   };
 
-  # Intel Arc A770 (DG2-512 / Alchemist / Xe-HPG). Force i915, block xe.
-  # Why: xe is mature for Lunar Lake / Battlemage but DG2 path still ships
-  # Mesa "experimental" warning in 2026-05. iHD VA-API on Xe + DG2 SIGBUSes
-  # in mmap of GPU BOs (libigdgmm/iHD coredump). i915 + iHD on DG2 is the
-  # hardened combo since 2022 — HW decode via iHD works there.
+  # Intel Arc DG2 / Alchemist / Xe-HPG. Pin to i915 — xe is the long-term
+  # driver but for DG2 (A310/A380/A580/A750/A770) i915 + iHD is the hardened
+  # combo. iHD VA-API on Xe + DG2 has SIGBUS issues in mmap of GPU BOs.
+  # force_probe lists every shipping DG2 PCI ID so this works regardless of
+  # which Arc variant the host has.
   boot.initrd.kernelModules = [ "i915" ];
 
   boot.kernelParams = [
-    "i915.force_probe=56a0"
-    "xe.force_probe=!56a0"
+    # All current DG2 device IDs (A310 → A770, incl. mobile and 8/16 GB LEs):
+    # 5690 5691 5692 5693 5694 5695 5696 5697 56a0 56a1 56a2 56a3 56a5 56a6
+    "i915.force_probe=5690,5691,5692,5693,5694,5695,5696,5697,56a0,56a1,56a2,56a3,56a5,56a6"
+    "xe.force_probe=!5690,!5691,!5692,!5693,!5694,!5695,!5696,!5697,!56a0,!56a1,!56a2,!56a3,!56a5,!56a6"
+
+    # HDMI audio reliability: disable runtime PM on the HDA codec so the
+    # HDMI audio sink does not vanish from ALSA after idle. Without this the
+    # PipeWire HDMI sink intermittently disappears on Arc + TV combos.
+    "snd_hda_intel.power_save=0"
+
+    # Keep KMS state intact across boot stages — preserves the EDID-derived
+    # mode through initrd → userspace handoff, avoiding a renegotiation that
+    # some TVs answer slowly (and which would otherwise drop to a fallback
+    # mode before the compositor starts).
+    "i915.fastboot=1"
   ];
 
   services.xserver.videoDrivers = [ "modesetting" ];
@@ -37,6 +50,13 @@
   # already enables redistributable firmware; explicit here so an Intel-only
   # host stays self-contained.
   hardware.enableRedistributableFirmware = true;
+
+  # HDMI audio power-save off at the ALSA module level too (matches the
+  # kernel-param above; modprobe.d wins on module reload). Keeps the codec
+  # awake so EDID/ELD stays populated for PipeWire to find the HDMI sink.
+  boot.extraModprobeConfig = ''
+    options snd_hda_intel power_save=0 power_save_controller=N
+  '';
 
   environment.systemPackages = with pkgs; [
     vulkan-tools
@@ -50,16 +70,5 @@
     QT_QPA_PLATFORM = "wayland";
     SDL_VIDEODRIVER = "wayland";
     MOZ_ENABLE_WAYLAND = "1";
-  };
-
-  # Intel-only host: replace SDDM with ly + autologin into niri.
-  # SDDM.nix imports unconditionally in modules/core/default.nix, so force it off.
-  services.displayManager.sddm.enable = lib.mkForce false;
-
-  services.displayManager.ly.enable = true;
-
-  services.displayManager.autoLogin = {
-    enable = true;
-    user = "total";
   };
 }

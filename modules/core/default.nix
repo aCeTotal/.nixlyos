@@ -1,5 +1,14 @@
 { ... }:
 
+let
+  opts = import ./options.nix;
+  # systemMode = 2 → HTPC (Intel Arc only, no NVIDIA). Otherwise the dual
+  # NVIDIA-PRIME + iGPU stack (desktop/laptop).
+  gpuModule =
+    if (opts.systemMode or 1) == 2
+    then ./gpu/intel.nix
+    else ./gpu/nvidia_intel.nix;
+in
 {
   imports = [
     ./boot.nix
@@ -19,7 +28,7 @@
     ./sound.nix
     ./zram.nix
     ./security.nix
-    ./gpu/nvidia_intel.nix
+    gpuModule
     ./cpu/intel.nix
     ../system/nixlytile.nix
     ./newsboat.nix
