@@ -272,11 +272,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1779049635,
-        "narHash": "sha256-UJ3KPUPk8HcIqgNHjg41yBbkMAoZwNddP4FSzSrTPgU=",
+        "lastModified": 1779751757,
+        "narHash": "sha256-wZu4VA7w/02xt28GDtS1CukNl7Z2TXnpMYc0o5JpUKk=",
         "owner": "aCeTotal",
         "repo": "nixlypkgs",
-        "rev": "6613d048d9835b0d9a791c218717edacf75e79e8",
+        "rev": "6803b16165e43405891b1b66229043c89ccf8251",
         "type": "github"
       },
       "original": {
@@ -382,11 +382,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1778869304,
-        "narHash": "sha256-30sZNZoA1cqF5JNO9fVX+wgiQYjB7HJqqJ4ztCDeBZE=",
+        "lastModified": 1779508470,
+        "narHash": "sha256-Ap9KJX+5xHIn3bPIpfNgT6MEXdAECECwo4/rmlQD74M=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d233902339c02a9c334e7e593de68855ad26c4cb",
+        "rev": "29916453413845e54a65b8a1cf996842300cd299",
         "type": "github"
       },
       "original": {
@@ -440,11 +440,11 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1778998163,
-        "narHash": "sha256-yuOXnm3grEnhK4MRZPoZForD9mvT7FGgQtXzzw3Eejg=",
+        "lastModified": 1779603672,
+        "narHash": "sha256-JbBzozM0iwrWw6u7bQy5HwAVt9XwXh0DAl5EsPIkv/8=",
         "owner": "powerofthe69",
         "repo": "proton-cachyos-nix",
-        "rev": "05b1dde38b10661ebbb22d59dd597d4e71a9d980",
+        "rev": "e3fa6fe3d0e04a3c434931d0ff531aa16259c118",
         "type": "github"
       },
       "original": {

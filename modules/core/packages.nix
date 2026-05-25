@@ -8,10 +8,7 @@ in
     {
       home.packages = (with pkgs; [
         discord
-        brave
-        firefox
         google-chrome
-        gimp
         celluloid
         pureref
         claude
@@ -20,7 +17,6 @@ in
         vlc
         onlyoffice-desktopeditors
         pavucontrol
-        blender_nvidia
       ]) ++ [ speedtree ];
     }
   ];

@@ -15,6 +15,7 @@
       ./modules/user/env.nix
       ./modules/user/gtk.nix
       ./modules/core/emulator_config.nix
+      ./modules/core/audio_priority.nix
       ./modules/user/caveman.nix
       ./modules/user/claude.nix
     ];

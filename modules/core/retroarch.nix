@@ -89,12 +89,25 @@
       # ── Video ───────────────────────────────────────────
       video_driver = "vulkan"
       video_fullscreen = "true"
-      video_windowed_fullscreen = "true"
+      # Wayland: real fullscreen (xdg_toplevel.set_fullscreen) covers
+      # layer-shell top (waybar). Windowed-fullscreen = borderless window,
+      # waybar stays on top.
+      video_windowed_fullscreen = "false"
       video_vsync = "true"
       video_threaded = "true"
       video_smooth = "true"
       video_scale_integer = "false"
       video_aspect_ratio_auto = "true"
+      # Pure vsync path (no VRR). Triple-buffer + auto frame delay
+      # = smoother pacing without tearing or G-Sync-style runloop.
+      video_max_swapchain_images = "3"
+      video_frame_delay = "0"
+      video_frame_delay_auto = "true"
+      video_hard_sync = "false"
+      vrr_runloop_enable = "false"
+      fastforward_ratio = "0.0"
+      video_shader_enable = "true"
+      video_shader_dir = "$HOME/.config/retroarch/shaders"
 
       # ── Audio ───────────────────────────────────────────
       audio_driver = "pipewire"
@@ -145,6 +158,95 @@
       savestate_auto_load = "true"
       config_save_on_exit = "true"
       RACFG
+
+      # ── Per-core overrides: fill 4K screen ──────────────
+      # aspect_ratio_index=1 (16:9 stretch). Widescreen-hack enabled
+      # for 3D cores via .opt below; 2D cores stretch.
+      mkdir -p "$RA_CFG_DIR/config"
+
+      for core in \
+        "bsnes" "Snes9x" "FCEUmm" "Nestopia" \
+        "Gambatte" "mGBA" "Genesis Plus GX" \
+        "Mupen64Plus-Next" "ParaLLEl N64" "Beetle PSX HW"; do
+        mkdir -p "$RA_CFG_DIR/config/$core"
+        cat > "$RA_CFG_DIR/config/$core/$core.cfg" << 'CORECFG'
+      aspect_ratio_index = "1"
+      video_fullscreen = "true"
+      video_windowed_fullscreen = "false"
+      video_fullscreen_x = "0"
+      video_fullscreen_y = "0"
+      video_smooth = "true"
+      video_force_aspect = "true"
+      video_scale_integer = "false"
+      CORECFG
+      done
+
+      # ── Core options: widescreen-hack + 4K-friendly res ─
+      # upsert_opt preserves user in-app tweaks to other keys
+      upsert_opt() {
+        local file="$1" key="$2" value="$3"
+        mkdir -p "$(dirname "$file")"
+        touch "$file"
+        if grep -q "^$key = " "$file" 2>/dev/null; then
+          sed -i "s|^$key = .*|$key = \"$value\"|" "$file"
+        else
+          echo "$key = \"$value\"" >> "$file"
+        fi
+      }
+
+      # Mupen64Plus-Next: true widescreen via projection-matrix hack
+      M64="$RA_CFG_DIR/config/Mupen64Plus-Next/Mupen64Plus-Next.opt"
+      upsert_opt "$M64" "mupen64plus-aspect" "16:9 adjusted"
+      upsert_opt "$M64" "mupen64plus-169screensize" "1920x1080"
+      upsert_opt "$M64" "mupen64plus-parallel-rdp-upscaling" "4x"
+      upsert_opt "$M64" "mupen64plus-MultiSampling" "4"
+      upsert_opt "$M64" "mupen64plus-Framerate" "Original"
+
+      # ParaLLEl N64: widescreen hint + 4x RDP upscale
+      PN64="$RA_CFG_DIR/config/ParaLLEl N64/ParaLLEl N64.opt"
+      upsert_opt "$PN64" "parallel-n64-aspectratiohint" "widescreen"
+      upsert_opt "$PN64" "parallel-n64-screensize" "1920x1080"
+      upsert_opt "$PN64" "parallel-n64-parallel-rdp-upscaling" "4x"
+      upsert_opt "$PN64" "parallel-n64-framerate" "original"
+
+      # Beetle PSX HW: widescreen-hack + 4x internal + PGXP
+      # CPU freq stays 100% → no physics/audio desync
+      BPSX="$RA_CFG_DIR/config/Beetle PSX HW/Beetle PSX HW.opt"
+      upsert_opt "$BPSX" "beetle_psx_hw_renderer" "hardware"
+      upsert_opt "$BPSX" "beetle_psx_hw_renderer_software_fb" "enabled"
+      upsert_opt "$BPSX" "beetle_psx_hw_internal_resolution" "4x"
+      upsert_opt "$BPSX" "beetle_psx_hw_widescreen_hack" "enabled"
+      upsert_opt "$BPSX" "beetle_psx_hw_widescreen_hack_aspect_ratio" "16:9"
+      upsert_opt "$BPSX" "beetle_psx_hw_filter" "bilinear"
+      upsert_opt "$BPSX" "beetle_psx_hw_dither_mode" "internal resolution"
+      upsert_opt "$BPSX" "beetle_psx_hw_msaa" "4x"
+      upsert_opt "$BPSX" "beetle_psx_hw_pgxp_mode" "memory only"
+      upsert_opt "$BPSX" "beetle_psx_hw_pgxp_vertex" "enabled"
+      upsert_opt "$BPSX" "beetle_psx_hw_pgxp_texture" "enabled"
+      upsert_opt "$BPSX" "beetle_psx_hw_adaptive_smoothing" "enabled"
+      upsert_opt "$BPSX" "beetle_psx_hw_cpu_freq_scale" "100%(native)"
+      upsert_opt "$BPSX" "beetle_psx_hw_skip_bios" "enabled"
+      upsert_opt "$BPSX" "beetle_psx_hw_frame_duping" "enabled"
+
+      # bsnes HD Mode 7: only SNES core with internal upscaling
+      BSNES="$RA_CFG_DIR/config/bsnes/bsnes.opt"
+      upsert_opt "$BSNES" "bsnes_mode7_scale" "8x"
+      upsert_opt "$BSNES" "bsnes_mode7_perspective" "ON"
+      upsert_opt "$BSNES" "bsnes_mode7_supersample" "ON"
+      upsert_opt "$BSNES" "bsnes_mode7_mosaic" "ON"
+      upsert_opt "$BSNES" "bsnes_ips_headered" "ON"
+
+      # ── 2D-core shader preset: xBR upscale ──────────────
+      # Path resolves after first-run Online Updater → Update Slang Shaders.
+      # Until then preset is silently skipped by RetroArch.
+      SHADER="$HOME/.config/retroarch/shaders/shaders_slang/xbr/xbr-lv2-multipass.slangp"
+      for core in \
+        "bsnes" "Snes9x" "FCEUmm" "Nestopia" \
+        "Gambatte" "mGBA" "Genesis Plus GX"; do
+        CFG="$RA_CFG_DIR/config/$core/$core.cfg"
+        upsert_opt "$CFG" "video_shader_enable" "true"
+        upsert_opt "$CFG" "video_shader" "$SHADER"
+      done
     '';
   };
 }
