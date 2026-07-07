@@ -72,9 +72,10 @@
     # Lokal port-pool — masse plass til parallelle HTTP-connections.
     "net.ipv4.ip_local_port_range" = "10240 65535";
 
-    # Lav-latency NIC busy-poll for gaming + tale (μs).
-    "net.core.busy_poll" = 50;
-    "net.core.busy_read" = 50;
+    # busy_poll/busy_read fjernet: systemvid busy-poll spinner CPU-en
+    # 50µs per blokkerende socket-read — konstant ekstra strømtrekk på
+    # laptop for en latencygevinst som er støy over WiFi (AX210 er
+    # eneste raske NIC her).
 
     # UDP-buffer minima — bedre QUIC/HTTP3 og spilltrafikk.
     "net.ipv4.udp_rmem_min" = 16384;
@@ -87,7 +88,11 @@
   services.resolved = {
     enable = true;
     settings.Resolve = {
-      DNSSEC = "allow-downgrade";
+      # DNSSEC av: systemd-resolveds validering er buggy og blokkerer
+      # legitime domener (z.ai: "DNSSEC validation failed: no-signature").
+      # allow-downgrade hjelper ikke — nedgraderer kun når server mangler
+      # DNSSEC-støtte, ikke ved valideringsfeil per domene.
+      DNSSEC = "false";
       DNSOverTLS = "opportunistic";
       FallbackDNS = [
         "1.1.1.1#cloudflare-dns.com"

@@ -2,7 +2,12 @@
 
 {
   time.timeZone = "Europe/Oslo";
-  time.hardwareClockInLocalTime = true;
+  # hardwareClockInLocalTime=true skrur av kjernens RTC-tilbakeskriving
+  # (11-minute mode).  Med død CMOS-batteri starter hver boot i 2019 og
+  # tidshoppet til nå får alle OnCalendar-timere (nix-gc, fstrim, ...)
+  # til å fyre umiddelbart ved boot — minutter med IO-storm.  UTC-RTC
+  # lar kjernen holde klokka synket.  (Gjelder kun uten Windows dual-boot.)
+  time.hardwareClockInLocalTime = false;
 
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.supportedLocales = [

@@ -27,10 +27,8 @@
     "vm.min_free_kbytes" = 131072; # Keep 128MB free minimum
   };
 
-  systemd.oomd = {
-    enable = true;
-    enableUserSlices = true;
-    enableRootSlice = true;
-    enableSystemSlice = true;
-  };
+  # systemd-oomd avslått: earlyoom (system_services.nix) kjører allerede
+  # med varsler — to OOM-killere pollet minne/PSI parallelt og kunne
+  # drepe hver sin prosess for samme trykk-hendelse.
+  systemd.oomd.enable = false;
 }

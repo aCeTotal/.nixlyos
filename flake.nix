@@ -9,7 +9,6 @@
     mnw.url = "github:Gerg-L/mnw";
     lanzaboote.url = "github:nix-community/lanzaboote";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
-    proton-cachyos.url = "github:powerofthe69/proton-cachyos-nix";
   };
 
   outputs = inputs@{
@@ -57,6 +56,17 @@
       openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
     };
 
+    # opencollada-blender removed from nixpkgs 2026-04-26 (now a throw alias).
+    # nixlypkgs blender variants still list it in their callPackage args, which
+    # forces the throw even with colladaSupport disabled. Stub the attr at the
+    # overlay level so callPackage resolves it without firing the alias.
+    blenderNoCollada = final: prev: {
+      opencollada-blender = null;
+      blender_nvidia = prev.blender_nvidia.override { colladaSupport = false; };
+      blender_amd    = prev.blender_amd.override    { colladaSupport = false; };
+      blender_intel  = prev.blender_intel.override  { colladaSupport = false; };
+    };
+
     pkgs = import nixpkgsUnstableSrc {
       inherit system;
       config = {
@@ -65,9 +75,9 @@
       };
       overlays = [
         nixlypkgs.overlays.default
+        blenderNoCollada
         openldapNoCheck
         inputs.nix-cachyos-kernel.overlays.default
-        inputs.proton-cachyos.overlays.default
         (import ./pkgs/proton-ge/overlay.nix)
       ];
     };

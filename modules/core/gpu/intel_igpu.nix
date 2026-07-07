@@ -26,9 +26,17 @@
 
   boot.initrd.kernelModules = [ "i915" ];
 
+  # Keep KMS state intact across boot stages — preserves the EDID-derived
+  # mode through initrd → userspace handoff (no renegotiation flicker).
+  boot.kernelParams = [ "i915.fastboot=1" ];
+
   # GuC/HuC firmware loading on KBL improves media engine power/perf.
   # enable_guc=3 = load both GuC and HuC. Safe on Gen9.5+.
+  # enable_fbc=0: FBC på eDP plane 1A ga EAGAIN-commit-storm + "Atomic
+  # update failure on pipe A" under fullscreen-video (2026-07-07).
   boot.extraModprobeConfig = ''
-    options i915 enable_guc=3 enable_fbc=1
+    options i915 enable_guc=3 enable_fbc=0
   '';
+
+  hardware.enableRedistributableFirmware = true;
 }

@@ -20,12 +20,12 @@
     programs.ssh = {
         enable = true;
         enableDefaultConfig = false;
-        matchBlocks = {
+        settings = {
           "*" = {
-            compression = true;
+            Compression = true;
           };
           "github.com" = {
-            identityFile = "~/.ssh/github";
+            IdentityFile = "~/.ssh/github";
           };
         };
     };

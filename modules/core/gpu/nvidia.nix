@@ -19,6 +19,21 @@
     open = false;
     nvidiaSettings = false;
     package = config.boot.kernelPackages.nvidiaPackages.latest;
+
+    # Optimus: the 300Hz internal panel (eDP) is wired to the Intel iGPU, so by
+    # default every frame the dGPU renders is copied to the iGPU for display —
+    # that cross-GPU present caps FPS (~100) regardless of scene. reverseSync
+    # makes the NVIDIA dGPU render the WHOLE session (compositor + apps) and
+    # present to the Intel-connected outputs, so the dGPU is used 100% (one copy
+    # instead of two). dGPU stays powered (more heat/battery — fine on AC).
+    # NOTE: a copy to the Intel eDP still remains; the only way to remove it
+    # entirely is the BIOS/MSI-Center MUX → "Discrete Graphics Mode", which
+    # rewires the panel directly to NVIDIA (card0-eDP-2).
+    prime = {
+      reverseSync.enable = true;
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
+    };
   };
 
   boot = {

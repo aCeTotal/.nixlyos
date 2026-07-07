@@ -1,13 +1,11 @@
 { pkgs, ... }:
 
-let
-  speedtree = import ../derivations/speedtree.nix { inherit pkgs; };
-in
 {
   config.home-manager.sharedModules = [
     {
-      home.packages = (with pkgs; [
+      home.packages = with pkgs; [
         discord
+        firefox
         google-chrome
         celluloid
         pureref
@@ -17,7 +15,7 @@ in
         vlc
         onlyoffice-desktopeditors
         pavucontrol
-      ]) ++ [ speedtree ];
+      ];
     }
   ];
 }

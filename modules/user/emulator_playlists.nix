@@ -204,8 +204,13 @@ in
 {
   home.packages = [ genScript fetchScript ];
 
+  # mountpoint -q i stedet for [[ -d ]]: -d på automount-punktet TRIGGER
+  # NFS-mounten, så hver eneste nixos-rebuild gikk rekursivt gjennom hele
+  # ROM-biblioteket over NFS (find + 7z/zip-peeks).  Nå kjører generering
+  # kun når serveren allerede er montert; ellers kjør nixly-gen-playlists
+  # manuelt.
   home.activation.emulatorPlaylists = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [[ -d "${romRoot}" ]]; then
+    if ${pkgs.util-linux}/bin/mountpoint -q "/mnt/nfs/Bigdisk1"; then
       $DRY_RUN_CMD ${genScript}/bin/nixly-gen-playlists || true
     else
       echo "ROM root ${romRoot} not mounted, skipping playlist generation"

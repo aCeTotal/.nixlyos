@@ -13,8 +13,10 @@
   programs.neovim.defaultEditor = true;
 
   # Power Management
-  # schedutil cooperates with scx_lavd; powersave was leaving perf on the table.
-  powerManagement.cpuFreqGovernor = "schedutil";
+  # Ingen cpuFreqGovernor her: intel_pstate=active tilbyr kun
+  # performance/powersave, så "schedutil" fikk cpufreq.service til å
+  # feile ved hver boot og governor ble stille stående i powersave.
+  # power-profiles-daemon (gpu/intel.nix) eier EPP/governor i stedet.
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -45,7 +47,8 @@
     package = pkgs.ananicy-cpp;
     rulesProvider = pkgs.ananicy-rules-cachyos;
     settings = {
-      check_freq = 1000;        # Check processes every 1s
+      check_freq = 5;           # Full rescan every 5s (unit is SECONDS,
+                                # not ms — 1000 meant every ~16.7 min)
       cgroup_load = true;       # Use cgroups for better control
       type_load = true;         # Load type rules
       rule_load = true;         # Load process rules
@@ -115,4 +118,9 @@
     DefaultTimeoutStopSec = "10s";
     DefaultDeviceTimeoutSec = "10s";
   };
+
+  # Journal-tak: journalen lå på 500+ MB på /var/log uten grense.
+  services.journald.extraConfig = ''
+    SystemMaxUse=200M
+  '';
 }

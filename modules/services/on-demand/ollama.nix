@@ -36,7 +36,12 @@ let
     fi
   '';
 in
-{
+# Hele modulen gated på services.ollama.enable: uten gating genererte
+# wantedBy/environment-overridene en ollama.service uten ExecStart
+# ("bad-setting" ved hver boot) og en 60s-timer som pollet en tjeneste
+# som aldri kunne starte.  services/nixly-ai (uimportert) er det som
+# setter services.ollama.enable — importer den for å aktivere.
+lib.mkIf config.services.ollama.enable {
   systemd.services.ollama.wantedBy = lib.mkForce [ ];
 
   systemd.services.ollama.environment = lib.mkForce {

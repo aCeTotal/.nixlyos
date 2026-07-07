@@ -19,7 +19,7 @@
     ./sound.nix
     ./zram.nix
     ./security.nix
-    ./gpu/intel.nix
+    ./gpu/intel_igpu.nix
     ./gpu/nvidia_intel.nix
     ./cpu/intel.nix
     ../system/nixlytile.nix

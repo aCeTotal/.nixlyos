@@ -10,7 +10,6 @@
 
   programs.steam = {
     enable = true;
-    gamescopeSession.enable = true;
     remotePlay.openFirewall = false;
     dedicatedServer.openFirewall = false;
     # `-cef-disable-gpu-compositing` for the niri+xwayland-satellite black-
@@ -20,7 +19,6 @@
     };
     extraCompatPackages = with pkgs; [
       proton-ge-bin
-      proton-cachyos
     ];
     extraPackages = with pkgs; [
       gamemode
@@ -31,13 +29,13 @@
 
   hardware.steam-hardware.enable = true;
 
-  # Tillat brukere i `gamemode`-gruppa å starte/stoppe ananicy.service uten
+  # Tillat brukere i `gamemode`-gruppa å starte/stoppe ananicy-cpp.service uten
   # passord — gamemode start/end-skript pauser ananicy under spill og restarter
   # etterpå (unngår konflikt mellom ananicy's renice og gamemode's renice).
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if (action.id == "org.freedesktop.systemd1.manage-units" &&
-          action.lookup("unit") == "ananicy.service" &&
+          action.lookup("unit") == "ananicy-cpp.service" &&
           subject.isInGroup("gamemode")) {
         return polkit.Result.YES;
       }
@@ -71,12 +69,12 @@
       };
       custom = {
         start = "${pkgs.writeShellScript "gamemode-start" ''
-          ${pkgs.systemd}/bin/systemctl stop ananicy.service || true
+          ${pkgs.systemd}/bin/systemctl stop ananicy-cpp.service || true
           ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance || true
           ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på (ananicy pauset)'
         ''}";
         end = "${pkgs.writeShellScript "gamemode-end" ''
-          ${pkgs.systemd}/bin/systemctl start ananicy.service || true
+          ${pkgs.systemd}/bin/systemctl start ananicy-cpp.service || true
           ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced || true
           ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Deaktivert - Tilbake til normal'
         ''}";
@@ -98,7 +96,6 @@
     ''))
     (geforce-now.override { browserCommand = "google-chrome-stable"; })
     steamcmd
-    gamescope
     mangohud
     goverlay
     vkbasalt

@@ -32,8 +32,13 @@
         kernelParams = [
             "nvme_core.default_ps_max_latency_us=0"
             "intel_pstate=active"
-            "i915.enable_fbc=1"      # Framebuffer compression
-            "i915.enable_psr=1"      # Panel self refresh
+            # FBC AV: aktiv komprimering på plane 1A ga "Atomic update
+            # failure on pipe A" + EAGAIN-storm på hver nonblocking flip
+            # under fullscreen-video (nixlytile diag 2026-07-07).
+            "i915.enable_fbc=0"      # Framebuffer compression
+            # PSR: panelet støtter ikke PSR (Sink support: no) — param
+            # er virkningsløs; satt til 0 for tydelighet.
+            "i915.enable_psr=0"      # Panel self refresh
             "i915.fastboot=1"        # Raskere oppstart
         ];
 

@@ -29,4 +29,24 @@ in
   services.udev.extraRules = ''
     ACTION=="add|change", SUBSYSTEM=="platform", KERNEL=="msi-ec", RUN+="/bin/sh -c 'chmod 0666 /sys/devices/platform/msi-ec/fan_mode /sys/devices/platform/msi-ec/shift_mode /sys/devices/platform/msi-ec/cooler_boost 2>/dev/null || true'"
   '';
+
+  # EC defaults to shift_mode=unspecified (low-power), which pins the dGPU at
+  # its ~10W TGP floor. Force shift_mode=turbo so the EC grants full dGPU TGP.
+  # Without this the GPU boosts a few seconds then clamps. Set on boot and on
+  # resume (S3 resets the EC). cooler_boost left off — turbo's own fan curve
+  # sustains; flip it on only if you see thermal throttling under load.
+  systemd.services.msi-ec-turbo = {
+    description = "Set MSI EC shift_mode=turbo for full dGPU TGP";
+    after = [ "systemd-modules-load.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 50); do [ -w /sys/devices/platform/msi-ec/shift_mode ] && break; sleep 0.1; done; echo turbo > /sys/devices/platform/msi-ec/shift_mode'";
+    };
+  };
+
+  powerManagement.resumeCommands = lib.mkAfter ''
+    echo turbo > /sys/devices/platform/msi-ec/shift_mode 2>/dev/null || true
+  '';
 }

@@ -158,6 +158,10 @@ in
   };
 
   config = {
+    # Install the chosen variant (CUDA + OPTIX compiled in for nvidia) so it
+    # lands on PATH / app menu, not just the activation bootstrap.
+    home.packages = [ variantPkg ];
+
     # BlenderKit: free GPL addon, not on extensions.blender.org.
     home.file.".config/blender/5.1/scripts/addons/blenderkit".source = blenderkitSrc;
 

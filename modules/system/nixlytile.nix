@@ -22,8 +22,9 @@
     XDG_SESSION_DESKTOP = "nixlytile";
   };
 
-  services.xserver.enable = true;
-
+  # services.xserver.enable fjernet: Wayland-only session (SDDM kjører
+  # wayland, X11-apper går via xwayland-satellite) — full Xorg-stack
+  # var ren closure/boot-bloat som ingenting startet.
   security.polkit.enable = true;
 
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
