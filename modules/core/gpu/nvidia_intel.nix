@@ -74,9 +74,22 @@
 
   boot = {
     initrd.kernelModules = [ "nvidia" "nvidia_uvm" "nvidia_modeset" "nvidia_drm" ];
+    # Module params via kernel cmdline (not extraModprobeConfig): the nvidia
+    # modules load in the INITRD, which doesn't include stage-2 modprobe.d.
     kernelParams = [
       "nvidia_drm.modeset=1"
       "nvidia_drm.fbdev=1"
+      # PAT for GPU memory mappings — faster CPU→GPU uploads (streaming
+      # textures/buffers in games). Well-tested, no known downside.
+      "nvidia.NVreg_UsePageAttributeTable=1"
+      # Skip zeroing of freshly allocated system memory for the GPU —
+      # faster allocations during asset streaming. Tradeoff: stale RAM
+      # contents visible to the GPU driver (single-user desktop: accepted,
+      # same trust model as mitigations=off in boot.nix).
+      "nvidia.NVreg_InitializeSystemMemoryAllocations=0"
+      # ReBAR: no-op on Turing (needs Ampere+ vbios support) but harmless,
+      # and correct if the GPU is ever swapped/eGPU'd.
+      "nvidia.NVreg_EnableResizableBar=1"
     ];
   };
 
@@ -106,8 +119,14 @@
     __GL_THREADED_OPTIMIZATIONS = "1";
     __GL_SHADER_DISK_CACHE = "1";
     __GL_SHADER_DISK_CACHE_SIZE = "10737418240";   # 10 GiB shader cache
+    # Never trim the shader cache mid-session — cache eviction during
+    # gameplay shows up as recompile hitches.
+    __GL_SHADER_DISK_CACHE_SKIP_CLEANUP = "1";
     MESA_SHADER_CACHE_MAX_SIZE = "10G";
-    WLR_RENDERER = "gles2";
+    # WLR_RENDERER intentionally NOT set globally: the nixlytile package
+    # wrapper exports vulkan for the compositor itself, and a global
+    # gles2 here only sabotaged raw dev-binary test runs (gles2 env vs
+    # vulkan-built vendored wlroots → "couldn't create renderer").
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
   };
 }

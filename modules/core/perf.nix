@@ -34,5 +34,13 @@
 
     # Skip split-lock detection (CachyOS default — perf cost on detection)
     "kernel.split_lock_mitigate" = 0;
+
+    # No background memory compaction during gameplay — kcompactd bursts
+    # show up as frame-time spikes. nixlytile's game mode triggers an
+    # explicit compaction at game start, which covers the THP need.
+    "vm.compaction_proactiveness" = 0;
+    # Don't let watermark boosting kick kswapd into aggressive reclaim on
+    # fragmentation (another background stutter source under memory load).
+    "vm.watermark_boost_factor" = 0;
   };
 }

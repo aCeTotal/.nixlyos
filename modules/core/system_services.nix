@@ -47,8 +47,10 @@
     package = pkgs.ananicy-cpp;
     rulesProvider = pkgs.ananicy-rules-cachyos;
     settings = {
-      check_freq = 5;           # Full rescan every 5s (unit is SECONDS,
-                                # not ms — 1000 meant every ~16.7 min)
+      check_freq = 15;          # Full rescan every 15s (unit is SECONDS,
+                                # not ms — 1000 meant every ~16.7 min).
+                                # New processes still caught via proc events;
+                                # 5s rescan was steady background CPU.
       cgroup_load = true;       # Use cgroups for better control
       type_load = true;         # Load type rules
       rule_load = true;         # Load process rules
@@ -99,9 +101,8 @@
     "kernel.sched_autogroup_enabled" = 1;         # Group processes for fairness
 
     # Memory management for responsiveness
-    "vm.watermark_boost_factor" = 0;    # Disable watermark boosting
+    # (watermark_boost_factor + compaction_proactiveness settes i perf.nix)
     "vm.watermark_scale_factor" = 125;  # More aggressive reclaim
-    "vm.compaction_proactiveness" = 0;  # Disable proactive compaction (reduces stutter)
     "vm.zone_reclaim_mode" = 0;         # Disable zone reclaim (reduces latency)
     "vm.stat_interval" = 10;            # Less frequent vm stats (reduces overhead)
 

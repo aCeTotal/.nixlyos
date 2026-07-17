@@ -5,7 +5,9 @@
     package = pkgs.nixVersions.latest;
 
     settings = {
-      auto-optimise-store = true;
+      # auto-optimise-store av: hardlinket synkront under hver build (ekstra
+      # IO per rebuild). Ukentlig nix-optimise-timer (idle-prioritet) dekker
+      # samme jobb.
       sandbox = true;
       accept-flake-config = false;
       experimental-features = [ "nix-command" "flakes" ];

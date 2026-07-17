@@ -93,8 +93,7 @@
     "net.ipv4.conf.all.accept_source_route" = 0;      # blokkerer source routing
     "net.ipv6.conf.all.accept_source_route" = 0;
     "net.ipv4.icmp_echo_ignore_broadcasts" = 1;       # smurf attack protection
-    "net.ipv4.conf.all.log_martians" = 1;              # logger ugyldige pakker
-    "net.ipv4.conf.default.log_martians" = 1;
+    # log_martians av: jevn journald-skriving på støyete nett, leses aldri.
 
     # Kernel anti-exploit hardening
     "kernel.yama.ptrace_scope" = 1;                    # begrenser ptrace

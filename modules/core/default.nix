@@ -14,6 +14,7 @@
     ./users.nix
     ./timezone_locale.nix
     ./system_services.nix
+    ./docs.nix
     ./perf.nix
     ./wayland.nix
     ./sound.nix

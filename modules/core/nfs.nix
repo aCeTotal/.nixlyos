@@ -4,6 +4,9 @@
   # NFS-støtte (nfs-utils, rpcbind, kernel-moduler)
   boot.supportedFilesystems = [ "nfs" ];
 
+  # rpcbind trengs kun for NFSv3 — mount under er v4.2-only.
+  services.rpcbind.enable = lib.mkForce false;
+
   services.cachefilesd = {
     enable = true;
     # Tillat cache å bruke mer plass før cleanup starter
