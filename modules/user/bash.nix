@@ -1,6 +1,8 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
+    home.packages = [ pkgs.eza ];
+
     # Bash
     programs = {
         bash = {
@@ -9,6 +11,10 @@
 
             shellAliases = {
                 "z" = "zoxide";
+                "pfo" = "cd /mnt/nfs/Bigdisk1/www/PFO";
+                "work" = "cd /mnt/nfs/Bigdisk1/Work/painting";
+                ".." = "cd ..";
+                "ls" = "eza --long --all --header --group --git --icons --color=always";
             };
 
             # push: git add -A, prompt for commit message, commit + push

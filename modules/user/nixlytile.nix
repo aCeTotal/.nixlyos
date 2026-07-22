@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 
 {
   imports = [
@@ -41,8 +41,10 @@
     socat
     jq
     nixly_launcher
-  ]
-  ++ lib.optionals (pkgs ? mcontrolcenter) [ pkgs.mcontrolcenter ];
+  ];
+  # mcontrolcenter-pakken installeres system-wide i modules/system/msi-ec.nix.
+  # Autostart av GUI-en ligger nedenfor i config.kdl (compositor-autostart er
+  # eneste mekanisme som funker her — graphical-session.target aktiveres aldri).
 
   home.file."Pictures/wallpapers/beach.jpg".source = ../../wallpapers/beach.jpg;
 
