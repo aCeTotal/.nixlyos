@@ -31,10 +31,8 @@
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
-    # CachyOS kernel — BORE-EEVDF, ThinLTO, AutoFDO, x86-64-v3 build.
-    # Comet Lake i7-10870H is x86-64-v3 (AVX2, no AVX-512). LTO build pulls
-    # from the lantian binary cache (substituter wired in nix.nix).
-    kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-x86_64-v3;
+    # Zen kernel — desktop-tuned, BORE-ish scheduler tweaks.
+    kernelPackages = pkgs.linuxPackages_zen;
 
     kernelParams = [
       "quiet"

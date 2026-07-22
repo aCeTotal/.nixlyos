@@ -28,7 +28,7 @@
     };
     
     programs.bash.shellAliases = {
-      "update" = "bash $HOME/.nixlyos/pkgs/proton-ge/bump.sh && nix flake update nixlypkgs --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
+      "update" = "bash $HOME/.nixlyos/pkgs/proton-ge/bump.sh && nix flake update nixlypkgs totalvim --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "upgrade" = "bash $HOME/.nixlyos/pkgs/proton-ge/bump.sh && nix flake update --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "pin-nixpkgs" = "sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "nixly" = "cd $HOME/.nixlyos/";
