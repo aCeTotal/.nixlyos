@@ -52,10 +52,6 @@
       "libsoup-2.74.3"
     ];
 
-    openldapNoCheck = final: prev: {
-      openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
-    };
-
     # opencollada-blender removed from nixpkgs 2026-04-26 (now a throw alias).
     # nixlypkgs blender variants still list it in their callPackage args, which
     # forces the throw even with colladaSupport disabled. Stub the attr at the
@@ -76,7 +72,6 @@
       overlays = [
         nixlypkgs.overlays.default
         blenderNoCollada
-        openldapNoCheck
         inputs.nix-cachyos-kernel.overlays.default
         (import ./pkgs/proton-ge/overlay.nix)
       ];
