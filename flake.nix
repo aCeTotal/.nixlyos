@@ -121,5 +121,14 @@
         }
       ];
     };
+
+    devShells.${system}.default = pkgs.mkShell {
+      packages = with pkgs; [
+        nix
+        nixos-rebuild
+        git
+        nix-output-monitor
+      ];
+    };
   };
 }

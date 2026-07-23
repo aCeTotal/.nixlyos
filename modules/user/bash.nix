@@ -74,6 +74,21 @@
                     echo "rev = \"$rev\";"
                     echo "hash = \"$sri\";"
                 }
+
+                # auto-direnv: on entering a git repo that has a flake.nix but
+                # no .envrc, create `use flake` and allow it so the devShell
+                # loads automatically. Git projects only; never clobbers.
+                _auto_direnv() {
+                    [ "$PWD" = "$_auto_direnv_last" ] && return
+                    _auto_direnv_last=$PWD
+                    local top
+                    top=$(git rev-parse --show-toplevel 2>/dev/null) || return
+                    [ -e "$top/.envrc" ] && return
+                    [ -e "$top/flake.nix" ] || return
+                    printf 'use flake\n' > "$top/.envrc"
+                    direnv allow "$top"
+                }
+                PROMPT_COMMAND="_auto_direnv''${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
             '';
         };
         direnv = {
