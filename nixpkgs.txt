@@ -1,3 +1,8 @@
 #Working
 unstable=a799d3e3886da994fa307f817a6bc705ae538eeb
 stable=bd0ff2d3eac24699c3664d5966b9ef36f388e2ca
+
+# totalvim lock: repo rev, mnw wrapper rev, nixpkgs rev it builds against
+totalvimsrc=4f00da21b1f6be30816a70418fb2bbda17b59d05
+mnw=0151d9fa87992cbeb67c86616fb9170dcec830b6
+totalvim=bd0ff2d3eac24699c3664d5966b9ef36f388e2ca

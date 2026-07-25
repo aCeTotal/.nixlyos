@@ -19,6 +19,7 @@
       ./modules/user/emulator_playlists.nix
       ./modules/user/caveman.nix
       ./modules/user/claude.nix
+      ./modules/user/discord_rpc.nix
     ];
 
     home = {

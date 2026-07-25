@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 {
     home.packages = [ pkgs.eza ];
@@ -94,6 +94,9 @@
         direnv = {
             enable = true;
             nix-direnv.enable = true;
+            # Auto-approve .envrc in own repos so direnv never asks
+            # for `direnv allow` (covers repos that ship an .envrc).
+            config.whitelist.prefix = [ "${config.home.homeDirectory}/git" ];
         };
     };
 }

@@ -23,6 +23,10 @@
     "tun"
     # WireGuard (innebygd i moderne kernels)
     "wireguard"
+    # iwlwifi laster op-mode-modulen iwlmvm via request_module() ved boot,
+    # og den lastingen kan feile stille (ingen wlan0, NM ser ingen wifi-hw).
+    # Tving lasting her så wifi alltid er tilgjengelig etter boot.
+    "iwlmvm"
   ];
 
   boot.kernel.sysctl = {
