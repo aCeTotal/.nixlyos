@@ -11,6 +11,8 @@
       ./modules/user/btop.nix
       ./modules/user/starship.nix
       ./modules/user/alacritty.nix
+      ./modules/user/herdr.nix
+      ./modules/user/update_tray.nix
       ./modules/user/nixlytile.nix
       ./modules/user/env.nix
       ./modules/user/gtk.nix
@@ -30,7 +32,8 @@
     
     programs.bash.shellAliases = {
       "update" = "bash $HOME/.nixlyos/pkgs/proton-ge/bump.sh && nix flake update nixlypkgs totalvim --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
-      "upgrade" = "bash $HOME/.nixlyos/pkgs/proton-ge/bump.sh && nix flake update --flake $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
+      # Aktiverer kun det 18:00-sjekken har prevalidert (bygg garantert OK).
+      "upgrade" = "if [ -f /var/lib/nixly-update/pending ]; then systemctl start nixly-update-apply.service && echo 'Oppgradering aktivert — gjelder fra neste boot.'; else echo 'Ingen validert oppdatering tilgjengelig.'; fi";
       "pin-nixpkgs" = "sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "nixly" = "cd $HOME/.nixlyos/";
       "c" = "claude --dangerously-skip-permissions";

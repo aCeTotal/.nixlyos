@@ -46,10 +46,9 @@
       "random.trust_cpu=on"
       "nowatchdog"
       "nmi_watchdog=0"
-      # Single-user desktop: disable Spectre/MDS/Retbleed/etc speculation
-      # mitigations. ~10-15% perf on Comet Lake. Trade-off accepted —
-      # local-attacker model only relevant for multi-tenant hosts.
-      "mitigations=off"
+      # mitigations=off flyttet til specialisation "gaming"
+      # (modules/core/specialisation_gaming.nix) — default boot kjoerer
+      # naa med mitigations paa.
       "split_lock_detect=off"
     ];
 

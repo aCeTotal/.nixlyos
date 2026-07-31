@@ -114,10 +114,14 @@
     autostart "sh -c 'wl-paste --primary --type text --watch clipman store --no-persist'"
     autostart "appd"
     autostart "mcontrolcenter"
+    // Registreres sist -> havner lengst til hoeyre i trayen. Ikonet er
+    // usynlig (PASSIVE) til en prevalidert oppdatering ligger klar.
+    autostart "nixly-update-tray"
 
     // ───────── keybindings ─────────
     // Applications
     bind "Super+Return"       "spawn" "alacritty"
+    bind "Super+Shift+Return" "spawn" "alacritty -e bash"
     bind "Super+p"            "spawn" "apptoggle"
     bind "Super+g"            "spawn" "fuzzel"
     bind "Super+i"            "spawn" "fuzzel"

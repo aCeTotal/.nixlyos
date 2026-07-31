@@ -97,7 +97,11 @@
       # allow-downgrade hjelper ikke — nedgraderer kun når server mangler
       # DNSSEC-støtte, ikke ved valideringsfeil per domene.
       DNSSEC = "false";
-      DNSOverTLS = "opportunistic";
+      # Strict DoT: all DNS kryptert til Quad9 (blokkerer ogsaa kjente
+      # malware-domener). LAN/rogue-DHCP kan ikke spoofe eller avlytte
+      # oppslag. NB: captive portals paa aapne nett kan kreve midlertidig
+      # "opportunistic".
+      DNSOverTLS = "true";
       FallbackDNS = [
         "1.1.1.1#cloudflare-dns.com"
         "1.0.0.1#cloudflare-dns.com"
@@ -106,6 +110,12 @@
       LLMNR = "false";
     };
   };
+
+  # Quad9 som primaer-DNS (DoT-kapabel; DHCP-utdelt DNS ignoreres)
+  networking.nameservers = [
+    "9.9.9.9#dns.quad9.net"
+    "149.112.112.112#dns.quad9.net"
+  ];
 
   # Enable NetworkManager here instead, per request
   networking.networkmanager.enable = true;

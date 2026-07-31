@@ -17,6 +17,11 @@ general.import = [
 [env]
 TERM = "xterm-256color"
 
+# Alle terminaler kjøres via herdr (attacher til default bakgrunnssesjon)
+# herdr-shell sørger også for auto-opprettet Claude-tab i fokusert workspace
+[terminal]
+shell = "herdr-shell"
+
 [font]
 size = 14.0
 

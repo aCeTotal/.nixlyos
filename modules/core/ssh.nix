@@ -3,10 +3,13 @@
 {
   services.openssh = {
     enable = true;
+    # SSH kun via tailscale (tailscale0 er trusted interface) — port 22
+    # aapnes ikke i brannmuren for LAN/internett.
+    openFirewall = false;
     settings = {
       PermitRootLogin = "no";
-      PasswordAuthentication = true;
-      KbdInteractiveAuthentication = true;
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
       PubkeyAuthentication = true;
       X11Forwarding = false;
       AllowTcpForwarding = "yes";

@@ -7,6 +7,7 @@
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
     lanzaboote.url = "github:nix-community/lanzaboote";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
+    herdr.url = "github:herdrdev/herdr/v0.7.5";
   };
 
   outputs = inputs@{

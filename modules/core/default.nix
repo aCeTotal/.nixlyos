@@ -5,6 +5,10 @@
     ./boot.nix
     ../system/SDDM.nix
     ./networking.nix
+    ./tailscale.nix
+    ./ssh_gate.nix
+    ./specialisation_gaming.nix
+    ./autoupdate.nix
     ./nix.nix
     ./nfs.nix
     ./ssh.nix

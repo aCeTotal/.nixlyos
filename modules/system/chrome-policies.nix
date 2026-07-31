@@ -14,7 +14,8 @@
         "BrowserCrashDumpEnabled": false,
         "MetricsReportingEnabled": false,
         "AutoOpenFileTypes": ["application"],
-        "AutoOpenAllowedForURLs": ["*"]
+        "AutoOpenAllowedForURLs": ["*"],
+        "ExtensionInstallForcelist": ["ddkjiahejlhfcafbddmgiahcphecmpfh"]
       }
     '';
 
@@ -29,7 +30,8 @@
         "BrowserCrashDumpEnabled": false,
         "MetricsReportingEnabled": false,
         "AutoOpenFileTypes": ["application"],
-        "AutoOpenAllowedForURLs": ["*"]
+        "AutoOpenAllowedForURLs": ["*"],
+        "ExtensionInstallForcelist": ["ddkjiahejlhfcafbddmgiahcphecmpfh"]
       }
     '';
 

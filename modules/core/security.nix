@@ -7,11 +7,6 @@
   # than iptables-restore at boot.
   networking.nftables.enable = true;
 
-  # Deluge BitTorrent
-  networking.firewall.allowedTCPPorts = [ 6881 ];
-  networking.firewall.allowedUDPPorts = [ 6881 ];
-  networking.firewall.allowedTCPPortRanges = [ { from = 57000; to = 57010; } ];
-  networking.firewall.allowedUDPPortRanges = [ { from = 57000; to = 57010; } ];
 
   # ── AppArmor (MAC) ───────────────────────────────────────────────
   security.apparmor.enable = false;

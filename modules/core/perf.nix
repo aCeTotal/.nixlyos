@@ -18,11 +18,17 @@
   # and min_free_kbytes also defined there.
 
   # Raise open-file + memlock limits for game engines, electron, IDEs.
+  # rtprio for @audio: lets PipeWire/mpv audio threads take RT scheduling
+  # directly via RLIMIT_RTPRIO (no rtkit round-trip needed) so audio never
+  # starves under GPU-composite/compositor load — the occasional playback
+  # audio dropouts on the HTPC.
   security.pam.loginLimits = [
     { domain = "*"; type = "soft"; item = "nofile";  value = "524288";    }
     { domain = "*"; type = "hard"; item = "nofile";  value = "1048576";   }
     { domain = "*"; type = "soft"; item = "memlock"; value = "unlimited"; }
     { domain = "*"; type = "hard"; item = "memlock"; value = "unlimited"; }
+    { domain = "@audio"; type = "soft"; item = "rtprio"; value = "95"; }
+    { domain = "@audio"; type = "hard"; item = "rtprio"; value = "95"; }
   ];
 
   boot.kernel.sysctl = {

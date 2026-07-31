@@ -45,19 +45,24 @@
         "context.properties" = {
           "default.clock.rate" = 48000;
           "default.clock.allowed-rates" = [ 48000 44100 96000 192000 ];
+          # Default stays 128 (2.7ms) so games get low latency without
+          # asking. max-quantum was 256 and streams were pinned to
+          # node.latency=128 — that capped EVERY client (mpv asks ~200ms)
+          # to 2.7ms buffers, which drops out under GPU/compositor load
+          # (audio stutter during video playback). Let clients that want
+          # big buffers have them; the graph still follows the LOWEST
+          # active request, so a running game keeps quantum at 128.
           "default.clock.quantum" = 128;
           "default.clock.min-quantum" = 32;
-          "default.clock.max-quantum" = 256;
+          "default.clock.max-quantum" = 2048;
           "log.level" = 2;
         };
         "stream.properties" = {
-          "node.latency" = "128/48000";
           "resample.quality" = 9;
         };
       };
       pipewire-pulse."92-low-latency" = {
         "stream.properties" = {
-          "node.latency" = "128/48000";
           "resample.quality" = 9;
         };
       };
