@@ -8,6 +8,8 @@
     lanzaboote.url = "github:nix-community/lanzaboote";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
     herdr.url = "github:herdrdev/herdr/v0.7.5";
+    totalvim = { url = "github:aCeTotal/totalvim"; flake = false; };
+    mnw.url = "github:Gerg-L/mnw";
   };
 
   outputs = inputs@{
@@ -84,31 +86,14 @@
       };
     };
 
-    # totalvim fully locked via nixpkgs.txt (totalvimsrc/mnw/totalvim revs)
-    # so system upgrades can't touch it. Bump revs there to update totalvim.
-    totalvimSrc = builtins.fetchTree {
-      type = "github";
-      owner = "aCeTotal";
-      repo = "totalvim";
-      rev = revs.totalvimsrc;
-    };
+    # totalvim + mnw are flake inputs (like nixlypkgs): they follow HEAD and
+    # are only locked by flake.lock, so `nix flake update` bumps them to latest.
+    totalvimSrc = inputs.totalvim;
 
-    mnw = builtins.getFlake "github:Gerg-L/mnw/${revs.mnw}";
+    totalvimVimPlugin = pkgsStable.callPackage (totalvimSrc + "/plugins/totalvim") {};
 
-    # Dedicated nixpkgs pin for totalvim (revs.totalvim in nixpkgs.txt) so
-    # neovim, plugins and LSP servers stay fixed when stable/unstable move.
-    pkgsTotalvim = import (fetchNixpkgs revs.totalvim) {
-      inherit system;
-      config = {
-        allowUnfree = true;
-        permittedInsecurePackages = permittedInsecure;
-      };
-    };
-
-    totalvimVimPlugin = pkgsTotalvim.callPackage (totalvimSrc + "/plugins/totalvim") {};
-
-    totalvimPkg = mnw.lib.wrap {
-      pkgs = pkgsTotalvim;
+    totalvimPkg = inputs.mnw.lib.wrap {
+      pkgs = pkgsStable;
       inputs = {
         self.legacyPackages.${system}.vimPlugins.totalvim = totalvimVimPlugin;
       };

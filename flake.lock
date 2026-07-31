@@ -157,6 +157,21 @@
         "type": "github"
       }
     },
+    "mnw": {
+      "locked": {
+        "lastModified": 1784154424,
+        "narHash": "sha256-HRn4O1X2ShYtbq5Egji72/aemyc2cIQicjRZD9hBqM8=",
+        "owner": "Gerg-L",
+        "repo": "mnw",
+        "rev": "0151d9fa87992cbeb67c86616fb9170dcec830b6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Gerg-L",
+        "repo": "mnw",
+        "type": "github"
+      }
+    },
     "nix-cachyos-kernel": {
       "inputs": {
         "cachyos-kernel": "cachyos-kernel",
@@ -386,9 +401,11 @@
         "herdr": "herdr",
         "home-manager": "home-manager",
         "lanzaboote": "lanzaboote",
+        "mnw": "mnw",
         "nix-cachyos-kernel": "nix-cachyos-kernel",
         "nixlypkgs": "nixlypkgs",
-        "nixos-hardware": "nixos-hardware"
+        "nixos-hardware": "nixos-hardware",
+        "totalvim": "totalvim"
       }
     },
     "rust-overlay": {
@@ -430,6 +447,22 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "totalvim": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785453533,
+        "narHash": "sha256-6RxxCPebHTKhXH3XrSqTfBGCtdd445PCJDoJ677Q+t0=",
+        "owner": "aCeTotal",
+        "repo": "totalvim",
+        "rev": "2fc36986c3cfc7c96a2a9363ab91bd83f31a951e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aCeTotal",
+        "repo": "totalvim",
         "type": "github"
       }
     }
