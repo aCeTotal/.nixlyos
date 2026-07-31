@@ -72,7 +72,7 @@
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "18:00";
-      Persistent = true;           # sjekken (ufarlig) tas igjen etter boot
+      Persistent = false;          # KUN 18:00 — aldri catch-up ved boot
       RandomizedDelaySec = "10min";
     };
   };

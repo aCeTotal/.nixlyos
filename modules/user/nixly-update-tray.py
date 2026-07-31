@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Tray-ikon som vises naar en prevalidert oppdatering ligger klar.
 
-Viser standard update-ikon via StatusNotifierItem (samme protokoll som
-nm-applet/blueman -> lik stoerrelse og avstand i nixlytile-trayen).
+Startes av systemd path-uniten KUN naar /var/lib/nixly-update/pending
+finnes — nixlytile-trayen ignorerer SNI Status=Passive, saa prosessen
+maa vaere helt av naar ingenting er klart. Avslutter selv naar pending
+forsvinner; path-uniten starter den igjen neste gang flagget dukker opp.
 Klikk -> meny -> aktiverer nixly-update-apply.service (polkit-regel
 lar bruker total starte den uten passord)."""
 
 import os
 import subprocess
+import sys
 
 import gi
 
@@ -17,12 +20,16 @@ from gi.repository import Gtk, GLib, AyatanaAppIndicator3 as AppIndicator
 
 PENDING = "/var/lib/nixly-update/pending"
 
+if not os.path.exists(PENDING):
+    sys.exit(0)
+
 indicator = AppIndicator.Indicator.new(
     "nixly-update",
     "software-update-available",
     AppIndicator.IndicatorCategory.APPLICATION_STATUS,
 )
 indicator.set_title("NixlyOS-oppdatering klar")
+indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
 
 
 def apply_update(_item):
@@ -39,16 +46,12 @@ menu.show_all()
 indicator.set_menu(menu)
 
 
-def refresh():
-    active = os.path.exists(PENDING)
-    indicator.set_status(
-        AppIndicator.IndicatorStatus.ACTIVE
-        if active
-        else AppIndicator.IndicatorStatus.PASSIVE
-    )
+def watch():
+    if not os.path.exists(PENDING):
+        Gtk.main_quit()
+        return False
     return True
 
 
-refresh()
-GLib.timeout_add_seconds(10, refresh)
+GLib.timeout_add_seconds(10, watch)
 Gtk.main()
