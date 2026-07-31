@@ -75,24 +75,29 @@
                     echo "hash = \"$sri\";"
                 }
 
-                # auto-direnv: on entering a git repo that has a flake.nix but
-                # no .envrc, create `use flake` and allow it so the devShell
-                # loads automatically. Git projects only; never clobbers.
-                _auto_direnv() {
-                    [ "$PWD" = "$_auto_direnv_last" ] && return
-                    _auto_direnv_last=$PWD
+                # direnv only on editor launch, never on cd: in a git repo
+                # with a flake.nix, create/allow `use flake` and run nvim
+                # inside the devShell env via `direnv exec`.
+                nvim() {
                     local top
-                    top=$(git rev-parse --show-toplevel 2>/dev/null) || return
-                    [ -e "$top/.envrc" ] && return
-                    [ -e "$top/flake.nix" ] || return
-                    printf 'use flake\n' > "$top/.envrc"
-                    direnv allow "$top"
+                    top=$(git rev-parse --show-toplevel 2>/dev/null)
+                    if [ -n "$top" ] && [ -e "$top/flake.nix" ]; then
+                        if [ ! -e "$top/.envrc" ]; then
+                            printf 'use flake\n' > "$top/.envrc"
+                            direnv allow "$top"
+                        fi
+                        direnv exec "$top" nvim "$@"
+                    else
+                        command nvim "$@"
+                    fi
                 }
-                PROMPT_COMMAND="_auto_direnv''${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
             '';
         };
         direnv = {
             enable = true;
+            # No shell hook: direnv must not load env on cd.
+            # Only `direnv exec` via the nvim wrapper uses it.
+            enableBashIntegration = false;
             nix-direnv.enable = true;
             # Auto-approve .envrc in own repos so direnv never asks
             # for `direnv allow` (covers repos that ship an .envrc).

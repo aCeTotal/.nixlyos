@@ -38,6 +38,30 @@
           }
         ];
       };
+
+      # PipeWire 1.6 slår på api.alsa.split-enable som default. I split-modus
+      # lages ingen ACP-profiler for kort uten tilgjengelige porter (typisk
+      # GPU-HDMI-audio uten skjerm koblet til): EnumProfile blir tom mens
+      # aktiv profil er "off". pipewire-pulse finner da ikke "off" i den
+      # tomme profillisten og rapporterer active_profile = NULL i
+      # pa_card_info — Steams 32-bit libaudio.so (Miles voice-enumerering)
+      # dereferer active_profile->name uten NULL-sjekk → Steam SIGSEGV ved
+      # hver oppstart. Skru av split på alle ALSA-kort så ACP alltid
+      # eksponerer profillisten (inkl. "off").
+      "52-no-split-pcm" = {
+        "monitor.alsa.rules" = [
+          {
+            matches = [
+              { "device.name" = "~alsa_card.*"; }
+            ];
+            actions = {
+              update-props = {
+                "api.alsa.split-enable" = false;
+              };
+            };
+          }
+        ];
+      };
     };
 
     extraConfig = {

@@ -30,16 +30,22 @@ let
     exec ${herdr}/bin/herdr
   '';
 
-  # Super+Return / launcher: kjoerer allerede en herdr-klient -> ny tab i
-  # fokusert herdr-workspace. Ellers -> nytt alacritty-vindu (som attacher
-  # via herdr-shell). Klient = herdr-prosess uten "server"-argument.
+  # Super+Return / launcher: kjoerer allerede en herdr-klient -> hopp til
+  # nixlytile-workspacen der herdr-vinduet staar (FocusWindow via
+  # Niri-IPC) og lag ny tab i fokusert herdr-workspace. Ellers -> nytt
+  # alacritty-vindu (som attacher via herdr-shell). Vinduet faar app-id
+  # "nixly-herdr" saa FocusWindow ikke treffer vanlige alacritty-vinduer.
   herdr-launch = pkgs.writeShellScriptBin "herdr-launch" ''
     if ${pkgs.procps}/bin/pgrep -f 'bin/herdr$' >/dev/null; then
+      if [ -n "$NIRI_SOCKET" ]; then
+        printf '{"Action":{"FocusWindow":{"app_id":"nixly-herdr"}}}\n' \
+          | ${pkgs.socat}/bin/socat -t 0.3 - UNIX-CONNECT:"$NIRI_SOCKET" >/dev/null 2>&1
+      fi
       ws=$(${herdr}/bin/herdr api snapshot 2>/dev/null \
         | ${jq} -r '.result.snapshot.focused_workspace_id // empty')
       exec ${herdr}/bin/herdr tab create ''${ws:+--workspace "$ws"} --focus >/dev/null 2>&1
     fi
-    exec alacritty
+    exec alacritty --class nixly-herdr
   '';
 in
 {
@@ -64,6 +70,11 @@ in
     [terminal]
     # Nye paner/tabs arver cwd fra aktiv pane
     new_cwd = "follow"
+
+    [ui]
+    # ctrl+t skal lage tab med en gang — ikke aapne navnedialog
+    # (dialogen sluker ogsaa paafoelgende cycle-taster til Enter/Esc).
+    prompt_new_tab_name = false
 
     [keys]
     new_tab = "ctrl+t"
