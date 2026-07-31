@@ -120,7 +120,7 @@
 
     // ───────── keybindings ─────────
     // Applications
-    bind "Super+Return"       "spawn" "herdr-launch"
+    bind "Super+Return"       "spawn" "alacritty"
     bind "Super+Shift+Return" "spawn" "alacritty -e bash"
     bind "Super+p"            "spawn" "apptoggle"
     bind "Super+g"            "spawn" "fuzzel"
@@ -170,9 +170,6 @@
     bind "Alt+Right"        "move-column-dir"              1
     bind "Alt+k"            "move-window-in-column-dir"    -1
     bind "Alt+j"            "move-window-in-column-dir"    1
-    // Alt+Up/Down er bevisst ubundet: herdr bruker dem til agent-cycling
-    // (previous_agent/next_agent) — compositor-bind ville stjele tastene
-    // før de naar terminalen.
 
     // Column width / consume / expel
     bind "Super+r"            "switch-preset-column-width"

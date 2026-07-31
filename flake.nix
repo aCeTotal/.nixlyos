@@ -7,7 +7,6 @@
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
     lanzaboote.url = "github:nix-community/lanzaboote";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
-    herdr.url = "github:herdrdev/herdr/v0.7.5";
     totalvim = { url = "github:aCeTotal/totalvim"; flake = false; };
     mnw.url = "github:Gerg-L/mnw";
   };
