@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   # Kernel-moduler for nettverk og VPN
@@ -45,7 +50,7 @@
 
     # TCP path/feature tuning.
     "net.ipv4.tcp_mtu_probing" = 1;
-    "net.ipv4.tcp_fastopen" = 3;          # client + server TFO
+    "net.ipv4.tcp_fastopen" = 3; # client + server TFO
     "net.ipv4.tcp_ecn" = 1;
     "net.ipv4.tcp_sack" = 1;
     "net.ipv4.tcp_dsack" = 1;
@@ -101,7 +106,7 @@
       # malware-domener). LAN/rogue-DHCP kan ikke spoofe eller avlytte
       # oppslag. NB: captive portals paa aapne nett kan kreve midlertidig
       # "opportunistic".
-      DNSOverTLS = "true";
+      DNSOverTLS = "opportunistic";
       FallbackDNS = [
         "1.1.1.1#cloudflare-dns.com"
         "1.0.0.1#cloudflare-dns.com"
@@ -142,12 +147,12 @@
 
   # NetworkManager VPN plugins
   networking.networkmanager.plugins = with pkgs; [
-    networkmanager-openvpn      # OpenVPN
-    networkmanager-vpnc         # Cisco VPN
-    networkmanager-openconnect  # Cisco AnyConnect / OpenConnect
-    networkmanager-fortisslvpn  # Fortinet SSL VPN
-    networkmanager-l2tp         # L2TP/IPsec
-    networkmanager-sstp         # SSTP (Microsoft)
+    networkmanager-openvpn # OpenVPN
+    networkmanager-vpnc # Cisco VPN
+    networkmanager-openconnect # Cisco AnyConnect / OpenConnect
+    networkmanager-fortisslvpn # Fortinet SSL VPN
+    networkmanager-l2tp # L2TP/IPsec
+    networkmanager-sstp # SSTP (Microsoft)
   ];
 
   systemd.services.NetworkManager-wait-online.enable = false;
@@ -167,12 +172,12 @@
     # VPN-klienter
     openvpn
     wireguard-tools
-    openconnect              # Cisco AnyConnect-kompatibel
-    vpnc                     # Cisco VPN
-    sstp                     # SSTP-klient
-    strongswan               # IKEv2/IPsec
-    libreswan                # Alternativ IPsec
-    openfortivpn             # Fortinet
+    openconnect # Cisco AnyConnect-kompatibel
+    vpnc # Cisco VPN
+    sstp # SSTP-klient
+    strongswan # IKEv2/IPsec
+    libreswan # Alternativ IPsec
+    openfortivpn # Fortinet
 
     # Nyttige verktøy
     iproute2
