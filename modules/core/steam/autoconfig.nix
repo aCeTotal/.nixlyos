@@ -12,10 +12,11 @@ writeScript "steam-autoconfig" ''
   """Steam auto-configuration:
     - GE-Proton as the global compat tool AND on every per-app override.
     - Shader pre-caching + background Vulkan shader processing on.
-    - Library as start page.
+    - Library as start-up location.
     - Friends/news/announcement popups and sounds off.
     - Steam Game Recording off.
-    - AutoUpdateBehavior=1 (update on launch, not in the background).
+    - AutoUpdateBehavior: games 1 (update on launch), Valve tools 2 (high prio).
+    - Proton Experimental on the `bleeding-edge` branch.
     - `nixly-game-wrap %command%` on every game's LaunchOptions.
   """
   import glob, os, re, sys, shutil
@@ -144,9 +145,6 @@ writeScript "steam-autoconfig" ''
       shader = ensure(steam_cfg, ["ShaderCacheManager"])
       changed |= set_leaf(shader, "EnableShaderBackgroundProcessing", "1")
 
-      # Library as start page (global fallback)
-      changed |= set_leaf(steam_cfg, "StartPage", "Library")
-
       if changed:
           write_back(path, data)
           print("[steam-autoconfig] Global config patched.", file=sys.stderr)
@@ -223,10 +221,6 @@ writeScript "steam-autoconfig" ''
       changed = False
       user_cfg = ensure(data, ["UserLocalConfigStore"])
 
-      # Library as start page (per-user; Steam reads this over the global one)
-      system = ensure(user_cfg, ["system"])
-      changed |= set_leaf(system, "StartPage", "Library")
-
       # Friends notifications + sounds off (no chat/online popups)
       friends = ensure(user_cfg, ["friends"])
       for k in [
@@ -264,6 +258,20 @@ writeScript "steam-autoconfig" ''
           write_back(path, data)
           print(f"[steam-autoconfig] Local UI prefs patched: {path}", file=sys.stderr)
 
+  def patch_sharedconfig(path):
+      # Start-up location. The legacy "StartPage" key is dead in the current
+      # client — it reads the `start_page` client setting, which persists to
+      # the roaming (cloud-synced) store as SteamDefaultDialog. "#app_games" is
+      # Library; the store front is "#app_store".
+      with open(path) as f:
+          data = parse(f.read())
+      steam_cfg = ensure(
+          data, ["UserRoamingConfigStore", "Software", "Valve", "Steam"]
+      )
+      if set_leaf(steam_cfg, "SteamDefaultDialog", "#app_games"):
+          write_back(path, data)
+          print(f"[steam-autoconfig] Start page set to Library: {path}", file=sys.stderr)
+
   def library_paths(root):
       # libraryfolders.vdf lives in steamapps/ (current) or config/ (older).
       # Returns library root dirs (each containing steamapps/).
@@ -293,20 +301,48 @@ writeScript "steam-autoconfig" ''
               out.append(p)
       return out
 
+  # Valve runtime/compat tools must NOT be held back like games are: a stale
+  # anti-cheat runtime or Proton build breaks the games that depend on it.
+  # Matched by manifest name so newly released tools are covered without a
+  # hardcoded appid list.
+  def is_tool(name):
+      return (
+          name.startswith("Proton")
+          or name.startswith("Steam Linux Runtime")
+          or "EasyAntiCheat" in name
+          or "BattlEye" in name
+      )
+
+  # Beta branch per tool appid. Proton Experimental's `bleeding-edge` branch
+  # carries the newest dxvk/vkd3d-proton/wine changes.
+  TOOL_BETAS = {
+      "1493710": "bleeding-edge",   # Proton Experimental
+  }
+
   def patch_appmanifest(path):
       # AutoUpdateBehavior: "0" always-update (default), "1" only-on-launch,
-      # "2" high-priority. Set to "1" so background updates do not hit disk or
-      # bandwidth during gameplay. New installs get "0" → re-run on each launch.
+      # "2" high-priority. Games get "1" so background updates do not hit disk
+      # or bandwidth during gameplay; tools get "2" so they update first and
+      # never lag behind. New installs get "0" → re-run on each launch.
       with open(path) as f:
           data = parse(f.read())
       appstate = data.get("AppState")
       if not isinstance(appstate, dict):
           return False
-      if appstate.get("AutoUpdateBehavior") == "1":
-          return False
-      appstate["AutoUpdateBehavior"] = "1"
-      write_back(path, data)
-      return True
+      name = appstate.get("name", "")
+      appid = appstate.get("appid", "")
+      tool = is_tool(name) if isinstance(name, str) else False
+
+      changed = set_leaf(appstate, "AutoUpdateBehavior", "2" if tool else "1")
+
+      beta = TOOL_BETAS.get(appid) if tool else None
+      if beta:
+          user_cfg = ensure(appstate, ["UserConfig"])
+          changed |= set_leaf(user_cfg, "BetaKey", beta)
+
+      if changed:
+          write_back(path, data)
+      return changed
 
   def main():
       root = find_root()
@@ -331,6 +367,13 @@ writeScript "steam-autoconfig" ''
           except Exception as e:
               print(f"[steam-autoconfig] local patch failed ({lc}): {e}", file=sys.stderr)
 
+      # Roaming store: only exists once the account has logged in at least once.
+      for sc in glob.glob(os.path.join(root, "userdata", "*", "7", "remote", "sharedconfig.vdf")):
+          try:
+              patch_sharedconfig(sc)
+          except Exception as e:
+              print(f"[steam-autoconfig] roaming patch failed ({sc}): {e}", file=sys.stderr)
+
       patched = 0
       for lib in library_paths(root):
           for acf in glob.glob(os.path.join(lib, "steamapps", "appmanifest_*.acf")):
@@ -341,7 +384,7 @@ writeScript "steam-autoconfig" ''
                   print(f"[steam-autoconfig] acf patch failed ({acf}): {e}", file=sys.stderr)
       if patched:
           print(
-              f"[steam-autoconfig] AutoUpdateBehavior=1 applied to {patched} app(s).",
+              f"[steam-autoconfig] Update policy applied to {patched} app(s).",
               file=sys.stderr,
           )
 
