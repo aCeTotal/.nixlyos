@@ -36,9 +36,17 @@
       rsync -a --delete /home/total/.nixlyos/ "$repo"/
       cd "$repo"
 
+      # Kanalgrenene (ikke release-*) er Hydra-gatede: de flytter seg foerst
+      # naar jobsettet er bygd, saa aa foelge grenhodet garanterer cache.
       rev=$(git ls-remote https://github.com/NixOS/nixpkgs refs/heads/nixos-unstable | cut -f1)
       [ -n "$rev" ] || exit 0
       sed -i "s/^unstable=.*/unstable=$rev/" nixpkgs.txt
+
+      # NB: grennavnet maa bumpes manuelt naar neste NixOS-release slippes —
+      # nixos-26.05 slutter aa bevege seg naar 26.11 er ute.
+      srev=$(git ls-remote https://github.com/NixOS/nixpkgs refs/heads/nixos-26.05 | cut -f1)
+      [ -n "$srev" ] || exit 0
+      sed -i "s/^stable=.*/stable=$srev/" nixpkgs.txt
 
       # Proton-GE-pin (samme steg som gamle upgrade-aliaset); fortsetter
       # med gammel pin om bump feiler

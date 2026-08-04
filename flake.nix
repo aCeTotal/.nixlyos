@@ -3,7 +3,9 @@
 
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    home-manager.url = "github:nix-community/home-manager/master";
+    # release-branch: home-manager master bygges mot nixpkgs-unstable og
+    # brekker mot en stable base. Grena selvoppdaterer innen 26.05.
+    home-manager.url = "github:nix-community/home-manager/release-26.05";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
     lanzaboote.url = "github:nix-community/lanzaboote";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
@@ -63,7 +65,10 @@
       blender_intel  = prev.blender_intel.override  { colladaSupport = false; };
     };
 
-    pkgs = import nixpkgsUnstableSrc {
+    # Systemet bygges i sin helhet fra stable. `pkgs-unstable` er kun
+    # eksponert som specialArg saa enkeltpakker kan velges inn manuelt
+    # (f.eks. `boot.kernelPackages = pkgs-unstable.linuxPackages_zen`).
+    pkgs = import nixpkgsStableSrc {
       inherit system;
       config = {
         allowUnfree = true;
@@ -77,7 +82,7 @@
       ];
     };
 
-    pkgsStable = import nixpkgsStableSrc {
+    pkgsUnstable = import nixpkgsUnstableSrc {
       inherit system;
       config = {
         allowUnfree = true;
@@ -89,10 +94,10 @@
     # are only locked by flake.lock, so `nix flake update` bumps them to latest.
     totalvimSrc = inputs.totalvim;
 
-    totalvimVimPlugin = pkgsStable.callPackage (totalvimSrc + "/plugins/totalvim") {};
+    totalvimVimPlugin = pkgs.callPackage (totalvimSrc + "/plugins/totalvim") {};
 
     totalvimPkg = inputs.mnw.lib.wrap {
-      pkgs = pkgsStable;
+      inherit pkgs;
       inputs = {
         self.legacyPackages.${system}.vimPlugins.totalvim = totalvimVimPlugin;
       };
@@ -100,10 +105,10 @@
 
     lib = pkgs.lib;
   in {
-    nixosConfigurations.nixlyos = import (nixpkgsUnstableSrc + "/nixos/lib/eval-config.nix") {
+    nixosConfigurations.nixlyos = import (nixpkgsStableSrc + "/nixos/lib/eval-config.nix") {
       inherit system lib;
 
-      specialArgs = { inherit inputs system totalvimPkg; };
+      specialArgs = { inherit inputs system totalvimPkg; pkgs-unstable = pkgsUnstable; };
 
       modules = [
         ({ ... }: { nixpkgs.pkgs = pkgs; })
@@ -119,7 +124,7 @@
             useGlobalPkgs = true;
             useUserPackages = true;
             backupCommand = ''mv --force "$1" "$1.backup"'';
-            extraSpecialArgs = { inherit inputs system totalvimPkg; };
+            extraSpecialArgs = { inherit inputs system totalvimPkg; pkgs-unstable = pkgsUnstable; };
             users.total = import ./home.nix;
           };
         }
