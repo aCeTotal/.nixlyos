@@ -133,8 +133,8 @@
     bind "Super+e"            "spawn" "dolphin"
     bind "Super+Escape"       "spawn" "nixly-lockscreen"
     bind "Super+F12"          "spawn" "nixly-lockscreen"
-    // bind "Super+BackSpace"    "spawn" "google-chrome-stable --ozone-platform-hint=auto --enable-features=UseOzonePlatform,WaylandWindowDecorations"
-    bind "Super+BackSpace"    "spawn" "firefox"
+    // NIXOS_OZONE_WL=1 (modules/system/nixlytile.nix) gir Wayland uten flagg.
+    bind "Super+BackSpace"    "spawn" "google-chrome-stable"
     bind "Super+s"            "spawn" "grimshot copy area"
     bind "Print"            "spawn" "grimshot copy area"
     bind "Shift+Print"      "spawn" "grimshot copy output"

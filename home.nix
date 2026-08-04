@@ -15,6 +15,7 @@
       ./modules/user/nixlytile.nix
       ./modules/user/env.nix
       ./modules/user/gtk.nix
+      ./modules/user/qt.nix
       ./modules/core/emulator_config.nix
       ./modules/core/audio_priority.nix
       ./modules/user/emulator_playlists.nix
