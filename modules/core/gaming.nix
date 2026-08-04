@@ -1,33 +1,7 @@
-{ inputs, config, pkgs, lib, ... }:
+{ config, pkgs, ... }:
 
 {
-  imports = [ inputs.nixlypkgs.nixosModules.nixly_steam ];
-
-  programs.nixly_steam = {
-    enable = true;
-    gpu = "auto";
-  };
-
-  programs.steam = {
-    enable = true;
-    remotePlay.openFirewall = false;
-    dedicatedServer.openFirewall = false;
-    # `-cef-disable-gpu-compositing` for the niri+xwayland-satellite black-
-    # window fix; the flag is vendor-agnostic (Intel/AMD/Nvidia).
-    package = pkgs.steam.override {
-      extraArgs = "-cef-disable-gpu-compositing";
-    };
-    extraCompatPackages = with pkgs; [
-      proton-ge-bin
-    ];
-    extraPackages = with pkgs; [
-      gamemode
-      libGL
-      libglvnd
-    ];
-  };
-
-  hardware.steam-hardware.enable = true;
+  imports = [ ./steam ];
 
   # Tillat brukere i `gamemode`-gruppa å starte/stoppe ananicy-cpp.service uten
   # passord — gamemode start/end-skript pauser ananicy under spill og restarter
@@ -83,17 +57,6 @@
   };
 
   environment.systemPackages = with pkgs; [
-    # hiPrio wins over steam-unwrapped's steam.desktop in buildEnv conflict
-    # resolution; nixly_launcher dedups by canonical path, so a per-user
-    # XDG override at a different store path can't hide it. Result: only
-    # nixly_steam.desktop appears in the launcher.
-    (lib.hiPrio (writeTextDir "share/applications/steam.desktop" ''
-      [Desktop Entry]
-      Type=Application
-      Name=Steam
-      NoDisplay=true
-      Exec=true
-    ''))
     (geforce-now.override { browserCommand = "google-chrome-stable"; })
     steamcmd
     mangohud

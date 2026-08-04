@@ -112,7 +112,12 @@
     autostart "xwayland-satellite"
     autostart "sh -c 'wl-paste --type text --watch clipman store --no-persist'"
     autostart "sh -c 'wl-paste --primary --type text --watch clipman store --no-persist'"
-    autostart "appd"
+    // appd walker HELE $HOME ved oppstart (fileindex + gitscan) og bygger
+    // et ikon-indeks paa ~21k entries. Rett etter innlogging konkurrerer
+    // det med kompositoren om CPU og disk, og musen fryser 2-3s. Utsatt
+    // 8s (kompositor + Wayland-klienter er oppe da) og nice 19 saa
+    // indekseringen aldri preempter frame-pathen. Super+p virker fra ~8s.
+    autostart "sh -c 'sleep 8; exec nice -n 19 appd'"
     autostart "mcontrolcenter"
     // update-trayikonet startes av systemd path-unit (update_tray.nix)
     // kun naar en prevalidert oppdatering ligger klar — trayen her

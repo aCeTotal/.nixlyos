@@ -62,6 +62,38 @@
           }
         ];
       };
+
+      # Kort der ingen port er tilgjengelig (typisk GPU-HDMI-audio uten
+      # skjerm i porten) endte likevel opp med TOM profilliste under
+      # PipeWire 1.6.6 — `pactl list cards` viste porter men verken
+      # "Profiles:" eller "Active Profile:". libpulse setter da
+      # pa_card_info.active_profile = NULL (den fylles kun når serverens
+      # aktive profilnavn finnes i den enumererte lista), og Steams
+      # 32-bit libaudio.so leser active_profile->name uten NULL-sjekk:
+      #
+      #   mov  0x18(%eax),%eax   ; ->active_profile  (offset 0x18, i386)
+      #   push (%eax)            ; ->name            → SIGSEGV
+      #
+      # WirePlumber setter api.acp.auto-profile = false på alle ALSA-kort
+      # fordi den styrer profilvalg selv, men for slike kort velger den
+      # ingenting og ACP eksponerer da ingen liste. Slå auto-profile på
+      # igjen: ACP faller tilbake til "off" og lista blir aldri tom.
+      # Kort WirePlumber faktisk styrer beholder sin profil (PCH står
+      # fortsatt i output:analog-stereo+input:analog-stereo).
+      "53-acp-auto-profile" = {
+        "monitor.alsa.rules" = [
+          {
+            matches = [
+              { "device.name" = "~alsa_card.*"; }
+            ];
+            actions = {
+              update-props = {
+                "api.acp.auto-profile" = true;
+              };
+            };
+          }
+        ];
+      };
     };
 
     extraConfig = {
