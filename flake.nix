@@ -2,6 +2,11 @@
   description = "NixlyOS";
 
   inputs = {
+    # Kanalgrenene (ikke release-*) er Hydra-gatede: de flytter seg foerst
+    # naar jobsettet er bygd, saa aa foelge grenhodet garanterer cache.
+    # NB: grennavnet maa bumpes manuelt naar neste NixOS-release slippes.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     # release-branch: home-manager master bygges mot nixpkgs-unstable og
     # brekker mot en stable base. Grena selvoppdaterer innen 26.05.
@@ -15,6 +20,8 @@
 
   outputs = inputs@{
     self,
+    nixpkgs,
+    nixpkgs-unstable,
     nixos-hardware,
     nixlypkgs,
     home-manager,
@@ -22,27 +29,6 @@
   }:
   let
     system = "x86_64-linux";
-
-    revs =
-      let
-        content = builtins.readFile ./nixpkgs.txt;
-        lines = builtins.filter builtins.isString (builtins.split "\n" content);
-        parseLine = line:
-          let m = builtins.match "[[:space:]]*([a-zA-Z]+)[[:space:]]*=[[:space:]]*([a-f0-9]+)[[:space:]]*" line;
-          in if m == null then null
-             else { name = builtins.elemAt m 0; value = builtins.elemAt m 1; };
-        pairs = builtins.filter (x: x != null) (map parseLine lines);
-      in builtins.listToAttrs pairs;
-
-    fetchNixpkgs = rev: builtins.fetchTree {
-      type = "github";
-      owner = "NixOS";
-      repo = "nixpkgs";
-      inherit rev;
-    };
-
-    nixpkgsUnstableSrc = fetchNixpkgs revs.unstable;
-    nixpkgsStableSrc   = fetchNixpkgs revs.stable;
 
     permittedInsecure = [
       "freeimage-unstable-2021-11-01"
@@ -68,7 +54,7 @@
     # Systemet bygges i sin helhet fra stable. `pkgs-unstable` er kun
     # eksponert som specialArg saa enkeltpakker kan velges inn manuelt
     # (f.eks. `boot.kernelPackages = pkgs-unstable.linuxPackages_zen`).
-    pkgs = import nixpkgsStableSrc {
+    pkgs = import nixpkgs {
       inherit system;
       config = {
         allowUnfree = true;
@@ -82,7 +68,7 @@
       ];
     };
 
-    pkgsUnstable = import nixpkgsUnstableSrc {
+    pkgsUnstable = import nixpkgs-unstable {
       inherit system;
       config = {
         allowUnfree = true;
@@ -102,11 +88,9 @@
         self.legacyPackages.${system}.vimPlugins.totalvim = totalvimVimPlugin;
       };
     } (totalvimSrc + "/nix/mnw");
-
-    lib = pkgs.lib;
   in {
-    nixosConfigurations.nixlyos = import (nixpkgsStableSrc + "/nixos/lib/eval-config.nix") {
-      inherit system lib;
+    nixosConfigurations.nixlyos = nixpkgs.lib.nixosSystem {
+      inherit system;
 
       specialArgs = { inherit inputs system totalvimPkg; pkgs-unstable = pkgsUnstable; };
 
