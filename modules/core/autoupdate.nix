@@ -72,8 +72,7 @@
   };
 
   # ── Aktivering ────────────────────────────────────────────────────
-  # Kjoeres ved klikk paa tray-ikonet, `upgrade`-aliaset eller 04:00-
-  # timeren. Bygger ingenting nytt — repoet peker allerede paa det
+  # Kjoeres ved klikk paa tray-ikonet eller 04:00-timeren. Bygger ingenting nytt — repoet peker allerede paa det
   # validerte, alt ligger i store, saa dette er kun eval + bootloader.
   systemd.services.nixly-update-apply = {
     description = "NixlyOS apply pre-validated update (next boot)";

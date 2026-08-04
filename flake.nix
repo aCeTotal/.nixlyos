@@ -4,7 +4,8 @@
   inputs = {
     # Kanalgrenene (ikke release-*) er Hydra-gatede: de flytter seg foerst
     # naar jobsettet er bygd, saa aa foelge grenhodet garanterer cache.
-    # NB: grennavnet maa bumpes manuelt naar neste NixOS-release slippes.
+    # NB: grennavnet bumpes automatisk av scripts/update.sh naar neste
+    # NixOS-release slippes (bade her og for home-manager under).
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
