@@ -3,33 +3,28 @@
 let
   cfg = config.nixly.blender;
 
-  # Variant → self-contained blender derivation (each has the right backend
-  # compiled in + its own renamed binary). All variants share the same config
-  # dir, so one bootstrap covers any choice.
-  variantPkg = {
-    nvidia = pkgs.blender_nvidia;
-    amd    = pkgs.blender_amd;
-    intel  = pkgs.blender_intel;
-  }.${cfg.variant};
+  # Official blender.org LTS binary: CUDA, OptiX, HIP and oneAPI kernels are all
+  # shipped precompiled, so one package covers every variant. `variant` now only
+  # picks which Cycles backend the bootstrap enables.
+  blenderPkg = pkgs.Blender_bin_lts;
 
-  blenderBin = lib.getExe variantPkg;
+  blenderBin = lib.getExe blenderPkg;
 
   # OPTIX gives RT-core acceleration on RTX cards; CUDA used as fallback for
-  # older NVIDIA. HIP is the only AMD path. Intel ships oneAPI-disabled →
-  # CPU-only Cycles.
+  # older NVIDIA. HIP is the only AMD path. ONEAPI covers Intel Arc.
   cyclesDevice = {
     nvidia = "OPTIX";
     amd    = "HIP";
-    intel  = "NONE";
+    intel  = "ONEAPI";
   }.${cfg.variant};
 
   acceptedDeviceTypes = {
     nvidia = [ "OPTIX" "CUDA" ];
     amd    = [ "HIP" ];
-    intel  = [ ];
+    intel  = [ "ONEAPI" ];
   }.${cfg.variant};
 
-  # Bundled in Blender 5.1 source (scripts/addons_core/) — legacy module IDs.
+  # Bundled in Blender 5.2 (scripts/addons_core/) — legacy module IDs.
   bundledAddons = [ "node_wrangler" "rigify" ];
 
   # extensions.blender.org pkg_ids. NOTE: "extra_curve_objectes" is the
@@ -158,18 +153,18 @@ in
   };
 
   config = {
-    # Install the chosen variant (CUDA + OPTIX compiled in for nvidia) so it
-    # lands on PATH / app menu, not just the activation bootstrap.
-    home.packages = [ variantPkg ];
+    # Only blender on the system — no source-built variants.
+    home.packages = [ blenderPkg ];
 
     # BlenderKit: free GPL addon, not on extensions.blender.org.
-    home.file.".config/blender/5.1/scripts/addons/blenderkit".source = blenderkitSrc;
+    home.file.".config/blender/5.2/scripts/addons/blenderkit".source = blenderkitSrc;
 
     # One-time bootstrap: install + enable addons, set Cycles device, apply
     # performance / input prefs. Idempotent via flag file. Re-run on demand:
-    #   rm ~/.config/blender/.nix_setup_v1 && home-manager switch
+    #   rm ~/.config/blender/.nix_setup_v2 && home-manager switch
+    # v2: Blender 5.2 uses a fresh ~/.config/blender/5.2 prefs dir.
     home.activation.blenderSetup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      FLAG="$HOME/.config/blender/.nix_setup_v1"
+      FLAG="$HOME/.config/blender/.nix_setup_v2"
       if [ ! -f "$FLAG" ] && [ -x "${blenderBin}" ]; then
         echo "[blender] bootstrapping addons + prefs (one-time)..."
         mkdir -p "$HOME/.config/blender"

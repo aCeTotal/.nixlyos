@@ -40,17 +40,6 @@
       "libsoup-2.74.3"
     ];
 
-    # opencollada-blender removed from nixpkgs 2026-04-26 (now a throw alias).
-    # nixlypkgs blender variants still list it in their callPackage args, which
-    # forces the throw even with colladaSupport disabled. Stub the attr at the
-    # overlay level so callPackage resolves it without firing the alias.
-    blenderNoCollada = final: prev: {
-      opencollada-blender = null;
-      blender_nvidia = prev.blender_nvidia.override { colladaSupport = false; };
-      blender_amd    = prev.blender_amd.override    { colladaSupport = false; };
-      blender_intel  = prev.blender_intel.override  { colladaSupport = false; };
-    };
-
     # Systemet bygges i sin helhet fra stable. `pkgs-unstable` er kun
     # eksponert som specialArg saa enkeltpakker kan velges inn manuelt
     # (f.eks. `boot.kernelPackages = pkgs-unstable.linuxPackages_zen`).
@@ -62,7 +51,6 @@
       };
       overlays = [
         nixlypkgs.overlays.default
-        blenderNoCollada
         inputs.nix-cachyos-kernel.overlays.default
         (import ./pkgs/proton-ge/overlay.nix)
       ];
