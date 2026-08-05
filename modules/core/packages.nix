@@ -5,6 +5,7 @@
   config.home-manager.sharedModules = [
     ({ pkgs, pkgs-unstable, ... }: {
       home.packages = (with pkgs; [
+        brave
         celluloid
         claude
         discord
