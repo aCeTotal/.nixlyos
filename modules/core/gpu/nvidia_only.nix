@@ -70,12 +70,13 @@
     GBM_BACKEND = "nvidia-drm";
   };
 
-  # Gaming: VRR/G-Sync tillatt, threaded GL, og en shader-cache som aldri
-  # trimmes midt i en sesjon (cache-eviction viser seg som recompile-hitch).
+  # Gaming: VRR/G-Sync tillatt, og en shader-cache som aldri trimmes midt i
+  # en sesjon (cache-eviction viser seg som recompile-hitch).
+  # __GL_THREADED_OPTIMIZATIONS er bevisst ikke satt: den henger/krasjer
+  # GL/EGL-klienter (alacritty, appd) paa ren NVIDIA.
   environment.sessionVariables = {
     __GL_VRR_ALLOWED = "1";
     __GL_GSYNC_ALLOWED = "1";
-    __GL_THREADED_OPTIMIZATIONS = "1";
     __GL_SHADER_DISK_CACHE = "1";
     __GL_SHADER_DISK_CACHE_SIZE = "10737418240";   # 10 GiB
     __GL_SHADER_DISK_CACHE_SKIP_CLEANUP = "1";
