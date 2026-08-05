@@ -1,0 +1,27 @@
+--- a/src/draw.c
++++ b/src/draw.c
+@@ -309,6 +309,15 @@
+ 		wlr_buffer_end_data_ptr_access(&surface->buffer->base);
+ 	}
+ 
++	/* cpu_cursor_buf is reused for every cursor image, and
++	 * wlr_cursor_set_buffer() early-returns when buffer, hotspot and
++	 * scale all match the previous call — the DRM cursor plane then
++	 * keeps its stale snapshot. Games hide the cursor with a fully
++	 * transparent image and later show a visible one at the same
++	 * hotspot: without this unset the visible image is dropped and
++	 * the pointer stays invisible until something changes the
++	 * hotspot (e.g. a workspace switch). */
++	wlr_cursor_unset_image(cursor);
+ 	wlr_cursor_set_buffer(cursor, &cpu_cursor_buf->base,
+ 		(int32_t)hx, (int32_t)hy, 1.0f);
+ }
+@@ -379,6 +388,8 @@
+ 			copy_w * 4);
+ 	}
+ 
++	/* Same stale-snapshot hazard as in upload_cursor_surface(). */
++	wlr_cursor_unset_image(cursor);
+ 	wlr_cursor_set_buffer(cursor, &cpu_cursor_buf->base,
+ 		(int32_t)img->hotspot_x, (int32_t)img->hotspot_y, 1.0f);
+ }

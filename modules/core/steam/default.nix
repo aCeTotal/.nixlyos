@@ -1,7 +1,9 @@
 { pkgs, ... }:
 
 let
-  gameWrap = pkgs.callPackage ./gamewrap.nix { };
+  gameWrap = pkgs.callPackage ./gamewrap.nix {
+    launchParams = import ./launchparams.nix;
+  };
   autoconfig = pkgs.callPackage ./autoconfig.nix { inherit gameWrap; };
 in
 {

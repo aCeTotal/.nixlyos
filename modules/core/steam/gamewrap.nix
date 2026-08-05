@@ -1,18 +1,26 @@
-{ python3, gamemode, writeScript }:
+{ python3, gamemode, writeScript, writeText, launchParams ? { } }:
 
 # Per-game wrapper injected into every Steam app's LaunchOptions as
-# `<this> %command%`. Applies PRIME offload (hybrid-GPU) and chains
-# gamemoderun in front of the actual game binary.
+# `<this> %command%`. Applies PRIME offload (hybrid-GPU), per-GPU launch
+# parameters from launchparams.nix, and chains gamemoderun in front of the
+# actual game binary.
 #
 # Steam stores LaunchOptions as plain text, so the absolute store path is
 # baked into every per-app entry; autoconfig.nix re-patches on each launch so
 # a new build's path replaces the old one before any game runs.
 writeScript "nixly-game-wrap" ''
   #!${python3}/bin/python3
-  """Wrap %command% with PRIME offload + gamemoderun."""
-  import os, sys
+  """Wrap %command% with PRIME offload + per-GPU params + gamemoderun."""
+  import json, os, shlex, sys
 
   GAMEMODERUN = "${gamemode}/bin/gamemoderun"
+
+  # "<appid>_<vendor>" -> "KEY=VAL ... -arg ..." (see launchparams.nix).
+  # Separate store file: inlining JSON in a Python string literal breaks on
+  # embedded quotes.
+  with open("${writeText "nixly-launch-params.json"
+      (builtins.toJSON launchParams)}") as _f:
+      LAUNCH_PARAMS = json.load(_f)
 
   def apply_prime_offload():
       # Applied per-game, not to the Steam parent: forcing the Steam UI onto
@@ -37,9 +45,47 @@ writeScript "nixly-game-wrap" ''
       else:
           os.environ.setdefault("DRI_PRIME", "1")
 
+  def gpu_vendor():
+      # Games render on the dGPU (PRIME offload above), so loaded driver
+      # decides the variant: proprietary Nvidia if present, else AMD if an
+      # AMD card exists. Intel-only hosts get no per-vendor params.
+      if os.path.exists("/proc/driver/nvidia/version"):
+          return "nvidia"
+      try:
+          for card in os.listdir("/sys/class/drm"):
+              if not card.startswith("card") or "-" in card:
+                  continue
+              with open(f"/sys/class/drm/{card}/device/vendor") as f:
+                  if f.read().strip() == "0x1002":
+                      return "amd"
+      except OSError:
+          pass
+      return None
+
+  def apply_launch_params(cmd):
+      # Look up "<appid>_<vendor>". Leading KEY=VAL tokens become env vars;
+      # the rest are appended after the game command, exactly like args in
+      # Steam's own LaunchOptions field.
+      appid = os.environ.get("SteamAppId") \
+          or os.environ.get("STEAM_COMPAT_APP_ID")
+      vendor = gpu_vendor()
+      if not appid or not vendor:
+          return cmd
+      spec = LAUNCH_PARAMS.get(f"{appid}_{vendor}")
+      if not spec:
+          return cmd
+      args = []
+      for tok in shlex.split(spec):
+          key, sep, val = tok.partition("=")
+          if not args and sep and key.isidentifier():
+              os.environ[key] = val
+          else:
+              args.append(tok)
+      return cmd + args
+
   def main():
       apply_prime_offload()
-      cmd = [GAMEMODERUN, *sys.argv[1:]]
+      cmd = [GAMEMODERUN, *apply_launch_params(sys.argv[1:])]
       os.execvp(cmd[0], cmd)
 
   if __name__ == "__main__":
