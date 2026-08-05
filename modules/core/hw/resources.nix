@@ -1,7 +1,7 @@
 # GENERERT av scripts/detect-hw.sh — ikke rediger manuelt.
 # Ren data (ingen NixOS-modul) — leses av nix.nix, zram.nix og boot.nix.
 {
-  cores = 16;
+  cores = 15;
   memGiB = 15;
 
   # x86-64 psABI-nivaa: 1 = pre-Nehalem, 2 = SSE4.2/POPCNT,
