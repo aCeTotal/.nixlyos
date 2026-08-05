@@ -91,13 +91,6 @@
 
           nixos-hardware.nixosModules.common-pc
           nixlypkgs.nixosModules.nixlypkgs
-          # Må ligge ETTER nixlypkgs-modulens overlay (mkAfter), ellers
-          # overskriver nixlypkgs den patchede nixlytile med upatchet versjon.
-          ({ lib, ... }: {
-            nixpkgs.overlays = lib.mkAfter [
-              (import ./pkgs/nixlytile-cursor-fix/overlay.nix)
-            ];
-          })
           inputs.lanzaboote.nixosModules.lanzaboote
           home-manager.nixosModules.home-manager
           {

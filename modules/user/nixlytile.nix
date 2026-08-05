@@ -38,6 +38,7 @@
     playerctl
     wireplumber
     xwayland-satellite
+    xrandr
     socat
     jq
     nixly_launcher
@@ -110,6 +111,10 @@
     autostart "nm-applet --indicator"
     autostart "blueman-applet"
     autostart "xwayland-satellite"
+    // Uten RandR-primary regner Wine/UE4 første monitor (HDMI, 1080p) som
+    // primær display-enhet, så exclusive fullscreen bare tilbyr 1080p-moduser.
+    // Retry-løkke fordi Xwayland-satellite trenger et par sekunder på å komme opp.
+    autostart "sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do DISPLAY=:0 xrandr --output DP-1 --primary 2>/dev/null && break; sleep 1; done'"
     autostart "sh -c 'wl-paste --type text --watch clipman store --no-persist'"
     autostart "sh -c 'wl-paste --primary --type text --watch clipman store --no-persist'"
     // appd walker HELE $HOME ved oppstart (fileindex + gitscan) og bygger
