@@ -25,9 +25,14 @@
     ./sound.nix
     ./zram.nix
     ./security.nix
-    ./gpu/intel_igpu.nix
-    ./gpu/nvidia_intel.nix
+    # scripts/detect-hw.sh skriver cpu/ og gpu/-imports rett under dette
+    # ankeret foer hver eval (install, update, rebuild), ut fra faktisk
+    # hardware, og fjerner de gamle linjene foerst. Derfor staar ingen av dem
+    # committet her. msi-ec og nixos-hardware-modulene: se ./hw/profile.nix.
+    # <detect-hw: cpu + gpu>
     ./cpu/intel.nix
+    ./gpu/nvidia_intel.nix
+    ./gpu/intel_igpu.nix
     ../system/nixlytile.nix
     ./newsboat.nix
     ./w3m.nix
@@ -35,8 +40,12 @@
     ./retroarch.nix
     ./drawingtablet.nix
     ../system/htpc.nix
-    ../system/msi-ec.nix
     ../system/idle.nix
+    # GENERERT av scripts/detect-hw.sh: laptop/modell-spesifikke moduler fra
+    # nixos-hardware (og msi-ec paa MSI-laptoper), og tjenester som bare skal
+    # kjoere naar enheten finnes (bluetooth, fprintd, boltd).
+    ./hw/profile.nix
+    ./hw/devices.nix
     ../services/on-demand
   ];
 }

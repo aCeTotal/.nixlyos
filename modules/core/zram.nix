@@ -1,10 +1,17 @@
 { config, lib, pkgs, ... }:
 
+let
+  hw = import ./hw/resources.nix;
+in
 {
   zramSwap = {
     enable = true;
     memoryPercent = 100;          # Use up to 100% of RAM as compressed swap
-    algorithm = "zstd";           # Better compression ratio than lz4
+    # zstd komprimerer best, men koster CPU per side inn/ut av swap. Paa en
+    # svak/gammel CPU (under AVX2) eller faa kjerner blir det synlig latency
+    # under minnepress — der er lz4 riktig bytte: daarligere ratio, men
+    # raskere paging. Detektert av scripts/detect-hw.sh.
+    algorithm = if hw.cpuLevel >= 3 && hw.cores >= 8 then "zstd" else "lz4";
     priority = 100;               # Higher priority than disk swap
   };
 

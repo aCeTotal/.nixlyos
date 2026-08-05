@@ -39,4 +39,10 @@
   '';
 
   hardware.enableRedistributableFirmware = true;
+
+  environment.sessionVariables = {
+    # glthread: GL-kall paa egen traad. Mesa slaar det paa via per-app-liste;
+    # globalt paa hjelper CPU-bundne OpenGL-titler som ikke staar der.
+    mesa_glthread = "true";
+  };
 }

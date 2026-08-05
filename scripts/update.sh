@@ -6,6 +6,9 @@ set -euo pipefail
 REPO="$HOME/.nixlyos"
 FLAKE="$REPO/flake.nix"
 
+# CPU/GPU-imports i modules/core/default.nix maa matche maskinen FOER eval.
+bash "$REPO/scripts/detect-hw.sh" "$REPO"
+
 cur=$(grep -oP 'nixpkgs/nixos-\K[0-9]{2}\.[0-9]{2}' "$FLAKE")
 
 # 25.11 -> 26.05 -> 26.11 -> 27.05 ...

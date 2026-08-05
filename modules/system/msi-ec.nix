@@ -4,6 +4,17 @@ let
   kp = config.boot.kernelPackages;
   msiEcPkg = if kp ? msi-ec then kp.msi-ec else if kp ? msi_ec then kp.msi_ec else null;
   mccPkg = if pkgs ? mcontrolcenter then pkgs.mcontrolcenter else null;
+
+  # Hele modulen importeres bare paa MSI-laptoper (gates i den genererte
+  # hw/profile.nix). firmware-pinnen under maa i tillegg vaere per hovedkort:
+  # den forteller msi-ec hvilke EC-registre den skal skrive til, saa feil
+  # profil = skriv til feil offset. Andre MSI-modeller faar ingen pin og lar
+  # msi-ec autodetektere (og nekte aa laste om modellen ikke stoettes).
+  dmi = import ../core/hw/dmi.nix;
+  firmwarePin =
+    if dmi.board == "MS-16V3"
+    then "options msi-ec firmware=16V3EMS1.106\n"   # GS66 Stealth 10UG, EC E16V3IMS.105
+    else "";
 in
 {
   # Build the msi-ec kernel module for the running kernel, if available
@@ -16,11 +27,9 @@ in
   );
 
   # Allow EC writes if you intend to change fan curves, etc.
-  # Force firmware=16V3EMS1.106 for GS66 Stealth 10UG (MS-16V3) with E16V3IMS.105
   boot.extraModprobeConfig = lib.mkAfter ''
     options ec_sys write_support=1
-    options msi-ec firmware=16V3EMS1.106
-  '';
+    ${firmwarePin}'';
 
   # Install mcontrolcenter if available (stable or unstable)
   environment.systemPackages = lib.mkAfter (lib.optional (mccPkg != null) mccPkg);
@@ -42,7 +51,9 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 50); do [ -w /sys/devices/platform/msi-ec/shift_mode ] && break; sleep 0.1; done; echo turbo > /sys/devices/platform/msi-ec/shift_mode'";
+      # Stoetter msi-ec ikke denne MSI-modellen, blir sysfs-noden aldri til.
+      # Da skal unitten avslutte rent i stedet for aa feile ved hver boot.
+      ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 50); do [ -w /sys/devices/platform/msi-ec/shift_mode ] && break; sleep 0.1; done; echo turbo > /sys/devices/platform/msi-ec/shift_mode 2>/dev/null || exit 0'";
     };
   };
 

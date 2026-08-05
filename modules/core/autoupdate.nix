@@ -24,7 +24,7 @@
     description = "NixlyOS update check + pre-build validation";
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
-    path = [ pkgs.git pkgs.nix pkgs.rsync pkgs.util-linux pkgs.bash ];
+    path = [ pkgs.git pkgs.nix pkgs.rsync pkgs.util-linux pkgs.bash pkgs.gawk ];
     serviceConfig = {
       Type = "oneshot";
       Nice = 19;
@@ -35,6 +35,10 @@
       repo=/var/cache/nixly-update/repo
       rsync -a --delete /home/total/.nixlyos/ "$repo"/
       cd "$repo"
+
+      # CPU/GPU-imports mot faktisk hardware foer eval. Skjer i kopien, saa
+      # et hardware-bytte valideres av forhaandsbygget som alt annet.
+      bash "$repo/scripts/detect-hw.sh" "$repo"
 
       # Proton-GE-pin (samme steg som gamle upgrade-aliaset); fortsetter
       # med gammel pin om bump feiler
@@ -56,6 +60,7 @@
 
       # Validert OK -> bump ekte repo (som total, beholder eierskap)
       runuser -u total -- cp "$repo/flake.lock" /home/total/.nixlyos/flake.lock
+      runuser -u total -- cp "$repo/modules/core/default.nix" /home/total/.nixlyos/modules/core/default.nix
       runuser -u total -- rsync -a "$repo/pkgs/proton-ge/" /home/total/.nixlyos/pkgs/proton-ge/
 
       echo "$new" > /var/lib/nixly-update/pending

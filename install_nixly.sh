@@ -212,6 +212,9 @@ log "Copying fresh hardware-configuration.nix into flake at $FLAKE_DIR"
 rm -f "$FLAKE_DIR/hardware-configuration.nix" || true
 cp "$HWC" "$FLAKE_DIR/hardware-configuration.nix"
 
+log "Detekterer CPU/GPU og setter riktige imports i modules/core/default.nix"
+bash "$FLAKE_DIR/scripts/detect-hw.sh" "$FLAKE_DIR"
+
 log "Genererer Secure Boot-nøkler for lanzaboote"
 nix-shell -p sbctl --run "sbctl create-keys --database-path /mnt/etc/secureboot --export /mnt/etc/secureboot"
 

@@ -1,5 +1,10 @@
 { pkgs, ... }:
 
+let
+  # Generert av scripts/detect-hw.sh: kjerner, RAM og utregnet
+  # byggparallellisme for DENNE maskinen.
+  hw = import ./hw/resources.nix;
+in
 {
   nix = {
     package = pkgs.nixVersions.latest;
@@ -14,8 +19,12 @@
       keep-outputs = true;
       keep-derivations = true;
       builders-use-substitutes = true;
-      max-jobs = 1;
-      cores = 2;
+      # Skalert etter RAM og kjerner (hw/resources.nix). Ett job per 8 GiB,
+      # cores per job begrenset av baade kjerner og RAM — nix-daemon har
+      # MemoryMax 90 % lenger ned, saa et bygg som spretter over taket blir
+      # drept i stedet for aa dra ned skrivebordet.
+      max-jobs = hw.maxJobs;
+      cores = hw.buildCores;
       http-connections = 50;
       connect-timeout = 30;
       fallback = true;

@@ -66,6 +66,9 @@
 
   environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "iHD";
+    # glthread: GL-kall paa egen traad. Mesa slaar det paa via per-app-liste;
+    # globalt paa hjelper CPU-bundne OpenGL-titler som ikke staar der.
+    mesa_glthread = "true";
     NIXOS_OZONE_WL = "1";
     QT_QPA_PLATFORM = "wayland";
     SDL_VIDEODRIVER = "wayland";

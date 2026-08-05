@@ -31,8 +31,15 @@
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
-    # Zen kernel — desktop-tuned, BORE-ish scheduler tweaks.
-    kernelPackages = pkgs.linuxPackages_zen;
+    # Zen kernel — desktop-tuned, BORE-ish scheduler tweaks. Bygges for
+    # generisk x86-64, saa den kjoerer paa gammel CPU ogsaa; men paa
+    # pre-Nehalem (psABI-nivaa 1) faller vi tilbake til hovedkernelen, som er
+    # den eneste som faktisk testes paa slik hardware. Nivaaet detekteres av
+    # scripts/detect-hw.sh.
+    kernelPackages =
+      if (import ./hw/resources.nix).cpuLevel >= 2
+      then pkgs.linuxPackages_zen
+      else pkgs.linuxPackages;
 
     kernelParams = [
       "quiet"

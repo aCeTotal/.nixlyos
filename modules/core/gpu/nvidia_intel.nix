@@ -1,5 +1,10 @@
 { config, lib, pkgs, ... }:
 
+let
+  # Generert av scripts/detect-hw.sh ved hver eval — desimal PCI-adresse
+  # lest fra /sys, saa prime peker riktig paa enhver hybrid-boks.
+  gpu = import ./detected.nix;
+in
 {
   services.xserver.videoDrivers = [ "nvidia" ];
 
@@ -67,8 +72,8 @@
     prime = {
       offload.enable = true;
       offload.enableOffloadCmd = true;
-      intelBusId = "PCI:0:2:0";
-      nvidiaBusId = "PCI:1:0:0";
+      intelBusId = gpu.intel;
+      nvidiaBusId = gpu.nvidia;
     };
   };
 

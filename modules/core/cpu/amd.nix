@@ -5,11 +5,13 @@
 
   boot = {
     kernelModules = [ "kvm-amd" ];
-    kernelParams = (lib.mkBefore [
+    # mkBefore maa omslutte HELE lista — den returnerer et prioritetssett, og
+    # `set ++ list` er en typefeil (samme moenster som cpu/intel.nix).
+    kernelParams = lib.mkBefore ([
       "amd_pstate=active"
-    ]) ++ (lib.optionals (config.virtualisation.libvirtd.enable or false) [
+    ] ++ (lib.optionals (config.virtualisation.libvirtd.enable or false) [
       "amd_iommu=on" "iommu=pt"
-    ]);
+    ]));
   };
   environment.systemPackages = with pkgs; [
     lm_sensors

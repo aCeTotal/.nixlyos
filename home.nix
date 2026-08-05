@@ -32,7 +32,7 @@
     
     programs.bash.shellAliases = {
       "update" = "bash $HOME/.nixlyos/scripts/update.sh";
-      "pin-nixpkgs" = "sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
+      "pin-nixpkgs" = "bash $HOME/.nixlyos/scripts/detect-hw.sh $HOME/.nixlyos && sudo nixos-rebuild boot --flake $HOME/.nixlyos#nixlyos";
       "nixly" = "cd $HOME/.nixlyos/";
       "c" = "claude --dangerously-skip-permissions";
       "ai" = "nixly-ai";
