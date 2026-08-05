@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./input.nix
     ./boot.nix
     ../system/SDDM.nix
     ./networking.nix
