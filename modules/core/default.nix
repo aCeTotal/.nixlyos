@@ -7,12 +7,12 @@
     ./networking.nix
     ./tailscale.nix
     ./ssh_gate.nix
-    ./specialisation_gaming.nix
     ./autoupdate.nix
     ./nix.nix
     ./nfs.nix
     ./ssh.nix
     ./gaming.nix
+    ./gametune.nix
     ./packages.nix
     ./totalvim.nix
     ./users.nix

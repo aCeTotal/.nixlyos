@@ -15,5 +15,7 @@
     lm_sensors
     cpufrequtils
   ];
-  services.power-profiles-daemon.enable = true;
+  # ppd av: den eier governor/EPP og overstyrte performance-governoren fra
+  # perf.nix. Én eier — se kommentaren der.
+  services.power-profiles-daemon.enable = false;
 }

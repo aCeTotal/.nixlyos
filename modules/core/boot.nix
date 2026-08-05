@@ -46,9 +46,12 @@
       "random.trust_cpu=on"
       "nowatchdog"
       "nmi_watchdog=0"
-      # mitigations=off flyttet til specialisation "gaming"
-      # (modules/core/specialisation_gaming.nix) — default boot kjoerer
-      # naa med mitigations paa.
+      # Spectre/MDS/Retbleed-mitigations AV som standard (var tidligere kun i
+      # specialisation "gaming", som naa er fjernet). ~10-15% CPU paa eldre
+      # Intel, mindre paa Zen. Trusselmodell: single-user desktop uten
+      # ufortrodd lokal kode — samme avveining som
+      # NVreg_InitializeSystemMemoryAllocations=0 i gpu/nvidia_intel.nix.
+      "mitigations=off"
       "split_lock_detect=off"
     ];
 

@@ -35,3 +35,14 @@ fi
 bash "$REPO/pkgs/proton-ge/bump.sh"
 nix flake update --flake "$REPO"
 sudo nixos-rebuild boot --flake "$REPO#nixlyos"
+
+# Auto-commit: styres av "Auto commit changes" paa Git-siden i nixlycc.
+CONF="$HOME/.local/nixlyos/git.conf"
+if [ -f "$CONF" ] && grep -qx 'autocommit=1' "$CONF"; then
+  if [ -n "$(git -C "$REPO" status --porcelain)" ]; then
+    git -C "$REPO" add -A
+    git -C "$REPO" commit -m "auto: update $(date '+%Y-%m-%d %H:%M')"
+  fi
+  # Rebuild er allerede ferdig — en feilet push skal ikke felle skriptet.
+  git -C "$REPO" push || echo "auto-commit: push feilet"
+fi

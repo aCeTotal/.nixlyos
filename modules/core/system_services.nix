@@ -13,10 +13,9 @@
   programs.neovim.defaultEditor = true;
 
   # Power Management
-  # Ingen cpuFreqGovernor her: intel_pstate=active tilbyr kun
-  # performance/powersave, så "schedutil" fikk cpufreq.service til å
-  # feile ved hver boot og governor ble stille stående i powersave.
-  # power-profiles-daemon (gpu/intel.nix) eier EPP/governor i stedet.
+  # Ingen cpuFreqGovernor her: perf.nix eier den (performance, alltid).
+  # Merk at *_pstate=active kun tilbyr performance/powersave — "schedutil"
+  # fikk cpufreq.service til å feile ved hver boot.
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -65,9 +64,63 @@
   };
 
   # ========================================
-  # IRQBALANCE - Distribute IRQs across CPUs for better performance
+  # IRQBALANCE - Hold avbrudd unna spillkjernene
   # ========================================
+  # Default-irqbalance sprer IRQ-er over alle kjerner, inkludert dem spillet
+  # kjoerer paa — hver NVMe-/nettverks-IRQ blir en preemption midt i en frame.
+  # IRQBALANCE_BANNED_CPUS gjoer det motsatte: alle IRQ-er samles paa SMT-
+  # traadene til fysisk kjerne 0, som er nettopp kjernen nixlytile reserverer
+  # til compositoren. Statisk maske => ingen kamp mot runtime-pinning (den
+  # gamle nixlytile-koden skrev smp_affinity, og irqbalance skrev over hvert
+  # 10. sekund).
+  #
+  # Masken regnes ut ved oppstart fra faktisk topologi, saa den er riktig paa
+  # alle maskiner: <8 logiske CPUer => ingen banning (for faa kjerner til aa
+  # avse én).
   services.irqbalance.enable = true;
+  systemd.services.irqbalance.serviceConfig.ExecStart = [
+    ""
+    (pkgs.writeShellScript "irqbalance-isolated" ''
+      set -u
+      ncpu=$(${pkgs.coreutils}/bin/getconf _NPROCESSORS_ONLN)
+      sibs=$(${pkgs.coreutils}/bin/cat \
+        /sys/devices/system/cpu/cpu0/topology/thread_siblings_list 2>/dev/null || echo 0)
+
+      if [ "$ncpu" -lt 8 ]; then
+        exec ${pkgs.irqbalance}/bin/irqbalance --foreground
+      fi
+
+      # thread_siblings_list er enten "0,8" (Intel/AMD SMT) eller "0-1".
+      allowed=""
+      IFS=, read -ra parts <<< "$sibs"
+      for p in "''${parts[@]}"; do
+        case "$p" in
+          *-*) for ((c=''${p%-*}; c<=''${p#*-}; c++)); do allowed="$allowed $c"; done ;;
+          *)   allowed="$allowed $p" ;;
+        esac
+      done
+
+      # Bygg hex-maske over alle CPUer som IKKE er lov, 32-bits grupper,
+      # mest signifikante gruppe foerst (irqbalance-formatet).
+      ngroups=$(( (ncpu + 31) / 32 ))
+      declare -a grp
+      for ((i=0; i<ngroups; i++)); do grp[i]=0; done
+      for ((c=0; c<ncpu; c++)); do
+        case " $allowed " in *" $c "*) continue ;; esac
+        gi=$((c / 32)); bit=$((c % 32))
+        grp[gi]=$(( ''${grp[gi]} | (1 << bit) ))
+      done
+      mask=""
+      for ((i=ngroups-1; i>=0; i--)); do
+        printf -v h "%08x" "''${grp[i]}"
+        if [ -z "$mask" ]; then mask="$h"; else mask="$mask,$h"; fi
+      done
+
+      export IRQBALANCE_BANNED_CPUS="$mask"
+      echo "irqbalance: IRQ-er begrenset til CPU(er) $allowed (banned=$mask)"
+      exec ${pkgs.irqbalance}/bin/irqbalance --foreground
+    '')
+  ];
 
   # ========================================
   # SCX LAVD - Latency-Aware Virtual Deadline CPU Scheduler

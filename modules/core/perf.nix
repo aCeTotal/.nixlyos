@@ -1,15 +1,23 @@
 { pkgs, ... }:
 
 {
-  # Performance tunings on top of linux-cachyos (LTO, x86-64-v3).
+  # Performance tunings on top of linuxPackages_zen.
   # Kernel & sysctl already covered: ananicy-cpp + cachyos rules, scx_lavd,
   # earlyoom, irqbalance, zram, BBR+fq, gamemode, btrfs noatime+zstd+ssd.
 
-  # Per-device IO scheduler: NVMe→kyber (CachyOS default; better mixed
-  # read/write fairness than `none` for game-load patterns), SSD→mq-deadline,
-  # HDD→bfq.
+  # CPU-governor: performance, alltid, paa alle maskiner. Én eier — derfor er
+  # power-profiles-daemon slaatt av (cpu/intel.nix, cpu/amd.nix) og
+  # desiredgov/defaultgov fjernet fra feral gamemode (gaming.nix). Med
+  # intel_pstate=active / amd_pstate=active betyr dette EPP=performance, dvs.
+  # maks turbo-residency ogsaa utenfor spill (menyer, shader-kompilering,
+  # kompilering). Kostnad: hoeyere idle-forbruk/varme paa laptop.
+  powerManagement.cpuFreqGovernor = "performance";
+
+  # Per-device IO scheduler: NVMe→none (ingen kø-omorganisering = lavest
+  # latency; NVMe har dyp hardware-kø og trenger ingen fairness-scheduler),
+  # SSD→mq-deadline, HDD→bfq.
   services.udev.extraRules = ''
-    ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="kyber"
+    ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="none"
     ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
     ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
   '';
@@ -22,6 +30,12 @@
   # directly via RLIMIT_RTPRIO (no rtkit round-trip needed) so audio never
   # starves under GPU-composite/compositor load — the occasional playback
   # audio dropouts on the HTPC.
+  #
+  # @gamemode faar rtprio + nice: uten RLIMIT_NICE staar gulvet paa 0, og
+  # nixlytile sin `setpriority(game, -10)` feilet med EACCES — hele
+  # prioriterings-halvdelen av game mode var en no-op. rtprio 95 her (ikke
+  # bare via @audio) saa compositor-RT-boosten virker paa maskiner der
+  # brukeren ikke er i audio-gruppa.
   security.pam.loginLimits = [
     { domain = "*"; type = "soft"; item = "nofile";  value = "524288";    }
     { domain = "*"; type = "hard"; item = "nofile";  value = "1048576";   }
@@ -29,6 +43,10 @@
     { domain = "*"; type = "hard"; item = "memlock"; value = "unlimited"; }
     { domain = "@audio"; type = "soft"; item = "rtprio"; value = "95"; }
     { domain = "@audio"; type = "hard"; item = "rtprio"; value = "95"; }
+    { domain = "@gamemode"; type = "soft"; item = "rtprio"; value = "95"; }
+    { domain = "@gamemode"; type = "hard"; item = "rtprio"; value = "95"; }
+    { domain = "@gamemode"; type = "soft"; item = "nice"; value = "-20"; }
+    { domain = "@gamemode"; type = "hard"; item = "nice"; value = "-20"; }
   ];
 
   boot.kernel.sysctl = {

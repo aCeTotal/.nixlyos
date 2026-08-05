@@ -26,8 +26,9 @@
         inhibit_screensaver = 1;
         softrealtime = "auto";
         reaper_freq = 5;          # Check for game exit every 5s
-        desiredgov = "performance"; # CPU governor during gaming
-        defaultgov = "powersave";   # Return to powersave after
+        # desiredgov/defaultgov fjernet: governor eies naa av
+        # perf.nix (performance, alltid). defaultgov="powersave" lot
+        # dessuten CPU-en staa igjen i powersave etter hvert spill.
       };
       gpu = {
         apply_gpu_optimisations = "accept-responsibility";
@@ -39,17 +40,18 @@
       };
       cpu = {
         park_cores = "no";
-        pin_cores = "yes";        # Pin game to specific cores
+        # pin_cores = "no": nixlytile eier CPU-affinitet (SMT-korrekt split,
+        # compositor paa fysisk kjerne 0, spill paa resten). To skrivere ga
+        # race — feral sin maske vant tilfeldig avhengig av rekkefoelge.
+        pin_cores = "no";
       };
       custom = {
         start = "${pkgs.writeShellScript "gamemode-start" ''
           ${pkgs.systemd}/bin/systemctl stop ananicy-cpp.service || true
-          ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance || true
           ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på (ananicy pauset)'
         ''}";
         end = "${pkgs.writeShellScript "gamemode-end" ''
           ${pkgs.systemd}/bin/systemctl start ananicy-cpp.service || true
-          ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced || true
           ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Deaktivert - Tilbake til normal'
         ''}";
       };
