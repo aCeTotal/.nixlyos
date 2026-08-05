@@ -127,18 +127,22 @@ writeScript "steam-autoconfig" ''
 
       # "0" is the global Steam Play default; every other key is an appid the
       # user has an explicit compat-tool override on. Force both onto GE-Proton
-      # so the newest GE build is what actually runs everywhere. Apps without
-      # an entry are untouched — native Linux titles keep running native.
+      # so the newest GE build is what actually runs everywhere. The wildcard
+      # MUST stay at Valve's default priority 75: 250 forces Proton onto
+      # Linux-native apps too, including Steam Linux Runtime itself, which then
+      # fails to install with "Invalid platform" (no Windows depot) and breaks
+      # every Proton game launch. Per-app overrides keep 250 (user-forced).
       compat = ensure(steam_cfg, ["CompatToolMapping"])
       if "0" not in compat or not isinstance(compat.get("0"), dict):
           compat["0"] = {}
       for appid, entry in compat.items():
           if not isinstance(entry, dict):
               continue
-          if entry.get("name") != GE_PROTON:
+          prio = "75" if appid == "0" else "250"
+          if entry.get("name") != GE_PROTON or entry.get("priority") != prio:
               entry["name"] = GE_PROTON
               entry["config"] = ""
-              entry["priority"] = "250"
+              entry["priority"] = prio
               changed = True
 
       # Shader pre-caching & background Vulkan shader processing
