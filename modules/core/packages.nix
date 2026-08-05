@@ -4,20 +4,21 @@
 {
   config.home-manager.sharedModules = [
     ({ pkgs, pkgs-unstable, ... }: {
-      home.packages = (with pkgs; [
-        brave
-        celluloid
-        claude
-        discord
-        google-chrome
-        nixlymedia
-        onlyoffice-desktopeditors
-        pavucontrol
-        pureref
-        spotify
-        vlc
-      ]) ++ (with pkgs-unstable; [
-      ]);
+      home.packages =
+        (with pkgs; [
+          brave
+          celluloid
+          claude
+          discord
+          google-chrome
+          nixlymedia
+          onlyoffice-desktopeditors
+          pavucontrol
+          spotify
+          vlc
+        ])
+        ++ (with pkgs-unstable; [
+        ]);
     })
   ];
 }
