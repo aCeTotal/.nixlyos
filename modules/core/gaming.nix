@@ -46,13 +46,14 @@
         pin_cores = "no";
       };
       custom = {
+        # Ingen notify-send her: nixlytile viser sin egen "Game Mode On"
+        # sammen med start-animasjonen. En dunst-boks i tillegg ga dobbelt
+        # varsel, i gammel stil, flere ganger per spillstart.
         start = "${pkgs.writeShellScript "gamemode-start" ''
           ${pkgs.systemd}/bin/systemctl stop ananicy-cpp.service || true
-          ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Aktivert - Ytelsesmodus på (ananicy pauset)'
         ''}";
         end = "${pkgs.writeShellScript "gamemode-end" ''
           ${pkgs.systemd}/bin/systemctl start ananicy-cpp.service || true
-          ${pkgs.libnotify}/bin/notify-send 'GameMode' 'Deaktivert - Tilbake til normal'
         ''}";
       };
     };
