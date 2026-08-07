@@ -6,6 +6,7 @@
     ({ pkgs, pkgs-unstable, ... }: {
       home.packages =
         (with pkgs; [
+          Unreal_editor
           brave
           celluloid
           claude
