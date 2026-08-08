@@ -11,6 +11,7 @@
           celluloid
           claude
           discord
+          gaea
           google-chrome
           nixlymedia
           onlyoffice-desktopeditors
