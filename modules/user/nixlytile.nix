@@ -96,6 +96,26 @@
         }
     }
 
+    // Unreal Editor deler app-id mellom prosjektvelgeren og selve editoren,
+    // saa reglene skiller paa tittel.  Velger- og opprett-vinduene er dialoger
+    // som ikke hoerer hjemme flislagt over hele skjermen; editoren selv
+    // (tittel "<Prosjekt> - Unreal Editor") skal fortsatt flislegges.
+    window-rule {
+        app-id   "UnrealEditor"
+        title    "Unreal Engine 5"
+        floating true
+    }
+    window-rule {
+        app-id   "UnrealEditor"
+        title    "New Project"
+        floating true
+    }
+    window-rule {
+        app-id   "UnrealEditor"
+        title    "Create Project"
+        floating true
+    }
+
     modkey      "Super"
     monitorkey  "Ctrl"
 
