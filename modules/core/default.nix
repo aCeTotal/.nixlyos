@@ -25,6 +25,7 @@
     ./sound.nix
     ./zram.nix
     ./security.nix
+    ./power.nix
     # scripts/detect-hw.sh skriver cpu/ og gpu/-imports rett under dette
     # ankeret foer hver eval (install, update, rebuild), ut fra faktisk
     # hardware, og fjerner de gamle linjene foerst. Derfor staar ingen av dem

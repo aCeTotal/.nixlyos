@@ -1,18 +1,11 @@
 { pkgs, ... }:
 
 {
-  # Root maa kunne lese bruker-eid repo (og byggekopien) via nix' git-
-  # fetcher — uten dette feiler fetchTree med "repository path is not
-  # owned by current user".
-  environment.etc."gitconfig".text = ''
-    [safe]
-    	directory = /home/total/.nixlyos
-    	directory = /var/cache/nixly-update/repo
-  '';
-
+  # Eiet av total: eval/bygg kjoerer som brukeren, ikke root. Root har
+  # ingen ssh-noekkel og naar derfor ikke private flake-inputs.
   systemd.tmpfiles.rules = [
-    "d /var/lib/nixly-update 0755 root root -"
-    "d /var/cache/nixly-update 0700 root root -"
+    "d /var/lib/nixly-update 0755 total users -"
+    "d /var/cache/nixly-update 0700 total users -"
   ];
 
   # ── Sjekk + forhaandsbygg (18:00) ─────────────────────────────────
@@ -24,9 +17,10 @@
     description = "NixlyOS update check + pre-build validation";
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
-    path = [ pkgs.git pkgs.nix pkgs.rsync pkgs.util-linux pkgs.bash pkgs.gawk ];
+    path = [ pkgs.git pkgs.nix pkgs.rsync pkgs.bash pkgs.gawk ];
     serviceConfig = {
       Type = "oneshot";
+      User = "total";
       Nice = 19;
       IOSchedulingClass = "idle";
     };
@@ -58,10 +52,10 @@
         exit 0
       fi
 
-      # Validert OK -> bump ekte repo (som total, beholder eierskap)
-      runuser -u total -- cp "$repo/flake.lock" /home/total/.nixlyos/flake.lock
-      runuser -u total -- cp "$repo/modules/core/default.nix" /home/total/.nixlyos/modules/core/default.nix
-      runuser -u total -- rsync -a "$repo/pkgs/proton-ge/" /home/total/.nixlyos/pkgs/proton-ge/
+      # Validert OK -> bump ekte repo
+      cp "$repo/flake.lock" /home/total/.nixlyos/flake.lock
+      cp "$repo/modules/core/default.nix" /home/total/.nixlyos/modules/core/default.nix
+      rsync -a "$repo/pkgs/proton-ge/" /home/total/.nixlyos/pkgs/proton-ge/
 
       echo "$new" > /var/lib/nixly-update/pending
     '';
@@ -81,12 +75,16 @@
   # validerte, alt ligger i store, saa dette er kun eval + bootloader.
   systemd.services.nixly-update-apply = {
     description = "NixlyOS apply pre-validated update (next boot)";
-    path = [ pkgs.git pkgs.nix pkgs.nixos-rebuild ];
+    path = [ pkgs.nix ];
     serviceConfig.Type = "oneshot";
     script = ''
       set -euo pipefail
       [ -f /var/lib/nixly-update/pending ] || exit 0
-      nixos-rebuild boot --flake /home/total/.nixlyos#nixlyos
+      new=$(cat /var/lib/nixly-update/pending)
+      # Aktiverer closuret som allerede er bygget og validert — ingen ny
+      # eval, saa root trenger verken nett eller ssh-tilgang her.
+      nix-env -p /nix/var/nix/profiles/system --set "$new"
+      "$new"/bin/switch-to-configuration boot
       rm -f /var/lib/nixly-update/pending /var/lib/nixly-update/result
     '';
   };

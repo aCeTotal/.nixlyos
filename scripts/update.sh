@@ -37,7 +37,9 @@ fi
 
 bash "$REPO/pkgs/proton-ge/bump.sh"
 nix flake update --flake "$REPO"
-sudo nixos-rebuild boot --flake "$REPO#nixlyos"
+# --sudo, ikke `sudo nixos-rebuild`: evalueringen maa skje som bruker, ellers
+# naar ikke fetcheren private flake-inputs over ssh. Kun aktivering blir root.
+nixos-rebuild boot --sudo --flake "$REPO#nixlyos"
 
 # Auto-commit: styres av "Auto commit changes" paa Git-siden i nixlycc.
 CONF="$HOME/.local/nixlyos/git.conf"
