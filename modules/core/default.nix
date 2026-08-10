@@ -39,6 +39,7 @@
     ./mpv.nix
     ./retroarch.nix
     ./drawingtablet.nix
+    ./citrix.nix
     ../system/htpc.nix
     ../system/idle.nix
     # GENERERT av scripts/detect-hw.sh: laptop/modell-spesifikke moduler fra

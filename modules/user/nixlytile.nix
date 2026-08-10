@@ -116,6 +116,15 @@
         floating true
     }
 
+    // Citrix Workspace: sesjonsvinduet fyller skjermen naar sesjonsopploesningen
+    // matcher monitoren, og skal ikke faa game-behandling eller lov til aa
+    // fullskjerme seg selv.
+    window-rule {
+        app-id     "Wfica"
+        game       false
+        fullscreen false
+    }
+
     modkey      "Super"
     monitorkey  "Ctrl"
 

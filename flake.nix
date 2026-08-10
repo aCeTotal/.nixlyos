@@ -53,6 +53,7 @@
           nixlypkgs.overlays.default
           inputs.nix-cachyos-kernel.overlays.default
           (import ./pkgs/proton-ge/overlay.nix)
+          (import ./pkgs/chrome/overlay.nix)
         ];
       };
 

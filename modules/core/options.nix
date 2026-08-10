@@ -6,5 +6,5 @@
 
   # autoLogin: true = SDDM skip login, straight into nixlytile as user "total".
   #            false = normal SDDM login prompt.
-  autoLogin = true;
+  autoLogin = false;
 }
