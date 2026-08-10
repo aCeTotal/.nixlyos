@@ -18,6 +18,7 @@
           onlyoffice-desktopeditors
           pavucontrol
           spotify
+          teams-for-linux
           vlc
         ])
         ++ (with pkgs-unstable; [
