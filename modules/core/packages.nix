@@ -9,6 +9,7 @@
           Unreal_editor
           brave
           celluloid
+          citrix-workspace-nixly
           claude
           discord
           gaea
