@@ -31,6 +31,21 @@
   # wfclient.ini eies av Citrix (wfica skriver den ved GUI-endringer), saa den
   # kan ikke symlinkes fra store. Vi patcher bare noeklene vi trenger.
   home-manager.users.total = { lib, ... }: {
+    # All_Regions.ini kopieres til ~/.ICAClient ved foerste kjoering og blir
+    # deretter aldri oppdatert. Nye klientversjoner legger til lockdown-noekler
+    # der (26.04 la til [Network\TCP-IP\HDXEnlightenedDataTransport] EDT=Allow),
+    # og mangler noekkelen i brukerkopien nekter wfica aa starte med
+    # "No value for (EDT) satisfies all lockdown requirements".
+    # Fila er en admin-lockdown-template som vi ikke redigerer, saa vi tar
+    # bare store-versjonen hver gang den endrer seg.
+    home.activation.citrixAllRegionsIni = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      SRC="${pkgs.citrix-workspace-nixly}/opt/citrix-icaclient/config/All_Regions.ini"
+      DST="$HOME/.ICAClient/All_Regions.ini"
+      if [ -f "$DST" ] && ! cmp -s "$SRC" "$DST"; then
+        install -m 600 "$SRC" "$DST"
+      fi
+    '';
+
     home.activation.citrixWfclientIni = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       INI="$HOME/.ICAClient/wfclient.ini"
       if [ -f "$INI" ]; then
