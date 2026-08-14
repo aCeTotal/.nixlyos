@@ -1,4 +1,4 @@
-{ python3, writeScript, gameWrap }:
+{ python3, writeScript, gameWrap, proton-ge-bin }:
 
 # Runs on the host (outside the Steam FHS sandbox) immediately before every
 # Steam launch, via programs.steam.package's `extraPreBwrapCmds`.
@@ -21,7 +21,13 @@ writeScript "steam-autoconfig" ''
   """
   import glob, os, re, sys, shutil
 
-  GE_PROTON = "GE-Proton"
+  # compatibilitytool.vdf for the GE-Proton build Steam actually registers
+  # (via extraCompatPackages). CompatToolMapping entries must use the tool's
+  # INTERNAL name from this file — a mismatch silently resolves to no compat
+  # tool at all, and Steam then exec()s the Windows binary directly
+  # ("cannot execute binary file"). Read at runtime; parsed below once the
+  # VDF parser is defined.
+  GE_PROTON_VDF = "${proton-ge-bin.steamcompattool}/compatibilitytool.vdf"
 
   def find_root():
       xdg = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
@@ -97,6 +103,20 @@ writeScript "steam-autoconfig" ''
           else:
               lines.append(f'{tab}"{ek}"\t\t"{_escape(str(v))}"')
       return "\n".join(lines)
+
+  def _ge_proton_name():
+      try:
+          with open(GE_PROTON_VDF) as f:
+              tools = parse(f.read())["compatibilitytools"]["compat_tools"]
+          for k, v in tools.items():
+              if isinstance(v, dict):
+                  return k
+      except Exception as e:
+          print(f"[steam-autoconfig] compat tool name lookup failed: {e}",
+                file=sys.stderr)
+      return "GE-Proton"
+
+  GE_PROTON = _ge_proton_name()
 
   def ensure(d, keys):
       for k in keys:
