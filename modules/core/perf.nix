@@ -15,11 +15,14 @@
 
   # Per-device IO scheduler: NVMe→none (ingen kø-omorganisering = lavest
   # latency; NVMe har dyp hardware-kø og trenger ingen fairness-scheduler),
-  # SSD→mq-deadline, HDD→bfq.
+  # SATA SSD/HDD→bfq. mq-deadline paa SATA-SSD ignorerer io-prioriteter:
+  # Steams idle-ioprio paa shader-kompilering og ananicys "ioclass idle"
+  # hadde null effekt, saa en stor Steam-oppdatering la desktopens
+  # page-fault-lesinger bakerst i samme kø — maskinen frøs i sekundvis
+  # under nedlasting. BFQ haandhever ioprio + per-prosess-fairness.
   services.udev.extraRules = ''
     ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="none"
-    ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
-    ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+    ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/scheduler}="bfq"
   '';
 
   # systemd-oomd already enabled in zram.nix; vm.dirty_*, vfs_cache_pressure

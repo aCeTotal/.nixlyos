@@ -45,7 +45,16 @@
   services.ananicy = {
     enable = true;
     package = pkgs.ananicy-cpp;
-    rulesProvider = pkgs.ananicy-rules-cachyos;
+    # cachyos-reglene setter sddm/sddm-helper til BG_CPUIO (nice 16,
+    # sched idle). SCHED_IDLE arves ved fork, saa hele den grafiske
+    # sesjonen (compositor-barn, Steam, alle spill) endte i SCHED_IDLE —
+    # spill fikk bare CPU naar ingen andre ville ha den. Fjern regelfila
+    # saa sddm beholder normal SCHED_OTHER.
+    rulesProvider = pkgs.runCommand "ananicy-rules-cachyos-no-sddm" { } ''
+      cp -r ${pkgs.ananicy-rules-cachyos} $out
+      chmod -R u+w $out
+      rm $out/etc/ananicy.d/00-default/DEs-and-WMs/sddm.rules
+    '';
     settings = {
       check_freq = 15;          # Full rescan every 15s (unit is SECONDS,
                                 # not ms — 1000 meant every ~16.7 min).

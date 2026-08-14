@@ -186,11 +186,24 @@
     KERNEL=="js[0-9]*", MODE="0660", GROUP="input", TAG+="uaccess"
     KERNEL=="event[0-9]*", SUBSYSTEM=="input", MODE="0660", GROUP="input", TAG+="uaccess"
 
-    # ntsync (kernel 6.14+): Wine/Proton NT-synkprimitiver i kernel — bedre
-    # frame-pacing enn fsync/futex-waitv i CPU-tunge titler. GE-Proton tar
-    # den i bruk naar /dev/ntsync er tilgjengelig (se steam/gamewrap.nix).
-    KERNEL=="ntsync", MODE="0660", TAG+="uaccess"
   '';
+
+  # ntsync (kernel 6.14+): Wine/Proton NT-synkprimitiver i kernel — bedre
+  # frame-pacing enn fsync/futex-waitv i CPU-tunge titler. GE-Proton tar
+  # den i bruk naar /dev/ntsync er tilgjengelig (se steam/gamewrap.nix).
+  # Egen 70-fil, IKKE extraRules: extraRules blir 99-local.rules, men
+  # uaccess-tagger prosesseres i 73-seat-late.rules — tag satt i 99 gir
+  # aldri ACL, brukeren fikk ikke aapnet /dev/ntsync og gamewrap-proben
+  # falt alltid tilbake til PROTON_USE_NTSYNC=0.
+  services.udev.packages = [
+    (pkgs.writeTextFile {
+      name = "ntsync-udev-rules";
+      destination = "/etc/udev/rules.d/70-ntsync.rules";
+      text = ''
+        KERNEL=="ntsync", MODE="0660", TAG+="uaccess"
+      '';
+    })
+  ];
 
   # ========================================
   # SYSTEMD SERVICE FOR CONTROLLER AUTO-CONNECT
