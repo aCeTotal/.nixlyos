@@ -1,5 +1,9 @@
 { pkgs, ... }:
 
+let
+  # Generert av scripts/detect-hw.sh — tom streng = ingen NVIDIA-GPU.
+  hasNvidia = (import ../core/gpu/detected.nix).nvidia != "";
+in
 {
   imports = [
     ./clipman.nix
@@ -138,6 +142,16 @@
     // "off" = aldri automatisk span.
     game-span "auto"
 
+    ${pkgs.lib.optionalString hasNvidia ''
+    // Late-latch (utsett game-commit til rett foer vblank) er av paa
+    // NVIDIA: driveren avviser IN_FENCE_FD (EPERM) paa 555+, saa
+    // wlroots-workarounden venter ut fencen CPU-side INNE i commiten.
+    // Latch-budsjettet (maks 10 ms) dekker ikke en vent som varer til
+    // spillets GPU-arbeid er ferdig — commiten bommer paa vblank og
+    // hvert spill jitrer konstant. Immediate-path gir fencen nesten en
+    // hel refresh aa signalere paa i stedet.
+    game-late-latch false
+    ''}
     wallpaper "~/.nixlyos/wallpapers/beach.jpg"
 
     // "info" i produksjon — debug betyr per-event formatering + logg-IO
