@@ -46,13 +46,43 @@ writeScript "nixly-game-wrap" ''
           os.environ.setdefault("DRI_PRIME", "1")
 
   def apply_ntsync():
-      # Kernel NT sync primitives (6.14+): better frame pacing than
-      # fsync/futex in CPU-heavy titles. Gated on the device actually being
-      # present AND writable (udev rule in gaming.nix) so Proton never picks
-      # a backend it cannot open. Proton builds without ntsync support
-      # ignore the variable.
-      if os.access("/dev/ntsync", os.R_OK | os.W_OK):
-          os.environ.setdefault("PROTON_USE_NTSYNC", "1")
+      # Kernel NT sync primitives: better frame pacing than fsync/futex in
+      # CPU-heavy titles. FUNCTIONAL probe, not a file check: open the
+      # device and actually create a semaphore via ioctl. Only a fully
+      # working ntsync yields "1"; any failure (no device, no permission,
+      # ABI mismatch, driver refusing) yields an explicit "0" so Proton
+      # never selects a backend that will die at runtime.
+      # User override (Steam LaunchOptions / launchparams.nix) wins.
+      if "PROTON_USE_NTSYNC" in os.environ:
+          return
+      ok = False
+      try:
+          import fcntl, struct
+          fd = os.open("/dev/ntsync", os.O_RDWR)
+          try:
+              # v6.14+ final ABI: NTSYNC_IOC_CREATE_SEM =
+              # _IOW('N', 0x80, {u32 count, u32 max}) → returns sem fd.
+              # Verified against the running kernel (7.1.8-zen1).
+              try:
+                  sem = fcntl.ioctl(
+                      fd, 0x40084E80, bytearray(struct.pack("II", 0, 1)))
+                  if isinstance(sem, int) and sem >= 0:
+                      os.close(sem)
+                      ok = True
+              except OSError:
+                  # pre-6.14 RFC ABI (e.g. 6.12 backports):
+                  # _IOWR('N', 0x80, {u32 sem, u32 count, u32 max}),
+                  # sem fd written into args.
+                  buf = bytearray(struct.pack("III", 0, 0, 1))
+                  fcntl.ioctl(fd, 0xC00C4E80, buf)
+                  sem = struct.unpack("III", bytes(buf))[0]
+                  os.close(sem)
+                  ok = True
+          finally:
+              os.close(fd)
+      except OSError:
+          ok = False
+      os.environ["PROTON_USE_NTSYNC"] = "1" if ok else "0"
 
   def gpu_vendor():
       # Games render on the dGPU (PRIME offload above), so loaded driver

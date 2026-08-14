@@ -21,6 +21,8 @@
     ./system_services.nix
     ./docs.nix
     ./perf.nix
+    ./prewarm.nix
+    ./overhead.nix
     ./wayland.nix
     ./sound.nix
     ./zram.nix

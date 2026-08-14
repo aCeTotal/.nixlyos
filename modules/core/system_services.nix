@@ -162,9 +162,8 @@
     "vm.zone_reclaim_mode" = 0;         # Disable zone reclaim (reduces latency)
     "vm.stat_interval" = 10;            # Less frequent vm stats (reduces overhead)
 
-    # Improve I/O responsiveness
-    "kernel.io_delay_type" = 0;         # Udelay (faster but uses CPU)
-
+    # kernel.io_delay_type fjernet: styrer legacy ISA port-0x80-delay,
+    # irrelevant på moderne hardware — bare sysctl-støy.
   };
 
   # ========================================

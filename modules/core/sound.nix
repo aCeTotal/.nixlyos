@@ -113,13 +113,17 @@
           "default.clock.max-quantum" = 2048;
           "log.level" = 2;
         };
+        # resample.quality 9 → 4 (PipeWire-default): kvalitet 9 kostet
+        # målbar CPU per 44.1→48-resamplet stream; 4 er designet som
+        # transparent/CPU-balansen. 48k-native streams resamples uansett
+        # ikke.
         "stream.properties" = {
-          "resample.quality" = 9;
+          "resample.quality" = 4;
         };
       };
       pipewire-pulse."92-low-latency" = {
         "stream.properties" = {
-          "resample.quality" = 9;
+          "resample.quality" = 4;
         };
       };
     };

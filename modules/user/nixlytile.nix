@@ -145,7 +145,10 @@
     log-level "info"
 
     // Autostart — one process per entry.
-    autostart "thunar --daemon"
+    // thunar --daemon fjernet: Dolphin er filbehandleren (Super+e), og
+    // thunar-daemonen dro med seg 5 residente gvfs-volume-monitors
+    // (goa/gphoto2/afc/mtp/udisks) ved hver innlogging. Thunar starter
+    // fortsatt on-demand om noe kaller den.
     autostart "swaybg -i \"$HOME/.nixlyos/wallpapers/beach.jpg\" -m fill"
     autostart "nm-applet --indicator"
     autostart "blueman-applet"

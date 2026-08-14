@@ -125,7 +125,11 @@
       LE = {
         MinAdvertisementInterval = 32;
         MaxAdvertisementInterval = 50;
-        ScanIntervalAutoConnect = 30;
+        # Interval == Window (30/30) ga 100 % scan-duty — radioen scannet
+        # KONTINUERLIG saa lenge en paret LE-enhet var utenfor rekkevidde
+        # (jevn hci0-kworker-last). 60/30 = 50 % duty; en kontroller som
+        # slaas paa oppdages fortsatt innen ~100 ms.
+        ScanIntervalAutoConnect = 60;
         ScanWindowAutoConnect = 30;
       };
       GATT = {

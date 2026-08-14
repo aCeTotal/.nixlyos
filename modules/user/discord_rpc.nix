@@ -94,7 +94,10 @@ in
     };
     Service = {
       ExecStart = "${python}/bin/python ${script}";
-      Restart = "always";
+      # on-failure, ikke always: med tom clientId exiter scriptet rent
+      # (exit 0) — Restart=always ville respawnet en python-prosess
+      # hvert 5. sekund til evig tid.
+      Restart = "on-failure";
       RestartSec = 5;
     };
     Install.WantedBy = [ "graphical-session.target" ];
