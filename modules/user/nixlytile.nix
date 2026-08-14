@@ -128,6 +128,16 @@
     modkey      "Super"
     monitorkey  "Ctrl"
 
+    // Multi-monitor gaming: oppløsningen spillet velger avgjør.
+    // Normal oppløsning (≤ skjermen) = 1 skjerm som før. Velger spillet
+    // en surround-oppløsning som er bredere/høyere enn skjermen (f.eks.
+    // 5760x1080 på 3x1080p) spennes det automatisk over alle aktive
+    // skjermer, og musen kan bevege seg over hele flaten.
+    // Super+Shift+M tvinger span på for spill som ikke kan be om større
+    // oppløsning selv (trykk igjen for å gå tilbake til auto).
+    // "off" = aldri automatisk span.
+    game-span "auto"
+
     wallpaper "~/.nixlyos/wallpapers/beach.jpg"
 
     // "info" i produksjon — debug betyr per-event formatering + logg-IO
@@ -152,6 +162,11 @@
     // 8s (kompositor + Wayland-klienter er oppe da) og nice 19 saa
     // indekseringen aldri preempter frame-pathen. Super+p virker fra ~8s.
     autostart "sh -c 'sleep 8; exec nice -n 19 appd'"
+    // Steam forvarmes i tray etter innlogging: klienten + steamwebhelper
+    // er da allerede oppe og shader-cache/VDF-er ligger i page cache, saa
+    // "Play" gaar rett i spillstart i stedet for 15-20s klientoppstart.
+    // 20s utsettelse + nice 10 saa innloggingen aldri konkurrerer om CPU/IO.
+    autostart "sh -c 'sleep 20; exec nice -n 10 steam -silent'"
     autostart "mcontrolcenter"
     // update-trayikonet startes av systemd path-unit (update_tray.nix)
     // kun naar en prevalidert oppdatering ligger klar — trayen her
@@ -180,6 +195,7 @@
     bind "Super+c"            "togglefloating"
     bind "Super+f"            "maximize-column"
     bind "Super+Shift+F"      "togglefullscreen"
+    bind "Super+Shift+M"      "togglegamespan"
     bind "Super+b"            "togglestatusbar"
 
     // Focus navigation

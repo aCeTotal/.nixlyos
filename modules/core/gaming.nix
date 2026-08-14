@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [ ./steam ];
@@ -176,12 +176,16 @@
     KERNEL=="hidraw*", ATTRS{idVendor}=="28de", MODE="0660", TAG+="uaccess"
     KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0660", TAG+="uaccess"
 
-    # Generic game controllers - set correct permissions
-    KERNEL=="js[0-9]*", MODE="0666"
-    KERNEL=="event[0-9]*", SUBSYSTEM=="input", MODE="0666", GROUP="input"
+    # Generic game controllers. 0660+input-gruppe i stedet for 0666:
+    # world-readable event-noder lot enhver prosess sniffe tastaturet.
+    # uaccess-tag gir aktiv logind-sesjon ACL uansett gruppe.
+    KERNEL=="js[0-9]*", MODE="0660", GROUP="input", TAG+="uaccess"
+    KERNEL=="event[0-9]*", SUBSYSTEM=="input", MODE="0660", GROUP="input", TAG+="uaccess"
 
-    # Reload input driver on hotplug for stability
-    ACTION=="add", SUBSYSTEM=="input", KERNEL=="js[0-9]*", RUN+="${pkgs.systemd}/bin/udevadm trigger --action=change"
+    # ntsync (kernel 6.14+): Wine/Proton NT-synkprimitiver i kernel — bedre
+    # frame-pacing enn fsync/futex-waitv i CPU-tunge titler. GE-Proton tar
+    # den i bruk naar /dev/ntsync er tilgjengelig (se steam/gamewrap.nix).
+    KERNEL=="ntsync", MODE="0660", TAG+="uaccess"
   '';
 
   # ========================================
@@ -253,7 +257,13 @@
       "hid-sony"
       "hid-microsoft"
       "hid-nintendo"
-    ];
+    ]
+    # ntsync: NT-synkprimitiver for Wine/Proton — bare paa kerneler som
+    # faktisk har driveren (fullverdig fra 6.14), ellers feiler
+    # systemd-modules-load paa fallback-kernelen.
+    ++ lib.optional
+      (lib.versionAtLeast config.boot.kernelPackages.kernel.version "6.14")
+      "ntsync";
 
     extraModprobeConfig = ''
       # Fix ERTM for Xbox Bluetooth controllers
@@ -262,10 +272,10 @@
       # xpadneo options for better stability
       options xpadneo disable_deadzones=0
       options xpadneo trigger_rumble_mode=0
-
-      # Increase HID timeout for slow controllers
-      options usbhid mousepoll=4
     '';
+    # usbhid mousepoll=4 fjernet: den KAPPET polling til 250 Hz for alle
+    # USB-mus (1000 Hz gaming-mus fikk +3 ms input-latency). Default (0)
+    # bruker enhetens egen intervall-deskriptor.
   };
 
 

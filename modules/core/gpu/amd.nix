@@ -39,6 +39,9 @@
     # per-app-liste; globalt paa gir gevinsten ogsaa i spill som ikke staar
     # der (eldre OpenGL-titler er CPU-bundet i draw-call-loopen).
     mesa_glthread = "true";
+    # 10G shader-cache (default 1G): eviction av gamle pipeline-cacher gir
+    # shader-rekompilering (stutter) og tregere spilloppstart neste gang.
+    MESA_SHADER_CACHE_MAX_SIZE = "10G";
     NIXOS_OZONE_WL = "1";
     QT_QPA_PLATFORM = "wayland";
     SDL_VIDEODRIVER = "wayland";

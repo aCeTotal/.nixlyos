@@ -139,8 +139,10 @@
     enableNotifications = true;
     freeMemThreshold = 5;       # Kill when <5% RAM free
     freeSwapThreshold = 10;     # Kill when <10% swap free
+    # earlyoom matcher paa comm (15 tegn): "chrome" dekker google-chrome-
+    # stable-prosessene som faktisk kjoerer her — gamle lista traff aldri.
     extraArgs = [
-      "--prefer" "^(Web Content|firefox|chromium|electron)$"
+      "--prefer" "^(Web Content|firefox|chrome|chromium|electron)$"
       "--avoid" "^(sshd|systemd|dbus)$"
     ];
   };

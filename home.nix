@@ -3,7 +3,10 @@
 {
 
     imports = [
-      ./modules/user/steam.nix
+      # user/steam.nix fjernet: skrev wildcard-CompatToolMapping med
+      # priority 250 (som autoconfig.nix dokumenterer at oedelegger Steam
+      # Linux Runtime-installasjon). modules/core/steam/autoconfig.nix
+      # eier all Steam-config naa, ved hver oppstart.
       ./modules/user/blender_setup.nix
       # programs
       ./modules/user/git.nix

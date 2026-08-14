@@ -45,6 +45,15 @@ writeScript "nixly-game-wrap" ''
       else:
           os.environ.setdefault("DRI_PRIME", "1")
 
+  def apply_ntsync():
+      # Kernel NT sync primitives (6.14+): better frame pacing than
+      # fsync/futex in CPU-heavy titles. Gated on the device actually being
+      # present AND writable (udev rule in gaming.nix) so Proton never picks
+      # a backend it cannot open. Proton builds without ntsync support
+      # ignore the variable.
+      if os.access("/dev/ntsync", os.R_OK | os.W_OK):
+          os.environ.setdefault("PROTON_USE_NTSYNC", "1")
+
   def gpu_vendor():
       # Games render on the dGPU (PRIME offload above), so loaded driver
       # decides the variant: proprietary Nvidia if present, else AMD if an
@@ -85,6 +94,7 @@ writeScript "nixly-game-wrap" ''
 
   def main():
       apply_prime_offload()
+      apply_ntsync()
       cmd = [GAMEMODERUN, *apply_launch_params(sys.argv[1:])]
       os.execvp(cmd[0], cmd)
 

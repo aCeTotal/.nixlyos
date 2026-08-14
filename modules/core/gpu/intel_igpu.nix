@@ -44,5 +44,7 @@
     # glthread: GL-kall paa egen traad. Mesa slaar det paa via per-app-liste;
     # globalt paa hjelper CPU-bundne OpenGL-titler som ikke staar der.
     mesa_glthread = "true";
+    # 10G shader-cache (default 1G): unngaa eviction → rekompileringsstutter.
+    MESA_SHADER_CACHE_MAX_SIZE = "10G";
   };
 }

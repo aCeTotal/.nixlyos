@@ -41,6 +41,9 @@
     kernelParams = [
       "nvidia_drm.modeset=1"
       "nvidia_drm.fbdev=1"
+      # PAT for GPU-minnemappinger — raskere CPU→GPU-opplastinger (samme
+      # begrunnelse som i gpu/nvidia_intel.nix).
+      "nvidia.NVreg_UsePageAttributeTable=1"
     ];
   };
 
@@ -65,6 +68,16 @@
 
   environment.sessionVariables = {
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
+    # VRR/G-Sync tillatt + stor shader-cache som aldri trimmes midt i en
+    # sesjon (cache-eviction under spilling = rekompilerings-hikk). Samme
+    # verdier som gpu/nvidia_intel.nix.
+    __GL_VRR_ALLOWED = "1";
+    __GL_GSYNC_ALLOWED = "1";
+    __GL_THREADED_OPTIMIZATIONS = "1";
+    __GL_SHADER_DISK_CACHE = "1";
+    __GL_SHADER_DISK_CACHE_SIZE = "10737418240";   # 10 GiB
+    __GL_SHADER_DISK_CACHE_SKIP_CLEANUP = "1";
+    MESA_SHADER_CACHE_MAX_SIZE = "10G";
   };
 
   # Belt-and-braces: set the same vars on the display-manager unit so SDDM's
