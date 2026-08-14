@@ -5,7 +5,7 @@ in {
   proton-ge-bin = prev.proton-ge-bin.overrideAttrs (_: {
     version = pin.version;
     src = prev.fetchzip {
-      url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${pin.version}/${pin.version}.tar.gz";
+      url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${pin.version}/${pin.version}-x86_64.tar.gz";
       hash = pin.hash;
     };
   });

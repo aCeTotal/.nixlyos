@@ -6,17 +6,17 @@ PIN="$DIR/pin.json"
 REPO="GloriousEggroll/proton-ge-custom"
 
 VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | jq -r '.tag_name')
-[[ -z "$VERSION" || "$VERSION" == "null" ]] && { echo "proton-ge bump: failed to fetch latest tag" >&2; exit 1; }
+[[ -z "$VERSION" || "$VERSION" == "null" ]] && { echo "Proton-GE: failed to fetch latest tag" >&2; exit 1; }
 
 if [[ -f "$PIN" ]] && [[ "$(jq -r '.version' "$PIN")" == "$VERSION" ]]; then
-  echo "proton-ge-bin: already at $VERSION"
+  echo "Proton-GE: $VERSION (Latest)"
   exit 0
 fi
 
-URL="https://github.com/${REPO}/releases/download/${VERSION}/${VERSION}.tar.gz"
-echo "proton-ge-bin: bumping to $VERSION"
+URL="https://github.com/${REPO}/releases/download/${VERSION}/${VERSION}-x86_64.tar.gz"
+echo "Proton-GE: bumping to version $VERSION"
 SHA=$(nix-prefetch-url --unpack --type sha256 "$URL" 2>/dev/null)
 HASH=$(nix hash convert --hash-algo sha256 --to sri "$SHA")
 
 jq -n --arg v "$VERSION" --arg h "$HASH" '{version: $v, hash: $h}' > "$PIN"
-echo "proton-ge-bin: pinned $VERSION ($HASH)"
+echo "Proton-GE: updated to version $VERSION"

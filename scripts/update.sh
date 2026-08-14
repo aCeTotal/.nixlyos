@@ -29,14 +29,15 @@ while cand=$(next_ver "$new") &&
 done
 
 if [ "$new" != "$cur" ]; then
-  echo "stable: $cur -> $new"
+  echo "Stable: $cur -> $new"
   sed -i "s|nixpkgs/nixos-$cur|nixpkgs/nixos-$new|; s|home-manager/release-$cur|home-manager/release-$new|" "$FLAKE"
 else
-  echo "stable: $cur (nyeste)"
+  echo "Stable: $cur (Latest)"
 fi
 
 bash "$REPO/pkgs/proton-ge/bump.sh"
-nix flake update --flake "$REPO"
+bash "$REPO/scripts/bump-nixlypkgs.sh"
+nix flake update --refresh --flake "$REPO"
 # --sudo, ikke `sudo nixos-rebuild`: evalueringen maa skje som bruker, ellers
 # naar ikke fetcheren private flake-inputs over ssh. Kun aktivering blir root.
 nixos-rebuild boot --sudo --flake "$REPO#nixlyos"
