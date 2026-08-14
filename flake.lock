@@ -180,11 +180,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1786730215,
-        "narHash": "sha256-bp0zDkHxRx1/aik9UIgt4b5qEPHMMlj30i2JR8w1owU=",
+        "lastModified": 1786739522,
+        "narHash": "sha256-iPsix2QOB9NB6G7Dc50XhLSA/ELQegAceGTvZ6OYOws=",
         "owner": "aCeTotal",
         "repo": "nixlypkgs",
-        "rev": "b912ef095ada5971e44b19f1224ddc84667b7286",
+        "rev": "299df05ed90db526f71454044b14dc4e5c8f08a7",
         "type": "github"
       },
       "original": {
