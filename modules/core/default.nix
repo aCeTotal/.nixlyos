@@ -34,7 +34,8 @@
     # committet her. msi-ec og nixos-hardware-modulene: se ./hw/profile.nix.
     # <detect-hw: cpu + gpu>
     ./cpu/intel.nix
-    ./gpu/nvidia_only.nix
+    ./gpu/nvidia_intel.nix
+    ./gpu/intel_igpu.nix
     ../system/nixlytile.nix
     ./newsboat.nix
     ./w3m.nix

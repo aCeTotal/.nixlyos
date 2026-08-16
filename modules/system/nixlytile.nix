@@ -27,6 +27,17 @@
   # var ren closure/boot-bloat som ingenting startet.
   security.polkit.enable = true;
 
+  # Compositoren starter denne ved oppstart (etter import-environment) —
+  # men bare hvis unit-filen finnes i /etc/systemd/user. Uten den
+  # aktiveres aldri graphical-session.target, og alt som er WantedBy den
+  # (nixly-idled, polkit-agent, m.fl.) blir stående dødt.
+  systemd.user.targets.nixlytile-session = {
+    description = "nixlytile compositor session";
+    bindsTo = [ "graphical-session.target" ];
+    wants = [ "graphical-session-pre.target" ];
+    after = [ "graphical-session-pre.target" ];
+  };
+
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";
     wantedBy = [ "graphical-session.target" ];

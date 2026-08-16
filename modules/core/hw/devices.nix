@@ -3,4 +3,6 @@
 { lib, ... }:
 
 {
+  # Thunderbolt-domain funnet — boltd godkjenner tilkoblede enheter.
+  services.hardware.bolt.enable = true;
 }

@@ -179,7 +179,9 @@ in
     // Spillstart krever input, saa resume-stoppen treffer alltid foer et
     // spill er oppe — i tillegg nekter service-gaten aa kjoere naar
     // gametune/gamemoded melder aktivt spill.
-    autostart "sh -c 'exec swayidle -w timeout 300 \"systemctl --user start nixly-prewarm-games.service\" resume \"systemctl --user stop nixly-prewarm-games.service\"'"
+    // Shader-replay (nixly-prewarm) startes ogsaa ved idle, men stoppes
+    // ikke ved resume: scriptet pauser fossilize selv naar spill kjoerer.
+    autostart "sh -c 'exec swayidle -w timeout 300 \"systemctl --user start nixly-prewarm-games.service nixly-prewarm.service\" resume \"systemctl --user stop nixly-prewarm-games.service\"'"
     // appd walker HELE $HOME ved oppstart (fileindex + gitscan) og bygger
     // et ikon-indeks paa ~21k entries. Rett etter innlogging konkurrerer
     // det med kompositoren om CPU og disk, og musen fryser 2-3s. Utsatt

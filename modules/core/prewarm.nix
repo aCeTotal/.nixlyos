@@ -73,7 +73,7 @@ let
   # forskjellen på "instant" og "nesten instant" oppstart. Kjøres ved
   # innlogging med IO/CPU idle-klasse: full fart når maskinen er ledig,
   # viker øyeblikkelig for compositor/innlogging ved contention.
-  prewarmScript = pkgs.writeShellScript "nixly-prewarm" ''
+  pagecacheScript = pkgs.writeShellScript "nixly-pagecache" ''
     set -u
     VMTOUCH=${pkgs.vmtouch}/bin/vmtouch
 
@@ -125,17 +125,49 @@ let
       done
     fi
   '';
+
+  # Shader-prewarm for alle installerte Steam-spill: replayer nedlastede
+  # Vulkan-pipeline-cacher (fozpipelinesv6/*.foz) inn i driver-cachene med
+  # fossilize_replay, slik at første launch ikke stopper på shader-
+  # kompilering. Samme script gir `readahead <appid>` som compositoren
+  # (launchfx) kjører ved Play-trykk — derfor må den på PATH.
+  prewarm = pkgs.writeShellApplication {
+    name = "nixly-prewarm";
+    runtimeInputs = with pkgs; [
+      coreutils
+      findutils
+      gawk
+      gnugrep
+      inotify-tools
+      procps
+      util-linux
+      vulkan-tools
+    ];
+    text = builtins.readFile ./nixly-prewarm;
+  };
 in
 {
-  # Bruker-service, ikke system: trenger $HOME, og default.target aktiveres
-  # ved innlogging (graphical-session.target gjør det ikke i nixlytile-
-  # sesjonen). Steam -silent-autostarten (+20s) treffer da varm cache.
-  systemd.user.services.nixly-prewarm = {
+  # steam-run gir fossilize_replay FHS-miljøet den trenger; prewarm må
+  # ligge på system-PATH så compositorens launch-readahead finner den.
+  environment.systemPackages = [
+    prewarm
+    pkgs.steam-run
+    pkgs.vmtouch
+    pkgs.swayidle
+  ];
+
+  # Bruker-services, ikke system: trenger $HOME, og default.target
+  # aktiveres ved innlogging (graphical-session.target gjør det ikke i
+  # nixlytile-sesjonen).
+
+  # Page-cache-preload ved innlogging. Steam -silent-autostarten (+20s)
+  # treffer da varm cache.
+  systemd.user.services.nixly-pagecache = {
     description = "Preload launch-critical files into page cache";
     wantedBy = [ "default.target" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = prewarmScript;
+      ExecStart = pagecacheScript;
       IOSchedulingClass = "idle";
       CPUSchedulingPolicy = "idle";
       Nice = 19;
@@ -153,12 +185,45 @@ in
     serviceConfig = {
       Type = "oneshot";
       ExecCondition = "${prewarmGate}";
-      ExecStart = [ "${prewarmScript}" "${prewarmGamesScript}" ];
+      ExecStart = [ "${pagecacheScript}" "${prewarmGamesScript}" ];
       IOSchedulingClass = "idle";
       CPUSchedulingPolicy = "idle";
       Nice = 19;
     };
   };
 
-  environment.systemPackages = [ pkgs.vmtouch pkgs.swayidle ];
+  # Full shader-replay-pass over alle installerte spill, trigget av samme
+  # swayidle-autostart. Trenger ingen resume-stop: scriptet SIGSTOP'er
+  # fossilize selv naar et spill kjoerer. Flock + stampfiler gjoer
+  # gjentatte pass billige.
+  systemd.user.services.nixly-prewarm = {
+    description = "nixlytile Steam shader prewarm";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${prewarm}/bin/nixly-prewarm run";
+      Nice = 19;
+      IOSchedulingClass = "idle";
+      CPUSchedulingPolicy = "batch";
+    };
+    # fossilize_replay via steam-run + vendor Vulkan ICDs
+    path = [ "/run/current-system/sw" ];
+  };
+
+  # Install-watcher: inotify på hver Steam-librarys shadercache — i det
+  # øyeblikket et nytt/oppdatert spills pipeline-cacher lander, replayes
+  # de inn i driver-cachene. Idle-triggeren står igjen som backstop for
+  # events som glipper.
+  systemd.user.services.nixly-prewarm-watch = {
+    description = "nixlytile Steam shader prewarm install watcher";
+    wantedBy = [ "default.target" ];
+    serviceConfig = {
+      ExecStart = "${prewarm}/bin/nixly-prewarm watch";
+      Restart = "on-failure";
+      RestartSec = 30;
+      Nice = 19;
+      IOSchedulingClass = "idle";
+      CPUSchedulingPolicy = "batch";
+    };
+    path = [ "/run/current-system/sw" ];
+  };
 }
