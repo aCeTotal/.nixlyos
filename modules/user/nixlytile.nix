@@ -173,6 +173,13 @@ in
     autostart "sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do DISPLAY=:0 xrandr --output DP-1 --primary 2>/dev/null && break; sleep 1; done'"
     autostart "sh -c 'wl-paste --type text --watch clipman store --no-persist'"
     autostart "sh -c 'wl-paste --primary --type text --watch clipman store --no-persist'"
+    // Prewarm av spill naar maskinen staar urort: 5 min uten input starter
+    // nixly-prewarm-games (varmer launch-kjede + alle installerte spill,
+    // se prewarm.nix); foerste input etterpaa stopper den momentant.
+    // Spillstart krever input, saa resume-stoppen treffer alltid foer et
+    // spill er oppe — i tillegg nekter service-gaten aa kjoere naar
+    // gametune/gamemoded melder aktivt spill.
+    autostart "sh -c 'exec swayidle -w timeout 300 \"systemctl --user start nixly-prewarm-games.service\" resume \"systemctl --user stop nixly-prewarm-games.service\"'"
     // appd walker HELE $HOME ved oppstart (fileindex + gitscan) og bygger
     // et ikon-indeks paa ~21k entries. Rett etter innlogging konkurrerer
     // det med kompositoren om CPU og disk, og musen fryser 2-3s. Utsatt
