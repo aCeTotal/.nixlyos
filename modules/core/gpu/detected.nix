@@ -3,7 +3,7 @@
 # hardware.nvidia.prime.*BusId krever. Tom streng = ingen slik GPU.
 {
   nvidia = "PCI:1@0:0:0";
-  intel = "PCI:0@0:2:0";
+  intel = "";
   amd = "";
 
   # NVIDIA-arkitektur fra PCI-device-ID, og driver-branchen den trenger.
