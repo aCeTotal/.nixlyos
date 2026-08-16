@@ -2,7 +2,6 @@
 
 {
   imports = [
-    ./lockscreen.nix
     ./input.nix
     ./boot.nix
     ../system/SDDM.nix
