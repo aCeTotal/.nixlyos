@@ -18,7 +18,6 @@ in
     sway-contrib.grimshot
     swappy
     swaybg
-    swaylock-effects
     networkmanagerapplet
     blueman
     clipman
