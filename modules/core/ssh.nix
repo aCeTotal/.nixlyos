@@ -8,7 +8,7 @@
     openFirewall = false;
     settings = {
       PermitRootLogin = "no";
-      PasswordAuthentication = false;
+      PasswordAuthentication = true;
       KbdInteractiveAuthentication = false;
       PubkeyAuthentication = true;
       X11Forwarding = false;
