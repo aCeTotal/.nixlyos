@@ -41,6 +41,7 @@
     ./mpv.nix
     ./retroarch.nix
     ./drawingtablet.nix
+    ./phonemirror.nix
     ./citrix.nix
     ./dcspit.nix
     ../system/htpc.nix

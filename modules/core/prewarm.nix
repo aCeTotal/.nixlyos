@@ -57,15 +57,75 @@ let
       libs=$(printf '%s\n%s\n' "$libs" "$extra" | ${pkgs.coreutils}/bin/sort -u)
     fi
 
+    # ── Prioritet: de spillene du faktisk kommer til aa starte ─────────
+    # Biblioteket er stoerre enn RAM, saa rotasjonen alene gir ingen
+    # garanti for at DITT neste spill ligger varmt. Disse tre varmes
+    # derfor foerst, hver runde: de to sist spilte + det sist
+    # installerte. Steam har ikke noe install-tidsfelt — LastUpdated er
+    # naermeste proxy, og treffer ogsaa en oppdatering av et gammelt
+    # spill. Proton/runtime-oppfoeringene filtreres bort; de varmes
+    # allerede av launch-kjeden i nixly-pagecache.
+    manifests() {
+      for lib in $libs; do
+        for m in "$lib"/steamapps/appmanifest_*.acf; do
+          [ -f "$m" ] || continue
+          ${pkgs.gawk}/bin/awk -F'"' -v lib="$lib" '
+            /"installdir"/  { d = $4 }
+            /"LastUpdated"/ { u = $4 }
+            /"LastPlayed"/  { p = $4 }
+            END {
+              if (d != "" && d !~ /^(Proton|SteamLinuxRuntime|Steamworks)/)
+                printf "%d|%d|%s/steamapps/common/%s\n", p, u, lib, d
+            }' "$m"
+        done
+      done
+    }
+
+    prio=$(manifests)
+    if [ -n "$prio" ]; then
+      played=$(printf '%s\n' "$prio" | ${pkgs.coreutils}/bin/sort -t'|' -k1,1 -rn \
+        | ${pkgs.gawk}/bin/awk -F'|' '$1 > 0 { print $3 }' | ${pkgs.coreutils}/bin/head -2)
+      installed=$(printf '%s\n' "$prio" | ${pkgs.coreutils}/bin/sort -t'|' -k2,2 -rn \
+        | ${pkgs.gawk}/bin/awk -F'|' 'NR == 1 { print $3 }')
+      # Here-string, ikke pipe: en pipe kjoerer loekka i subshell, og
+      # gatens "exit 0" ville da bare drept subshellen og latt resten av
+      # scriptet fortsette inn i rotasjonen.
+      prio_dirs=$(printf '%s\n%s\n' "$played" "$installed" \
+        | ${pkgs.gawk}/bin/awk 'NF && !seen[$0]++')
+      while IFS= read -r d; do
+        [ -n "$d" ] || continue
+        ${prewarmGate} || exit 0
+        warm "$d"
+      done <<< "$prio_dirs"
+    fi
+
+    # Resume-markoer: swayidle stopper oss ved foerste museberoerelse, og
+    # et 5-min idle-vindu rekker bare noen faa spill av biblioteket. Uten
+    # markoer starter hver runde paa samme foerste spill, og resten blir
+    # aldri varmet. Markoeren holder siste ferdige mappe; neste runde
+    # fortsetter etter den og sletter markoeren naar hele runden er tatt.
+    CURSOR="''${XDG_CACHE_HOME:-$HOME/.cache}/nixly-prewarm-games.cursor"
+    last=$(${pkgs.coreutils}/bin/cat "$CURSOR" 2>/dev/null || true)
+    skip=0
+    [ -n "$last" ] && skip=1
+
     for lib in $libs; do
       for d in "$lib"/steamapps/common/*/; do
         [ -d "$d" ] || continue
+        # Spol fram til der forrige runde ble avbrutt. Peker markoeren paa
+        # en avinstallert mappe, gaar runden tom og nullstilles under.
+        if [ "$skip" = 1 ]; then
+          [ "$d" = "$last" ] && skip=0
+          continue
+        fi
         # Re-sjekk gaten mellom hvert spill — abort om spill startet
         # eller minnet er brukt opp underveis.
         ${prewarmGate} || exit 0
         warm "$d"
+        printf '%s\n' "$d" > "$CURSOR"
       done
     done
+    ${pkgs.coreutils}/bin/rm -f "$CURSOR"
   '';
 
 
@@ -189,6 +249,14 @@ in
       IOSchedulingClass = "idle";
       CPUSchedulingPolicy = "idle";
       Nice = 19;
+      # Page cache belastes cgroup-en som feiler inn siden. Uten tak
+      # varmer en runde 27 GB inn i 31 GB RAM og kaster nettleser/terminal
+      # ut i zram — swayidle stopper oss ved museberoerelse, men da er
+      # skaden gjort og foerste klikk venter paa swap-in. Med taket
+      # reclaimer kernel prewarmens EGNE eldste sider foerst; sesjonen
+      # roeres ikke. Sidene som er varmet reparentes til user.slice naar
+      # oneshot-en avslutter, saa de blir liggende i cache.
+      MemoryHigh = "8G";
     };
   };
 
