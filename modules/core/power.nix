@@ -1,8 +1,8 @@
 { ... }:
 
 {
-  # La bruker total ta reboot/poweroff uten passord, ogsaa fra sesjoner som
-  # ikke er "active" paa et seat (agenter, ssh, tty uten polkit-agent).
+  # Let total reboot and power off without a password, even from sessions that
+  # are not active on a seat.
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if ((action.id == "org.freedesktop.login1.reboot" ||

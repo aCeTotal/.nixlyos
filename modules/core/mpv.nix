@@ -7,29 +7,23 @@
         enable = true;
         package = pkgs.mpv;
 
-        # ── Hovedconfig: smooth playback på alle skjermer ─────────
-        # Nøkkelen til "no hikking":
-        #   video-sync=display-resample → sync til skjermens refresh, resample audio
-        #   interpolation=yes           → interpolere frames når refresh > fps
-        #   tscale=oversample           → frame doubling for integer ratios uten tap
-        # mpv auto-detekterer hvilken skjerm vinduet er på og bruker dens FPS.
+        # Smooth playback on any screen: mpv detects the output's refresh rate and
+        # syncs to it, resampling audio and interpolating frames as needed.
         config = {
-          # ── Video output (Nvidia + Wayland/Niri) ────────────────
-          # gpu-next + vulkan = beste kvalitet/ytelse på moderne hw
-          # gpu-context auto-detekteres (waylandvk på Niri, x11vk på X11)
+          # gpu-next plus vulkan gives the best quality on modern hardware.
           vo = "gpu-next";
           gpu-api = "vulkan";
           hwdec = "auto-safe";
           hwdec-codecs = "all";
 
-          # ── Display sync (KRITISK for smooth) ───────────────────
+          # Display sync
           video-sync = "display-resample";
           interpolation = true;
           tscale = "oversample";
-          # video-latency-hacks gir lavere input-lag, ikke tap for video
+          # video-latency-hacks lowers input lag at no cost for video.
           video-latency-hacks = true;
 
-          # ── Skalering / kvalitet ────────────────────────────────
+          # Scaling and quality
           profile = "high-quality";
           scale = "ewa_lanczossharp";
           cscale = "ewa_lanczossharp";
@@ -41,13 +35,13 @@
           deband-range = 16;
           deband-grain = 4;
 
-          # ── HDR (TV) ────────────────────────────────────────────
+          # HDR (TV)
           target-colorspace-hint = true;
-          # Tone-mapping for HDR-innhold på SDR-skjerm
+          # Tone-mapping for HDR content on an SDR screen.
           tone-mapping = "bt.2446a";
           hdr-compute-peak = true;
 
-          # ── Audio ───────────────────────────────────────────────
+          # Audio
           audio-channels = "auto-safe";
           audio-spdif = "ac3,dts,eac3,dts-hd,truehd";
           audio-exclusive = false;
@@ -55,7 +49,7 @@
           volume = 100;
           volume-max = 150;
 
-          # ── Subtitles ───────────────────────────────────────────
+          # Subtitles
           sub-auto = "fuzzy";
           sub-file-paths = "subs:subtitles:Subs";
           slang = "no,nob,nor,en,eng";
@@ -65,34 +59,33 @@
           sub-border-size = 2;
           sub-shadow-offset = 1;
 
-          # ── Cache (smooth nettverks-streaming) ──────────────────
+          # Cache for network streaming
           cache = true;
           cache-secs = 60;
           demuxer-max-bytes = "512MiB";
           demuxer-max-back-bytes = "256MiB";
           demuxer-readahead-secs = 30;
 
-          # ── Vindu / skjerm ──────────────────────────────────────
+          # Window
           keep-open = "yes";
           save-position-on-quit = true;
           watch-later-options-remove = "pause";
           screenshot-format = "png";
           screenshot-directory = "~/Pictures/mpv";
 
-          # ── OSD ─────────────────────────────────────────────────
+          # OSD
           osd-bar = true;
           osd-font = "JetBrainsMono Nerd Font";
           osd-font-size = 28;
 
-          # ── YouTube / streaming ─────────────────────────────────
+          # YouTube / streaming
           ytdl-format = "bestvideo[height<=?2160][vcodec!=?vp9]+bestaudio/best";
           script-opts = "ytdl_hook-ytdl_path=${pkgs.yt-dlp}/bin/yt-dlp";
         };
 
-        # ── Profil-overrides (auto-aktiveres på match) ────────────
+        # Profile overrides, auto-activated on match.
         profiles = {
-          # Lavere refresh-skjermer (TV 60Hz med 24p innhold)
-          # Brukes manuelt: mpv --profile=tv
+          # Low-refresh screens; select with mpv --profile=tv.
           "tv" = {
             profile-desc = "TV / HTPC playback";
             fullscreen = true;
@@ -104,7 +97,7 @@
             hdr-compute-peak = true;
           };
 
-          # 4K / høy-bitrate
+          # 4K and high bitrate
           "high-res" = {
             profile-desc = "auto profile for >=1440p";
             profile-cond = "(width or 0) >= 1440";
@@ -113,7 +106,7 @@
             deband = false;
           };
 
-          # Lav oppløsning oppskalering
+          # Low-resolution upscaling
           "low-res" = {
             profile-desc = "auto profile for <720p";
             profile-cond = "(width or 0) < 1280";
@@ -134,9 +127,9 @@
           };
         };
 
-        # ── Bindings ──────────────────────────────────────────────
+        # Bindings
         bindings = {
-          # Navigasjon
+          # Navigation
           "RIGHT" = "seek 5";
           "LEFT" = "seek -5";
           "UP" = "seek 60";
@@ -144,12 +137,12 @@
           "Shift+RIGHT" = "seek 30";
           "Shift+LEFT" = "seek -30";
 
-          # Hastighet
+          # Speed
           "[" = "multiply speed 0.9091";
           "]" = "multiply speed 1.1";
           "BS" = "set speed 1.0";
 
-          # Volum
+          # Volume
           "WHEEL_UP" = "add volume 5";
           "WHEEL_DOWN" = "add volume -5";
           "m" = "cycle mute";
@@ -159,7 +152,7 @@
           "J" = "cycle sub down";
           "#" = "cycle audio";
 
-          # Diverse
+          # Misc
           "f" = "cycle fullscreen";
           "TAB" = "cycle ontop";
           "i" = "script-binding stats/display-stats-toggle";
@@ -168,7 +161,7 @@
           "q" = "quit-watch-later";
           "Q" = "quit";
 
-          # Profil-bytte
+          # Profile switching
           "Ctrl+t" = "apply-profile tv";
 
           # Frame-stepping
@@ -180,7 +173,7 @@
           "S" = "screenshot video";
         };
 
-        # ── Scripts ───────────────────────────────────────────────
+        # Scripts
         scripts = with pkgs.mpvScripts; [
           mpris            # MPRIS for media-keys / control center
           thumbfast        # Hurtig thumbnail-preview ved seeking
@@ -190,7 +183,7 @@
         ];
       };
 
-      # mpv trenger yt-dlp for streaming
+      # mpv needs yt-dlp for streaming.
       home.packages = with pkgs; [
         yt-dlp
       ];

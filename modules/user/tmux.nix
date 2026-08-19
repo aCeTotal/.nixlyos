@@ -84,7 +84,7 @@ in
         }
 
         tmuxPlugins.sensible
-        # must be before continuum edits right status bar
+        # Must come before continuum edits the right status bar.
         {
           plugin = tmuxPlugins.catppuccin;
           extraConfig = '' 
@@ -122,30 +122,30 @@ in
 
       set -g mouse on
 
-      # Change splits to match nvim and easier to remember
-      # Open new split at cwd of current split
+      # Splits match nvim.
+      # New splits open at the current pane cwd.
       unbind %
       unbind '"'
       bind | split-window -h -c "#{pane_current_path}"
       bind - split-window -v -c "#{pane_current_path}"
 
-      # Use vim keybindings in copy mode
+      # Vim keybindings in copy mode.
       set-window-option -g mode-keys vi
 
-      # v in copy mode starts making selection
+      # v starts a selection.
       bind-key -T copy-mode-vi v send-keys -X begin-selection
       bind-key -T copy-mode-vi C-v send-keys -X rectangle-toggle
       bind-key -T copy-mode-vi y send-keys -X copy-selection-and-cancel
 
-      # Escape turns on copy mode
+      # Escape enters copy mode.
       bind Escape copy-mode
 
-      # Easier reload of config
+      # Reload config.
       bind r source-file ~/.config/tmux/tmux.conf
 
       set-option -g status-position top
 
-      # make Prefix p paste the buffer.
+      # Prefix p pastes the buffer.
       unbind p
       bind p paste-buffer
 

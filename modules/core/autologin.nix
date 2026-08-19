@@ -1,7 +1,7 @@
 { ... }:
 
-# Importér denne modulen for automatisk innlogging ved boot.
-# SDDM hopper over login-skjermen og starter sesjonen som "total".
+# Import this module for automatic login at boot; SDDM skips the greeter and
+# starts the session as "total".
 {
   services.displayManager.autoLogin = {
     enable = true;

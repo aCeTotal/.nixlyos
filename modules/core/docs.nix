@@ -1,7 +1,7 @@
 { ... }:
 
 {
-  # NixOS-manualen bygges ellers på hver rebuild — eval-tid, build-IO og
-  # disk for noe som leses på nixos.org uansett. Man-pages beholdes.
+  # The NixOS manual would otherwise be rebuilt every time, for something read on
+  # nixos.org anyway; man pages are kept.
   documentation.nixos.enable = false;
 }

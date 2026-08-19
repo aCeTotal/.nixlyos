@@ -8,23 +8,15 @@ let
     set -u
     export PATH=${pkgs.coreutils}/bin
 
-    # Swappiness ned mens spillet kjoerer. zram.nix setter 180 (riktig for
-    # zram normalt), men zram-komprimering under spill stjeler CPU-sykluser
-    # fra spillkjernene og gir frame-time-spikes. Lagre den faktiske verdien
-    # og legg den tilbake i ExecStop — ikke en hardkodet default.
+    # Lower swappiness while a game runs; zram compression steals cycles from
+    # the game cores. The real value is saved so ExecStop restores it.
     cat /proc/sys/vm/swappiness > ${saveFile} || true
     echo 10 > /proc/sys/vm/swappiness || true
 
-    # Én eksplisitt kompaktering slik at spillet faar sammenhengende
-    # hugepages ved oppstart. perf.nix slaar av bakgrunns-kompaktering
-    # (vm.compaction_proactiveness=0) nettopp fordi kcompactd-bursts
-    # midt i spill er en stutter-kilde — dette er erstatningen.
+    # One explicit compaction, replacing the background one perf.nix disables.
     echo 1 > /proc/sys/vm/compact_memory || true
 
-    # AMD DPM til "high" mens spillet kjoerer (no-op paa maskiner uten
-    # amdgpu — fila finnes ikke). Vendor-agnostisk: NVIDIA/Intel har ingen
-    # tilsvarende sysfs-knapp som er trygg aa tvinge her, de haandteres av
-    # driver/compositor.
+    # AMD DPM to high; a no-op where the sysfs file does not exist.
     : > ${dpmFile}
     for f in /sys/class/drm/card*/device/power_dpm_force_performance_level; do
       [ -e "$f" ] || continue
@@ -32,12 +24,8 @@ let
       echo high > "$f" || true
     done
 
-    # PM QoS: 0 µs akseptabel wakeup-latency = ingen dype C-states.
-    # Constrainten lever saa lenge fd-en er aapen, derfor exec sleep
-    # (fd 3 arves over exec) i stedet for en travel loop.
-    # Eksistens-sjekk foerst: en feilende redirect i `exec` avslutter et
-    # ikke-interaktivt shell, og da ville hele unit'en feile paa maskiner
-    # uten cpuidle (VM-er).
+    # PM QoS 0 µs keeps the CPU out of deep C-states for as long as fd 3 stays
+    # open, hence the exec sleep; the existence check keeps VMs from failing.
     if [ -e /dev/cpu_dma_latency ]; then
       exec 3>/dev/cpu_dma_latency
       head -c4 /dev/zero >&3
@@ -61,12 +49,8 @@ let
   '';
 in
 {
-  # Privilegert halvdel av nixlytile sin game mode. Compositoren kjoerer som
-  # bruker og kan ikke skrive /proc/sys eller /dev/cpu_dma_latency (root 0600),
-  # saa disse to knappene var stille no-ops. Alt annet game mode pleide aa
-  # forsoeke — THP, nmi_watchdog, split_lock, io-scheduler, governor, IRQ-
-  # affinitet — er naa statisk i boot.nix / perf.nix / system_services.nix og
-  # trenger ingen runtime-rettigheter.
+  # The privileged half of nixlytile's game mode; everything else it used to
+  # touch is now static in boot.nix, perf.nix and system_services.nix.
   systemd.services.nixly-gametune = {
     description = "Low-latency tuning while a game is running";
     serviceConfig = {
@@ -77,8 +61,7 @@ in
     };
   };
 
-  # nixlytile starter/stopper unit'en over systemd naar ultra game mode slaar
-  # inn. Samme moenster som ananicy-cpp-regelen i gaming.nix.
+  # nixlytile starts and stops the unit when ultra game mode kicks in.
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if (action.id == "org.freedesktop.systemd1.manage-units" &&

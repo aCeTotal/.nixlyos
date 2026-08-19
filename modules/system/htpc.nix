@@ -6,9 +6,7 @@ let
 in
 lib.mkIf htpcEnabled {
 
-  # ─────────────────────────────────────────
-  #   System packages (retroarch only — mpv via home-manager)
-  # ─────────────────────────────────────────
+  # RetroArch only; mpv comes from home-manager below.
   environment.systemPackages =
     (with pkgs; [
       (retroarch.withCores (cores: with cores; [
@@ -34,20 +32,14 @@ lib.mkIf htpcEnabled {
       libretro-shaders-slang
     ]);
 
-  # Note: Intel Arc VAAPI/Vulkan stack (intel-media-driver, vpl-gpu-rt,
-  # iHD driver env) lives in modules/core/gpu/intel.nix — mpv hwdec on
-  # A770 uses that already.
+  # The Intel Arc VAAPI/Vulkan stack lives in modules/core/gpu/intel.nix.
 
-  # ─────────────────────────────────────────
-  #   Home-manager configs for the user
-  # ─────────────────────────────────────────
+  # Home-manager configs for the user
   home-manager.users.total = { pkgs, ... }: {
 
-    # RetroArch main config — XMB (PS3-style) menu with neoactive icon pack,
-    # 4K fullscreen Vulkan tuned for Intel Arc, bilinear pixel smoothing,
-    # pipewire audio, gamepad menu toggle (L3+R3), auto save/load states.
+    # RetroArch: XMB menu, 4K fullscreen Vulkan on Intel Arc, pipewire audio.
     xdg.configFile."retroarch/retroarch.cfg".text = ''
-      # ── Video: Vulkan on Intel Arc, 4K fullscreen ──
+      # Video: Vulkan on Intel Arc, 4K fullscreen
       video_driver = "vulkan"
       video_fullscreen = "true"
       video_windowed_fullscreen = "false"
@@ -63,7 +55,7 @@ lib.mkIf htpcEnabled {
       video_gpu_screenshot = "true"
       video_shared_context = "true"
 
-      # ── Scaling: fill 4K, preserve PAR, smooth pixels ──
+      # Scaling: fill 4K, preserve PAR, smooth pixels
       video_aspect_ratio_auto = "true"
       aspect_ratio_index = "22"
       video_scale_integer = "false"
@@ -71,13 +63,12 @@ lib.mkIf htpcEnabled {
       video_ctx_scaling = "true"
       video_force_aspect = "true"
 
-      # ── Default shader for smoother pixel art on all cores ──
-      # xBR Lv2 edge-smoothing upscaler (flip off per-core if perf drops)
+      # xBR Lv2 edge smoothing; flip off per core if performance drops.
       video_shader_enable = "true"
       video_shader_dir = "${pkgs.libretro-shaders-slang}/share/libretro/shaders/shaders_slang"
       video_shader = "${pkgs.libretro-shaders-slang}/share/libretro/shaders/shaders_slang/edge-smoothing/xbr/xbr-lv2.slangp"
 
-      # ── Audio ──
+      # Audio
       # audio_volume in dB, 0.0 = unity = 100%
       audio_driver = "pipewire"
       audio_enable = "true"
@@ -86,7 +77,7 @@ lib.mkIf htpcEnabled {
       audio_mute_enable = "false"
       audio_latency = "32"
 
-      # ── Menu: XMB (PS3-style) with neoactive icons, electric blue ──
+      # Menu: XMB (PS3-style) with neoactive icons, electric blue
       menu_driver = "xmb"
       xmb_theme = "4"
       xmb_menu_color_theme = "4"
@@ -99,39 +90,33 @@ lib.mkIf htpcEnabled {
       menu_enable_widgets = "true"
       menu_widget_scale_auto = "true"
 
-      # ── Input ──
+      # Input
       input_max_users = "4"
       input_autodetect_enable = "true"
       input_joypad_driver = "sdl2"
       input_menu_toggle_gamepad_combo = "2"
 
-      # ── Savestates ──
+      # Savestates
       savestate_auto_save = "true"
       savestate_auto_load = "true"
       savestate_thumbnail_enable = "true"
 
-      # ── Misc ──
+      # Misc
       pause_nonactive = "false"
       fps_show = "false"
 
-      # ── Asset / autoconfig paths ──
+      # Asset / autoconfig paths
       assets_directory = "${pkgs.retroarch-assets}/share/retroarch/assets"
       joypad_autoconfig_dir = "${pkgs.retroarch-joypad-autoconfig}/share/libretro/autoconfig"
     '';
 
-    # ─────────────────────────────────────────
-    #   mpv — ultra-smooth 4K60 on Intel Arc A770
-    # ─────────────────────────────────────────
-    # gpu-next + Vulkan + VAAPI hwdec on Arc. display-resample +
-    # interpolation (tscale=oversample) eliminates 24/25/30p judder
-    # against the 60Hz panel. EWA Lanczos sharp upscale to 4K.
-    # Huge demuxer cache eats local-server files whole for zero stalls.
-    # HDR settings are no-ops on SDR displays.
+    # mpv: 4K60 on Arc via gpu-next, Vulkan and VAAPI, with display-resample and
+    # interpolation to kill 24/25/30p judder against the 60 Hz panel.
     programs.mpv = {
       enable = true;
 
       config = {
-        # ── Operational ──
+        # Operational
         idle = "no";
         terminal = "no";
         force-window = "immediate";
@@ -143,13 +128,11 @@ lib.mkIf htpcEnabled {
         log-file = "/tmp/mpv.log";
         ao = "pipewire";
 
-        # ── Output: Vulkan + gpu-next on Arc A770 ──
+        # Output: Vulkan + gpu-next on Arc A770
         vo = "gpu-next";
         gpu-api = "vulkan";
         gpu-context = "auto";
-        # vaapi-copy: decoder writes to its own pool, frame copied to
-        # system RAM then re-uploaded for render. Eliminates pool
-        # contention that caused motion-scene hakk on Arc A770.
+        # vaapi-copy avoids the pool contention that stuttered motion scenes on the A770.
         hwdec = "vaapi-copy";
         vd-lavc-dr = "no";
         hwdec-codecs = "all";
@@ -157,15 +140,12 @@ lib.mkIf htpcEnabled {
         swapchain-depth = 3;
         gpu-shader-cache-dir = "~/.cache/mpv/shaders";
 
-        # ── Display: fullscreen 4K@60 on TV ──
+        # Display: fullscreen 4K@60 on TV
         fullscreen = "yes";
         keep-open = "yes";
         cursor-autohide = 500;
 
-        # ── Frame timing: ultra-smooth motion at 60Hz ──
-        # display-resample retimes audio to display refresh.
-        # interpolation + tscale=oversample fixes 24->60 judder
-        # (oversample = non-blurry phase-blend, ideal for 24/25/30 -> 60).
+        # Frame timing: display-resample retimes audio, oversample phase-blends 24 to 60.
         video-sync = "display-resample";
         interpolation = "yes";
         tscale = "oversample";
@@ -173,7 +153,7 @@ lib.mkIf htpcEnabled {
         video-latency-hacks = "no";
         hr-seek-framedrop = "no";
 
-        # ── Scaling: high-quality upscale to 4K on Arc ──
+        # Scaling: high-quality upscale to 4K on Arc
         scale = "ewa_lanczossharp";
         cscale = "ewa_lanczossoft";
         dscale = "mitchell";
@@ -187,27 +167,23 @@ lib.mkIf htpcEnabled {
         deband-range = 16;
         deband-grain = 4;
 
-        # ── HDR passthrough (no-op on SDR TV) ──
+        # HDR passthrough (no-op on SDR TV)
         target-colorspace-hint = "yes";
         target-peak = "auto";
         hdr-compute-peak = "no";
         tone-mapping = "bt.2446a";
         gamut-mapping-mode = "perceptual";
 
-        # ── Audio ──
-        # Decode to PCM (never bitstream) — works on laptop analog and
-        # HDMI-to-TV alike. audio-exclusive disabled so other apps can
-        # share the sink and WirePlumber route changes don't silence mpv.
-        # Volume pinned to 100% on every load.
+        # Audio
+        # Always decode to PCM, and never take the sink exclusively, so WirePlumber
+        # route changes cannot silence mpv.
         audio-channels = "auto";
         audio-exclusive = "no";
         volume = "100";
         volume-max = "100";
 
-        # ── Cache: HTTP stream from nixlymediaserver ──
-        # stream-buffer-size: TCP receive buffer. Default ~128KiB starves
-        # on 4K bitrates — 64MiB absorbs network jitter. cache-pause=yes
-        # + short wait: brief clean pause on stall beats dropped frames.
+        # Cache: HTTP stream from nixlymediaserver
+        # A 64 MiB receive buffer absorbs network jitter that starves 4K bitrates.
         cache = "yes";
         cache-secs = 180;
         cache-pause = "yes";
@@ -223,24 +199,23 @@ lib.mkIf htpcEnabled {
         network-timeout = 60;
         prefetch-playlist = "yes";
 
-        # ── Subs / audio language priority ──
+        # Subs / audio language priority
         sub-auto = "fuzzy";
         slang = "no,nob,en,eng";
         alang = "no,nob,en,eng";
 
-        # ── Subtitle styling (smaller text) ──
+        # Subtitle styling (smaller text)
         sub-font-size = 30;
         sub-border-size = 2;
         sub-shadow-offset = 0;
 
-        # ── Screenshots ──
+        # Screenshots
         screenshot-format = "png";
         screenshot-directory = "~/Pictures/mpv";
       };
     };
 
-    # Force every audio sink to 100% unmuted on HTPC session start. Runs
-    # after graphical-session is up so WirePlumber is already live.
+    # Force every sink to 100 % unmuted once WirePlumber is live.
     systemd.user.services.htpc-audio-unmute =
       let
         setAllSinks = pkgs.writeShellScript "htpc-audio-set-all-sinks-100" ''
@@ -278,9 +253,7 @@ lib.mkIf htpcEnabled {
         };
       };
 
-    # Watch for new sinks (HDMI hotplug, Bluetooth connect) and force
-    # them to 100% unmuted. Only reacts to *new* sinks, so manual volume
-    # changes mid-session are not clobbered.
+    # New sinks are forced to 100 % unmuted; existing ones are left alone.
     systemd.user.services.htpc-audio-watch = {
       Unit = {
         Description = "HTPC: force new audio sinks to 100% unmuted";

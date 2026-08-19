@@ -1,19 +1,15 @@
 { config, ... }:
 
 {
-  # Navnet i /etc/os-release (NAME/PRETTY_NAME), /etc/lsb-release,
-  # boot-oppfoeringene og `nixos-version`.
-  #
-  # distroId beholdes som "nixos": ID-en er det verktoey (distrobox,
-  # vscode-server, appimage-wrappere) sjekker for aa kjenne igjen plattformen,
-  # og en egen ID gjoer at de faller tilbake til generisk Linux.
+  # The name in /etc/os-release, /etc/lsb-release, the boot entries and nixos-version.
+  # distroId stays "nixos": tools check the ID to recognise the platform, and a
+  # custom one makes them fall back to generic Linux.
   system.nixos = {
     distroName = "NixlyOS";
     vendorName = "NixlyOS";
 
-    # Feltene under haardkoder nixos.org/nixpkgs i version.nix — de er rene
-    # strenger uten funksjon, saa de pekes hit i stedet. LOGO staar igjen paa
-    # nix-snowflake: ikonet maa finnes i temaet for aa vises.
+    # These fields are inert strings hardcoded to nixos.org upstream, so they are
+    # pointed here instead; LOGO stays put, since the icon must exist in the theme.
     extraOSReleaseArgs = {
       CPE_NAME = "cpe:/o:nixlyos:nixlyos:${config.system.nixos.release}";
       DEFAULT_HOSTNAME = "nixlyos";

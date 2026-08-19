@@ -1,17 +1,17 @@
 { pkgs, lib, ... }:
 
 {
-  # Ensure ~/.local/bin is on PATH for sessions
+  # Keep ~/.local/bin on PATH for sessions.
   home.sessionPath = [ "$HOME/.local/bin" ];
 
-  # Wrapper script to always launch a fresh Chrome profile quickly
+  # Wrapper that always launches a fresh Chrome profile.
   home.file.".local/bin/chrome-fresh" = {
     executable = true;
     text = ''
       #!/usr/bin/env bash
       set -euo pipefail
 
-      # Find real Chrome binary (from Nix store)
+      # Find the real Chrome binary.
       CHROME_BIN="$(printenv CHROME_BIN || true)"
       if [ -z "$CHROME_BIN" ]; then
         CHROME_BIN="$(command -v google-chrome-stable || true)"
@@ -21,10 +21,10 @@
         exit 127
       fi
 
-      # Create a temporary, empty profile directory for a truly fresh session
+      # Empty profile directory for a truly fresh session.
       PROFILE_DIR=$(mktemp -d -t chrome-fresh.XXXXXX)
       cleanup() {
-        # Best-effort cleanup; Chrome fully releases on exit
+        # Best-effort cleanup; Chrome releases it on exit.
         rm -rf "$PROFILE_DIR" 2>/dev/null || true
       }
       trap cleanup EXIT INT TERM
@@ -42,7 +42,7 @@
     '';
   };
 
-  # Override the desktop entry so launchers (e.g., wofi) use the wrapper
+  # Override the desktop entry so launchers use the wrapper.
   home.file.".local/share/applications/google-chrome.desktop".text = ''
     [Desktop Entry]
     Version=1.0

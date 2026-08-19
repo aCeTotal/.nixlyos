@@ -1,20 +1,8 @@
 { config, pkgs, lib, ... }:
 
-# ═══════════════════════════════════════════════════════════════════
-# Emulator Playlists (home-manager)
-# ═══════════════════════════════════════════════════════════════════
-# Scans ROM dirs at activation and writes RetroArch playlists
-# (~/.config/retroarch/playlists/<System>.lpl). Each playlist pins
-# a default libretro core. NES/SNES recurse into letter subdirs.
-# GB&GBC archives are peeked once (cached) and split into separate
-# Game Boy / Game Boy Color playlists by first inner ROM extension.
-#
-# Thumbnails are fetched on demand via `nixly-fetch-thumbnails`
-# (manual). It pulls from libretro-thumbnails GitHub and writes
-# into ~/.config/retroarch/thumbnails/<db>/Named_{Boxarts,Snaps,Titles}/.
-#
-# Per-core video/upscaling settings live in modules/core/retroarch.nix.
-# ═══════════════════════════════════════════════════════════════════
+# Scans the ROM dirs at activation and writes RetroArch playlists, each pinning a
+# default libretro core. Thumbnails are fetched on demand by nixly-fetch-thumbnails,
+# and the per-core video settings live in modules/core/retroarch.nix.
 
 let
   romRoot = "/mnt/nfs/Bigdisk1/Emulator/ROMS";
@@ -78,7 +66,7 @@ let
         local items_file
         items_file=$(mktemp)
 
-        # Build -iname A -o -iname B ... (no trailing -o)
+        # Build the -iname chain without a trailing -o.
         local find_args=( "(" )
         local first=1
         for ext in $exts; do
@@ -204,11 +192,8 @@ in
 {
   home.packages = [ genScript fetchScript ];
 
-  # mountpoint -q i stedet for [[ -d ]]: -d på automount-punktet TRIGGER
-  # NFS-mounten, så hver eneste nixos-rebuild gikk rekursivt gjennom hele
-  # ROM-biblioteket over NFS (find + 7z/zip-peeks).  Nå kjører generering
-  # kun når serveren allerede er montert; ellers kjør nixly-gen-playlists
-  # manuelt.
+  # mountpoint -q, not [[ -d ]]: testing the automount point triggers the NFS
+  # mount, so every rebuild walked the whole ROM library over the network.
   home.activation.emulatorPlaylists = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if ${pkgs.util-linux}/bin/mountpoint -q "/mnt/nfs/Bigdisk1"; then
       $DRY_RUN_CMD ${genScript}/bin/nixly-gen-playlists || true

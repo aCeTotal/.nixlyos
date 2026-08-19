@@ -1,16 +1,16 @@
 { lib, pkgs, ... }:
 
 {
-  # NFS-støtte (nfs-utils, rpcbind, kernel-moduler)
+  # NFS support.
   boot.supportedFilesystems = [ "nfs" ];
 
-  # rpcbind trengs kun for NFSv3 — mount under er v4.2-only.
+  # rpcbind is NFSv3 only; the mount below is v4.2.
   services.rpcbind.enable = lib.mkForce false;
 
   services.cachefilesd = {
     enable = true;
-    # Tillat cache å bruke mer plass før cleanup starter
-    # brun = start cleanup, bcull = aggressiv cleanup, bstop = stopp caching
+    # Let the cache grow further before cleanup starts.
+    # brun starts cleanup, bcull is aggressive, bstop halts caching.
     extraConfig = ''
       brun 20%
       bcull 10%
@@ -21,15 +21,14 @@
     '';
   };
 
-  # Ensure mount directories exist at boot
+  # Mount directories must exist at boot.
   systemd.tmpfiles.rules = [
     "d /mnt/nfs 0755 root root -"
     "d /mnt/nfs/Bigdisk1 0755 root root -"
   ];
 
-  # Rask tilgjengelighetsjekk - feiler umiddelbart (~1s) når NFS-server er utilgjengelig.
-  # Mount-enheten avhenger av denne, så mount prøver aldri å koble til en
-  # utilgjengelig server (som ville blokkert Dolphin i minutter pga TCP SYN-timeout).
+  # Fast reachability check that fails in about a second.
+  # The mount requires it, so it never blocks on a TCP SYN timeout.
   systemd.services.nfs-bigdisk1-check = {
     description = "Check NFS server 10.0.0.8 reachability";
     serviceConfig = {
@@ -41,10 +40,7 @@
     };
   };
 
-  # NFS mount-enhet med avhengighet til tilgjengelighetssjekken.
-  # Flyten: aksess → automount trigger → mount krever ping-sjekk →
-  #   Server nede: ping feiler (~1s) → mount feiler → Dolphin fortsetter
-  #   Server oppe: ping OK → mount kjører normalt
+  # Mount unit gated on the reachability check above.
   systemd.mounts = [{
     what = "10.0.0.8:/bigdisk1";
     where = "/mnt/nfs/Bigdisk1";
@@ -79,7 +75,7 @@
     };
   }];
 
-  # Automount - trigger mount ved aksess til /mnt/nfs/Bigdisk1
+  # Automount triggers on access.
   systemd.automounts = [{
     where = "/mnt/nfs/Bigdisk1";
     automountConfig = {

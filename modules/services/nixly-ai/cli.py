@@ -51,7 +51,7 @@ SYSTEM_PROMPT = (
 )
 
 
-# ---- token + RAG plumbing ----
+# token + RAG plumbing
 
 def load_token() -> str:
     t = os.environ.get("NIXLY_RAG_TOKEN", "").strip()
@@ -122,7 +122,7 @@ def chat_stream(ollama_url: str, model: str, messages: list[dict],
                 break
 
 
-# ---- session state ----
+# session state
 
 @dataclass
 class Settings:
@@ -142,7 +142,7 @@ class Session:
     last_sources: list[dict] = field(default_factory=list)
 
 
-# ---- rich rendering ----
+# rich rendering
 
 def banner(console: Console, s: Settings) -> None:
     info = Text.assemble(
@@ -197,7 +197,7 @@ def user_panel(text: str) -> Panel:
                  padding=(0, 2))
 
 
-# ---- one chat turn ----
+# one chat turn
 
 def run_turn(console: Console, sess: Session, question: str,
              plain: bool = False) -> None:
@@ -259,7 +259,7 @@ def run_turn(console: Console, sess: Session, question: str,
             sess.history.pop()
 
 
-# ---- slash commands ----
+# slash commands
 
 SLASH_HELP = """\
 **slash commands**
@@ -326,7 +326,7 @@ def handle_slash(console: Console, sess: Session, line: str) -> bool:
     return False
 
 
-# ---- prompt_toolkit input ----
+# prompt_toolkit input
 
 def make_prompt_session() -> PromptSession:
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
@@ -364,7 +364,7 @@ def repl(console: Console, sess: Session) -> int:
         run_turn(console, sess, line)
 
 
-# ---- entry ----
+# entry
 
 def main() -> int:
     p = argparse.ArgumentParser(prog="ai", description=__doc__)

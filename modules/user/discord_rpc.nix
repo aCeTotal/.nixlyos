@@ -1,17 +1,8 @@
 { pkgs, ... }:
 
 let
-  # Discord Rich Presence ("activity box") settings.
-  #
-  # Setup (one-time):
-  #   1. Go to https://discord.com/developers/applications -> "New Application".
-  #      The application NAME is what Discord shows as "Playing <name>".
-  #   2. Copy the "Application ID" into clientId below.
-  #   3. Images: either
-  #        a) Upload under "Rich Presence" -> "Art Assets" (PNG/JPG/GIF,
-  #           min 512x512) and use the asset name here, or
-  #        b) Use a direct https:// image URL (png/jpg/webp/gif).
-  #      SVG is NOT supported by Discord - convert to PNG first.
+  # Discord Rich Presence: create an application at discord.com/developers,
+  # paste its ID into clientId, and name an art asset or https image URL below.
   cfg = {
     clientId = ""; # <- Application ID from the developer portal (required)
     details = "NixlyOS"; # first text line
@@ -94,9 +85,8 @@ in
     };
     Service = {
       ExecStart = "${python}/bin/python ${script}";
-      # on-failure, ikke always: med tom clientId exiter scriptet rent
-      # (exit 0) — Restart=always ville respawnet en python-prosess
-      # hvert 5. sekund til evig tid.
+      # on-failure, not always: an empty clientId exits cleanly and would
+      # otherwise respawn forever.
       Restart = "on-failure";
       RestartSec = 5;
     };

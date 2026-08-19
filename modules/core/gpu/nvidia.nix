@@ -20,15 +20,8 @@
     nvidiaSettings = false;
     package = config.boot.kernelPackages.nvidiaPackages.latest;
 
-    # Optimus: the 300Hz internal panel (eDP) is wired to the Intel iGPU, so by
-    # default every frame the dGPU renders is copied to the iGPU for display —
-    # that cross-GPU present caps FPS (~100) regardless of scene. reverseSync
-    # makes the NVIDIA dGPU render the WHOLE session (compositor + apps) and
-    # present to the Intel-connected outputs, so the dGPU is used 100% (one copy
-    # instead of two). dGPU stays powered (more heat/battery — fine on AC).
-    # NOTE: a copy to the Intel eDP still remains; the only way to remove it
-    # entirely is the BIOS/MSI-Center MUX → "Discrete Graphics Mode", which
-    # rewires the panel directly to NVIDIA (card0-eDP-2).
+    # reverseSync lets the dGPU render the whole session, halving the cross-GPU
+    # copies that otherwise cap the Intel-wired eDP panel around 100 FPS.
     prime = {
       reverseSync.enable = true;
       intelBusId = "PCI:0:2:0";
@@ -41,8 +34,7 @@
     kernelParams = [
       "nvidia_drm.modeset=1"
       "nvidia_drm.fbdev=1"
-      # PAT for GPU-minnemappinger — raskere CPU→GPU-opplastinger (samme
-      # begrunnelse som i gpu/nvidia_intel.nix).
+      # PAT for GPU mappings, faster CPU-to-GPU uploads.
       "nvidia.NVreg_UsePageAttributeTable=1"
     ];
   };
@@ -56,10 +48,7 @@
     nvfancontrol
   ];
 
-  # System-wide vars (read by SDDM and other system services, not just user
-  # sessions). SDDM Wayland on NVIDIA proprietary needs GBM_BACKEND and
-  # __GLX_VENDOR_LIBRARY_NAME set in the display-manager environment, else
-  # the greeter cannot pick the NVIDIA GBM/EGL impl and renders black.
+  # System-wide so SDDM sees them; without these the greeter renders black.
   environment.variables = {
     LIBVA_DRIVER_NAME = "nvidia";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
@@ -68,9 +57,7 @@
 
   environment.sessionVariables = {
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
-    # VRR/G-Sync tillatt + stor shader-cache som aldri trimmes midt i en
-    # sesjon (cache-eviction under spilling = rekompilerings-hikk). Samme
-    # verdier som gpu/nvidia_intel.nix.
+    # Never trim the shader cache mid-session; eviction shows up as recompile hitches.
     __GL_VRR_ALLOWED = "1";
     __GL_GSYNC_ALLOWED = "1";
     __GL_THREADED_OPTIMIZATIONS = "1";
@@ -80,21 +67,15 @@
     MESA_SHADER_CACHE_MAX_SIZE = "10G";
   };
 
-  # Belt-and-braces: set the same vars on the display-manager unit so SDDM's
-  # systemd environment carries them even if PAM env import races.
+  # Same vars on the unit too, in case the PAM env import races.
   systemd.services.display-manager.environment = {
     GBM_BACKEND = "nvidia-drm";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     LIBVA_DRIVER_NAME = "nvidia";
   };
 
-  # GPU fan curve config for nvfancontrol
-  # Format: temperature(°C)  fan_speed(%)
-  # Designed for silence at idle, aggressive ramp before 85°C
+  # Fan curve for nvfancontrol: silent at idle, hard cap at 85 °C.
   environment.etc."xdg/nvfancontrol.conf".text = ''
-    # NixlyOS GPU Fan Curve - RTX 2080 Ti
-    # Goal: Maximum silence, hard cap at 85°C
-    #
     # Temp(°C)  Fan(%)
     20  0
     35  0
@@ -110,7 +91,6 @@
     83  100
   '';
 
-  # nvfancontrol systemd service - starts at boot
   systemd.services.nvfancontrol = {
     description = "NVIDIA GPU Fan Control";
     wantedBy = [ "multi-user.target" ];

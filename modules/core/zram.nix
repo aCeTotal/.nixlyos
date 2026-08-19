@@ -7,10 +7,8 @@ in
   zramSwap = {
     enable = true;
     memoryPercent = 100;          # Use up to 100% of RAM as compressed swap
-    # zstd komprimerer best, men koster CPU per side inn/ut av swap. Paa en
-    # svak/gammel CPU (under AVX2) eller faa kjerner blir det synlig latency
-    # under minnepress — der er lz4 riktig bytte: daarligere ratio, men
-    # raskere paging. Detektert av scripts/detect-hw.sh.
+    # zstd compresses best but costs CPU per page; weak CPUs get lz4 instead,
+    # which pages faster at a worse ratio. Chosen by scripts/detect-hw.sh.
     algorithm = if hw.cpuLevel >= 3 && hw.cores >= 8 then "zstd" else "lz4";
     priority = 100;               # Higher priority than disk swap
   };
@@ -21,9 +19,8 @@ in
     "vm.page-cluster" = 0;        # Disable readahead for zram (random access is fast)
     "vm.vfs_cache_pressure" = 50; # Keep dentries/inodes in cache longer
 
-    # CachyOS-style: byte-based dirty thresholds give consistent burst-write
-    # behavior regardless of how RAM is currently allocated. Ratio-mode shifts
-    # under memory pressure and can stall game writes.
+    # Byte-based dirty thresholds behave consistently regardless of RAM use;
+    # ratio mode shifts under pressure and can stall game writes.
     "vm.dirty_background_bytes" = 67108864;   # 64 MiB
     "vm.dirty_bytes" = 268435456;             # 256 MiB
     "vm.dirty_expire_centisecs" = 3000;
@@ -34,8 +31,7 @@ in
     "vm.min_free_kbytes" = 131072; # Keep 128MB free minimum
   };
 
-  # systemd-oomd avslått: earlyoom (system_services.nix) kjører allerede
-  # med varsler — to OOM-killere pollet minne/PSI parallelt og kunne
-  # drepe hver sin prosess for samme trykk-hendelse.
+  # systemd-oomd off: earlyoom already covers this, and two killers could each
+  # take a different process for the same pressure event.
   systemd.oomd.enable = false;
 }

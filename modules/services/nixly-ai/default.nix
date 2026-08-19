@@ -1,14 +1,8 @@
 { config, pkgs, lib, ... }:
 
-# Local Ollama + `ai` / `nixly-ai` chat TUI. Retrieval calls go to the
-# RAG server at https://ai.aceclan.no.
-#
-# Token (must match the server's /etc/nixly-rag/token):
-#   sudo install -d -m 0755 /etc/nixly-ai
-#   sudo install -m 0644 -o root -g root <(echo TOKEN) /etc/nixly-ai/token
-#
-# Override the model with NIXLY_AI_MODEL or the rag URL with NIXLY_RAG_URL
-# in the user's environment.
+# Local Ollama plus the `ai` chat TUI, with retrieval against the RAG server.
+# The token in /etc/nixly-ai/token must match the server's; NIXLY_AI_MODEL and
+# NIXLY_RAG_URL override the model and URL.
 
 let
   ragUrl = "https://ai.aceclan.no";
@@ -21,8 +15,7 @@ let
     prompt-toolkit
   ]);
 
-  # Bundle the python entrypoint as a versioned store path so the wrapper
-  # below is just a thin env-bootstrap.
+  # Versioned store path, so the wrapper below is a thin env bootstrap.
   cliScript = pkgs.runCommand "nixly-ai-cli" { } ''
     install -Dm0644 ${./cli.py} $out/share/nixly-ai/cli.py
   '';
@@ -71,8 +64,7 @@ in
     Nice = -5;
   };
 
-  # Token directory; the file itself is dropped in by the operator
-  # (see comment block above) so we don't keep secrets in the Nix store.
+  # Directory only: the operator drops the token in, keeping it out of the store.
   systemd.tmpfiles.rules = [
     "d /etc/nixly-ai 0755 root root -"
   ];

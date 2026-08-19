@@ -1,10 +1,10 @@
 { config, pkgs, lib, ... }:
 
 let
-  # Wine med staging patches for bedre .NET-støtte
+  # Wine with staging patches for better .NET support.
   winePackage = pkgs.wineWow64Packages.stagingFull;
 
-  # ClickOnce launcher script - håndterer både URLer og lokale filer
+  # ClickOnce launcher, handling both URLs and local files.
   clickonce-launcher = pkgs.writeShellScriptBin "clickonce-launcher" ''
     #!/usr/bin/env bash
     set -euo pipefail
@@ -18,7 +18,7 @@ let
     echo "=== ClickOnce Launcher startet: $(date) ==="
     echo "Input: $*"
 
-    # Initialiser wine prefix hvis den ikke finnes
+    # Initialise the wine prefix if missing.
     if [ ! -d "$WINEPREFIX" ]; then
       echo "Initialiserer Wine prefix..."
       ${winePackage}/bin/wineboot --init
@@ -34,18 +34,18 @@ let
       exit 1
     fi
 
-    # Fjern file:// prefix hvis det finnes
+    # Strip any file:// prefix.
     INPUT=$(echo "$INPUT" | ${pkgs.gnused}/bin/sed 's|^file://||')
 
-    # Opprett temp-mappe for nedlasting
+    # Temp dir for downloads.
     TMPDIR=$(mktemp -d)
     trap "rm -rf $TMPDIR" EXIT
 
-    # Sjekk om input er en lokal fil eller URL
+    # Local file or URL?
     if [ -f "$INPUT" ]; then
       echo "Behandler lokal fil: $INPUT"
       APP_FILE="$INPUT"
-      # Prøv å finne base URL fra filen selv
+      # Try to find the base URL from the file itself.
       BASE_URL=$(${pkgs.gnugrep}/bin/grep -oP '<deploymentProvider[^>]*codebase="\K[^"]+' "$APP_FILE" | head -1 || true)
       if [ -z "$BASE_URL" ]; then
         BASE_URL=$(${pkgs.gnugrep}/bin/grep -oP 'codebase="\K[^"]+' "$APP_FILE" | head -1 || true)
@@ -57,14 +57,14 @@ let
       BASE_URL="$INPUT"
     fi
 
-    # Parse manifest for å finne deployment provider og app-navn
+    # Parse the manifest for deployment provider and app name.
     CODEBASE=$(${pkgs.gnugrep}/bin/grep -oP 'codebase="\K[^"]+' "$APP_FILE" | head -1 || true)
 
     if [ -z "$CODEBASE" ]; then
       CODEBASE=$(${pkgs.gnused}/bin/sed -n 's/.*codebase="\([^"]*\)".*/\1/p' "$APP_FILE" | head -1)
     fi
 
-    # Håndter relative URLer
+    # Handle relative URLs.
     if [[ ! "$CODEBASE" =~ ^https?:// ]]; then
       URL_BASE=$(echo "$BASE_URL" | ${pkgs.gnused}/bin/sed 's|/[^/]*$|/|')
       CODEBASE="$URL_BASE$CODEBASE"
@@ -72,18 +72,18 @@ let
 
     echo "Fant deployment manifest: $CODEBASE"
 
-    # Last ned deployment manifest
+    # Download the deployment manifest.
     DEPLOY_FILE="$TMPDIR/deploy.manifest"
     ${pkgs.curl}/bin/curl -L -k -o "$DEPLOY_FILE" "$CODEBASE"
 
-    # Finn assembly identity og codebase for selve applikasjonen
+    # Find the application's assembly identity and codebase.
     APP_CODEBASE=$(${pkgs.gnugrep}/bin/grep -oP 'codebase="\K[^"]+\.exe\.manifest' "$DEPLOY_FILE" | head -1 || true)
 
     if [ -z "$APP_CODEBASE" ]; then
       APP_CODEBASE=$(${pkgs.gnused}/bin/sed -n 's/.*codebase="\([^"]*\.exe\.manifest\)".*/\1/p' "$DEPLOY_FILE" | head -1)
     fi
 
-    # Beregn base URL for nedlasting
+    # Compute the download base URL.
     MANIFEST_BASE=$(echo "$CODEBASE" | ${pkgs.gnused}/bin/sed 's|/[^/]*$|/|')
 
     if [[ ! "$APP_CODEBASE" =~ ^https?:// ]]; then
@@ -94,15 +94,15 @@ let
 
     echo "App manifest URL: $APP_MANIFEST_URL"
 
-    # Last ned app manifest
+    # Download the app manifest.
     APP_MANIFEST="$TMPDIR/app.manifest"
     ${pkgs.curl}/bin/curl -L -k -o "$APP_MANIFEST" "$APP_MANIFEST_URL"
 
-    # Finn alle filer som må lastes ned
+    # Find every file to download.
     APP_DIR="$TMPDIR/app"
     mkdir -p "$APP_DIR"
 
-    # Last ned hovedapplikasjonen (.exe.deploy eller .exe)
+    # Download the main application.
     EXE_FILE=$(${pkgs.gnugrep}/bin/grep -oP 'codebase="\K[^"]+\.exe(\.deploy)?' "$APP_MANIFEST" | head -1 || true)
 
     if [ -z "$EXE_FILE" ]; then
@@ -114,14 +114,14 @@ let
     echo "Laster ned applikasjonsfiler..."
     ${pkgs.libnotify}/bin/notify-send "ClickOnce" "Laster ned applikasjon..."
 
-    # Last ned exe-filen
+    # Download the exe.
     if [ -n "$EXE_FILE" ]; then
       EXE_URL="$APP_BASE$EXE_FILE"
       LOCAL_EXE="$APP_DIR/$(basename "$EXE_FILE" .deploy)"
       echo "Laster ned: $EXE_URL"
       ${pkgs.curl}/bin/curl -L -k -o "$LOCAL_EXE" "$EXE_URL"
 
-      # Last ned tilhørende DLLer
+      # Download the accompanying DLLs.
       for DLL in $(${pkgs.gnugrep}/bin/grep -oP 'codebase="\K[^"]+\.dll(\.deploy)?' "$APP_MANIFEST" || true); do
         DLL_URL="$APP_BASE$DLL"
         LOCAL_DLL="$APP_DIR/$(basename "$DLL" .deploy)"
@@ -129,7 +129,7 @@ let
         ${pkgs.curl}/bin/curl -L -k -o "$LOCAL_DLL" "$DLL_URL" 2>/dev/null || true
       done
 
-      # Last ned config-filer
+      # Download config files.
       for CFG in $(${pkgs.gnugrep}/bin/grep -oP 'codebase="\K[^"]+\.config(\.deploy)?' "$APP_MANIFEST" || true); do
         CFG_URL="$APP_BASE$CFG"
         LOCAL_CFG="$APP_DIR/$(basename "$CFG" .deploy)"
@@ -149,7 +149,7 @@ let
     fi
   '';
 
-  # Desktop entry for MIME-håndtering
+  # Desktop entry for MIME handling.
   clickonce-desktop = pkgs.makeDesktopItem {
     name = "clickonce-launcher";
     desktopName = "ClickOnce Launcher";
@@ -174,23 +174,23 @@ let
 in
 {
   home.packages = with pkgs; [
-    # Wine for å kjøre Windows-applikasjoner
+    # Wine runs the Windows applications.
     winePackage
 
-    # Winetricks for å installere .NET Framework
+    # Winetricks installs .NET Framework.
     winetricks
 
-    # ClickOnce launcher
+    # ClickOnce launcher.
     clickonce-launcher
     clickonce-desktop
 
-    # Nyttige verktøy
+    # Utilities
     cabextract
     curl
     libnotify
   ];
 
-  # MIME-type assosiasjoner
+  # MIME type associations.
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
@@ -204,7 +204,7 @@ in
     };
   };
 
-  # MIME-type definisjon
+  # MIME type definition.
   xdg.dataFile."mime/packages/clickonce.xml".text = ''
     <?xml version="1.0" encoding="UTF-8"?>
     <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
@@ -219,19 +219,19 @@ in
     </mime-info>
   '';
 
-  # Desktop entry må også være i applications-mappen
+  # The desktop entry must also live in the applications dir.
   xdg.dataFile."applications/clickonce-launcher.desktop".source =
     "${clickonce-desktop}/share/applications/clickonce-launcher.desktop";
 
 
-  # Aktiveringsskript som kjører etter rebuild
+  # Activation script, run after each rebuild.
   home.activation.updateClickOnceMime = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    # Oppdater MIME-database
+    # Update the MIME database.
     if [ -d "$HOME/.local/share/mime" ]; then
       ${pkgs.shared-mime-info}/bin/update-mime-database $HOME/.local/share/mime 2>/dev/null || true
     fi
 
-    # Oppdater desktop database
+    # Update the desktop database.
     if [ -d "$HOME/.local/share/applications" ]; then
       ${pkgs.desktop-file-utils}/bin/update-desktop-database $HOME/.local/share/applications 2>/dev/null || true
     fi

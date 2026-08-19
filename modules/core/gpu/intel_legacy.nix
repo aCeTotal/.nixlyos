@@ -1,12 +1,8 @@
 { config, lib, pkgs, ... }:
 
-# Intel iGPU Gen7.5 og eldre (Haswell, Ivy Bridge, Sandy Bridge, Bay Trail,
-# Ironlake og bakover). detect-hw.sh velger denne ut fra PCI-device-ID.
-#
-# Forskjellen fra gpu/intel_igpu.nix: intel-media-driver (iHD) krever
-# Gen8/Broadwell eller nyere, saa her er i965 den ENESTE VA-API-driveren.
-# GuC/HuC-firmware finnes heller ikke foer Gen9, og intel-compute-runtime
-# (OpenCL) starter paa Gen8 — begge droppet.
+# Intel iGPU Gen7.5 and older, selected by detect-hw.sh from the PCI ID.
+# Unlike gpu/intel_igpu.nix, i965 is the only VA-API driver here, and GuC/HuC
+# firmware and intel-compute-runtime are dropped since both start at Gen8.
 
 {
   hardware.graphics = {

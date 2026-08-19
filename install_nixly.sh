@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-# NixOS installer for SSD/NVMe with FDE (root) and ext4.
-# - Bootloader: lanzaboote (Secure Boot via UEFI). ESP (/boot) remains unencrypted by UEFI design.
-# - Root: LUKS2 (argon2id) + ext4 tuned for SSD with low I/O (no swap partition; zram enabled).
-# - Destructive: WIPES the chosen disk completely.
+# NixOS installer: lanzaboote Secure Boot, LUKS2 root on ext4, zram instead of swap.
+# Destructive: wipes the chosen disk completely.
 
 set -euo pipefail
 

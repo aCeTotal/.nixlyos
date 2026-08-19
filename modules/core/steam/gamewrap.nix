@@ -1,13 +1,8 @@
 { python3, gamemode, writeScript, writeText, launchParams ? { } }:
 
-# Per-game wrapper injected into every Steam app's LaunchOptions as
-# `<this> %command%`. Applies PRIME offload (hybrid-GPU), per-GPU launch
-# parameters from launchparams.nix, and chains gamemoderun in front of the
-# actual game binary.
-#
-# Steam stores LaunchOptions as plain text, so the absolute store path is
-# baked into every per-app entry; autoconfig.nix re-patches on each launch so
-# a new build's path replaces the old one before any game runs.
+# Per-game wrapper injected into every Steam app's LaunchOptions; applies PRIME
+# offload, the per-GPU parameters from launchparams.nix, and gamemoderun.
+# Its store path is baked into each entry, so autoconfig.nix re-patches on launch.
 writeScript "nixly-game-wrap" ''
   #!${python3}/bin/python3
   """Wrap %command% with PRIME offload + per-GPU params + gamemoderun."""
@@ -15,20 +10,14 @@ writeScript "nixly-game-wrap" ''
 
   GAMEMODERUN = "${gamemode}/bin/gamemoderun"
 
-  # "<appid>_<vendor>" -> "KEY=VAL ... -arg ..." (see launchparams.nix).
-  # Separate store file: inlining JSON in a Python string literal breaks on
-  # embedded quotes.
+  # Kept in its own store file, since inlining JSON breaks on embedded quotes.
   with open("${writeText "nixly-launch-params.json"
       (builtins.toJSON launchParams)}") as _f:
       LAUNCH_PARAMS = json.load(_f)
 
   def apply_prime_offload():
-      # Applied per-game, not to the Steam parent: forcing the Steam UI onto
-      # the dGPU makes steamwebhelper's CEF GPU process look up libGLX_nvidia
-      # inside the steam-runtime container, where /run/opengl-driver is not
-      # bound — CEF then crashes in a respawn loop and the UI never renders.
-      # Detection-gated so single-GPU hosts get neither __GLX_VENDOR_LIBRARY_NAME
-      # nor DRI_PRIME.
+      # Per-game only: forcing the Steam UI itself onto the dGPU crashes CEF in a
+      # respawn loop, since /run/opengl-driver is unbound inside the runtime.
       try:
           renders = [p for p in os.listdir("/sys/class/drm")
                      if p.startswith("renderD")]
@@ -46,13 +35,8 @@ writeScript "nixly-game-wrap" ''
           os.environ.setdefault("DRI_PRIME", "1")
 
   def apply_ntsync():
-      # Kernel NT sync primitives: better frame pacing than fsync/futex in
-      # CPU-heavy titles. FUNCTIONAL probe, not a file check: open the
-      # device and actually create a semaphore via ioctl. Only a fully
-      # working ntsync yields "1"; any failure (no device, no permission,
-      # ABI mismatch, driver refusing) yields an explicit "0" so Proton
-      # never selects a backend that will die at runtime.
-      # User override (Steam LaunchOptions / launchparams.nix) wins.
+      # Functional ntsync probe, not a file check: only a semaphore that actually
+      # gets created yields "1", so Proton never picks a backend that dies later.
       if "PROTON_USE_NTSYNC" in os.environ:
           return
       ok = False
@@ -60,9 +44,7 @@ writeScript "nixly-game-wrap" ''
           import fcntl, struct
           fd = os.open("/dev/ntsync", os.O_RDWR)
           try:
-              # v6.14+ final ABI: NTSYNC_IOC_CREATE_SEM =
-              # _IOW('N', 0x80, {u32 count, u32 max}) → returns sem fd.
-              # Verified against the running kernel (7.1.8-zen1).
+              # Final 6.14+ ABI: create-sem returns the semaphore fd.
               try:
                   sem = fcntl.ioctl(
                       fd, 0x40084E80, bytearray(struct.pack("II", 0, 1)))
@@ -70,9 +52,7 @@ writeScript "nixly-game-wrap" ''
                       os.close(sem)
                       ok = True
               except OSError:
-                  # pre-6.14 RFC ABI (e.g. 6.12 backports):
-                  # _IOWR('N', 0x80, {u32 sem, u32 count, u32 max}),
-                  # sem fd written into args.
+                  # Pre-6.14 RFC ABI writes the semaphore fd into args instead.
                   buf = bytearray(struct.pack("III", 0, 0, 1))
                   fcntl.ioctl(fd, 0xC00C4E80, buf)
                   sem = struct.unpack("III", bytes(buf))[0]
@@ -85,9 +65,7 @@ writeScript "nixly-game-wrap" ''
       os.environ["PROTON_USE_NTSYNC"] = "1" if ok else "0"
 
   def gpu_vendor():
-      # Games render on the dGPU (PRIME offload above), so loaded driver
-      # decides the variant: proprietary Nvidia if present, else AMD if an
-      # AMD card exists. Intel-only hosts get no per-vendor params.
+      # The loaded driver picks the variant; Intel-only hosts get no per-vendor params.
       if os.path.exists("/proc/driver/nvidia/version"):
           return "nvidia"
       try:
@@ -102,9 +80,7 @@ writeScript "nixly-game-wrap" ''
       return None
 
   def apply_launch_params(cmd):
-      # Look up "<appid>_<vendor>". Leading KEY=VAL tokens become env vars;
-      # the rest are appended after the game command, exactly like args in
-      # Steam's own LaunchOptions field.
+      # Leading KEY=VAL tokens become env vars; the rest are appended as args.
       appid = os.environ.get("SteamAppId") \
           or os.environ.get("STEAM_COMPAT_APP_ID")
       vendor = gpu_vendor()

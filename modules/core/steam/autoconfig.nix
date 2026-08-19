@@ -1,12 +1,8 @@
 { python3, writeScript, gameWrap, proton-ge-bin }:
 
-# Runs on the host (outside the Steam FHS sandbox) immediately before every
-# Steam launch, via programs.steam.package's `extraPreBwrapCmds`.
-#
-# Steam rewrites config.vdf and localconfig.vdf when it exits and drops keys
-# it did not set itself, so these settings cannot be written once — they are
-# reapplied on each start. Best-effort: VDF key names occasionally shift
-# between Steam UI builds; failures log to stderr and never block launch.
+# Runs on the host before every Steam launch, via extraPreBwrapCmds.
+# Steam drops keys it did not set on exit, so these settings are reapplied each start.
+# Best-effort: failures log to stderr and never block launch.
 writeScript "steam-autoconfig" ''
   #!${python3}/bin/python3
   """Steam auto-configuration:
@@ -21,12 +17,8 @@ writeScript "steam-autoconfig" ''
   """
   import glob, os, re, sys, shutil
 
-  # compatibilitytool.vdf for the GE-Proton build Steam actually registers
-  # (via extraCompatPackages). CompatToolMapping entries must use the tool's
-  # INTERNAL name from this file — a mismatch silently resolves to no compat
-  # tool at all, and Steam then exec()s the Windows binary directly
-  # ("cannot execute binary file"). Read at runtime; parsed below once the
-  # VDF parser is defined.
+  # CompatToolMapping needs the tool's internal name from this file; a mismatch
+  # silently resolves to no compat tool at all.
   GE_PROTON_VDF = "${proton-ge-bin.steamcompattool}/compatibilitytool.vdf"
 
   def find_root():
@@ -40,10 +32,7 @@ writeScript "steam-autoconfig" ''
               return p
       return None
 
-  # VDF strings allow C-style escapes inside quotes (\" \\ \n \t \r). The
-  # tokenizer must consume `\<anything>` as a unit so an embedded `\"` does not
-  # terminate the string. Unescape on read, re-escape on dump so the round trip
-  # preserves Steam's payload exactly.
+  # VDF allows C-style escapes, so the tokenizer consumes `\<anything>` as a unit.
   _UNESC = {"n": "\n", "t": "\t", "r": "\r", "\\": "\\", '"': '"'}
 
   def _unescape(s):
@@ -145,13 +134,8 @@ writeScript "steam-autoconfig" ''
       changed = False
       steam_cfg = ensure(data, ["InstallConfigStore", "Software", "Valve", "Steam"])
 
-      # "0" is the global Steam Play default; every other key is an appid the
-      # user has an explicit compat-tool override on. Force both onto GE-Proton
-      # so the newest GE build is what actually runs everywhere. The wildcard
-      # MUST stay at Valve's default priority 75: 250 forces Proton onto
-      # Linux-native apps too, including Steam Linux Runtime itself, which then
-      # fails to install with "Invalid platform" (no Windows depot) and breaks
-      # every Proton game launch. Per-app overrides keep 250 (user-forced).
+      # Force every entry onto GE-Proton; the "0" wildcard must stay at priority 75,
+      # since 250 forces Proton onto Linux-native apps including Steam Linux Runtime.
       compat = ensure(steam_cfg, ["CompatToolMapping"])
       if "0" not in compat or not isinstance(compat.get("0"), dict):
           compat["0"] = {}
@@ -165,7 +149,7 @@ writeScript "steam-autoconfig" ''
               entry["priority"] = prio
               changed = True
 
-      # Shader pre-caching & background Vulkan shader processing
+      # Shader pre-caching and background Vulkan shader processing.
       shader = ensure(steam_cfg, ["ShaderCacheManager"])
       changed |= set_leaf(shader, "EnableShaderBackgroundProcessing", "1")
 
@@ -174,11 +158,7 @@ writeScript "steam-autoconfig" ''
           print("[steam-autoconfig] Global config patched.", file=sys.stderr)
 
   def patch_app_launch_options(user_cfg):
-      # Inject `<wrap> %command%` into per-app LaunchOptions so every game runs
-      # with PRIME offload + gamemoderun. Re-runs on each start so newly
-      # installed games get covered, and so a rebuild's new store path replaces
-      # the prior one in already-patched entries (including legacy
-      # nixly-gamescope-wrap paths from gamescope-era builds).
+      # Inject `<wrap> %command%` into per-app LaunchOptions for PRIME offload and gamemode.
       wrap = "${gameWrap}"
       new_prefix = f"{wrap} %command%"
       changed = False
@@ -193,9 +173,7 @@ writeScript "steam-autoconfig" ''
       if apps is None:
           return False
 
-      # writeScript creates /nix/store/<hash>-nixly-game-wrap as the file path
-      # itself (no /bin/ suffix). Also matches the legacy nixly-gamescope-wrap
-      # name so old entries migrate to this build.
+      # Also matches the legacy nixly-gamescope-wrap name so old entries migrate.
       wrap_path_re = re.compile(
           r"/nix/store/[A-Za-z0-9]+-nixly-game(?:scope)?-wrap"
       )
@@ -205,8 +183,7 @@ writeScript "steam-autoconfig" ''
               continue
           opts = app.get("LaunchOptions", "")
 
-          # Already wrapped (current or legacy path) — rewrite the store path if
-          # it has drifted, otherwise leave alone.
+          # Already wrapped: only rewrite a drifted store path.
           if wrap_path_re.search(opts):
               new_opts = wrap_path_re.sub(wrap, opts)
               if new_opts != opts:
@@ -219,8 +196,7 @@ writeScript "steam-autoconfig" ''
               changed = True
               continue
 
-          # Migrate prior `gamemoderun %command%` injection — the wrap handles
-          # gamemode internally now.
+          # Migrate old `gamemoderun %command%`; the wrap handles gamemode itself now.
           if "gamemoderun %command%" in opts:
               app["LaunchOptions"] = opts.replace(
                   "gamemoderun %command%", new_prefix, 1
@@ -232,9 +208,7 @@ writeScript "steam-autoconfig" ''
               app["LaunchOptions"] = opts.replace("%command%", new_prefix, 1)
               changed = True
           else:
-              # Args-only LaunchOptions ("-skipintro -windowed"): Steam appends
-              # these to the game binary. Inject `<wrap> %command%` in front so
-              # the wrap launches the game binary with the user's args intact.
+              # Args-only options: prepend the wrap so the user's args stay intact.
               app["LaunchOptions"] = f"{new_prefix} {opts}"
               changed = True
       return changed
@@ -245,7 +219,7 @@ writeScript "steam-autoconfig" ''
       changed = False
       user_cfg = ensure(data, ["UserLocalConfigStore"])
 
-      # Friends notifications + sounds off (no chat/online popups)
+      # Friends notifications and sounds off.
       friends = ensure(user_cfg, ["friends"])
       for k in [
           "Notifications_ShowChatRoomNotification",
@@ -262,13 +236,11 @@ writeScript "steam-autoconfig" ''
       ]:
           changed |= set_leaf(friends, k, "0")
 
-      # Store/news auto-popups off
+      # Store and news auto-popups off.
       news = ensure(user_cfg, ["News"])
       changed |= set_leaf(news, "NotifyAvailableGames", "0")
 
-      # Steam Game Recording off — background recording eats CPU/disk during
-      # gameplay. Key paths shifted between Steam builds (streaming_v2 vs the
-      # GameRecording subtree); write both. Extra keys are harmless if ignored.
+      # Game Recording off; key paths shifted between builds, so write both.
       gr = ensure(user_cfg, ["GameRecording"])
       for k in ("Mode", "Enabled", "BackgroundRecording"):
           changed |= set_leaf(gr, k, "0")
@@ -283,10 +255,7 @@ writeScript "steam-autoconfig" ''
           print(f"[steam-autoconfig] Local UI prefs patched: {path}", file=sys.stderr)
 
   def patch_sharedconfig(path):
-      # Start-up location. The legacy "StartPage" key is dead in the current
-      # client — it reads the `start_page` client setting, which persists to
-      # the roaming (cloud-synced) store as SteamDefaultDialog. "#app_games" is
-      # Library; the store front is "#app_store".
+      # Start-up location; the legacy "StartPage" key is dead, SteamDefaultDialog wins.
       with open(path) as f:
           data = parse(f.read())
       steam_cfg = ensure(
@@ -297,8 +266,7 @@ writeScript "steam-autoconfig" ''
           print(f"[steam-autoconfig] Start page set to Library: {path}", file=sys.stderr)
 
   def library_paths(root):
-      # libraryfolders.vdf lives in steamapps/ (current) or config/ (older).
-      # Returns library root dirs (each containing steamapps/).
+      # libraryfolders.vdf lives in steamapps/ or, on older clients, config/.
       paths = [root]
       for cand in (
           os.path.join(root, "steamapps", "libraryfolders.vdf"),
@@ -325,10 +293,7 @@ writeScript "steam-autoconfig" ''
               out.append(p)
       return out
 
-  # Valve runtime/compat tools must NOT be held back like games are: a stale
-  # anti-cheat runtime or Proton build breaks the games that depend on it.
-  # Matched by manifest name so newly released tools are covered without a
-  # hardcoded appid list.
+  # Matched by manifest name so new tools are covered without a hardcoded appid list.
   def is_tool(name):
       return (
           name.startswith("Proton")
@@ -337,17 +302,13 @@ writeScript "steam-autoconfig" ''
           or "BattlEye" in name
       )
 
-  # Beta branch per tool appid. Proton Experimental's `bleeding-edge` branch
-  # carries the newest dxvk/vkd3d-proton/wine changes.
+  # Beta branch per tool appid.
   TOOL_BETAS = {
       "1493710": "bleeding-edge",   # Proton Experimental
   }
 
   def patch_appmanifest(path):
-      # AutoUpdateBehavior: "0" always-update (default), "1" only-on-launch,
-      # "2" high-priority. Games get "1" so background updates do not hit disk
-      # or bandwidth during gameplay; tools get "2" so they update first and
-      # never lag behind. New installs get "0" → re-run on each launch.
+      # AutoUpdateBehavior: games get "1" (on launch), Valve tools "2" (high priority).
       with open(path) as f:
           data = parse(f.read())
       appstate = data.get("AppState")

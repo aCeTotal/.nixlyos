@@ -1,5 +1,5 @@
 function dirLookup(dir)
-   -- Return first result from find
+   -- First result from find.
    local p = io.popen('find '..dir..' -maxdepth 0 -type d | head -n 1')  
    for file in p:lines() do 
        return file
@@ -46,7 +46,7 @@ require("nvim-dap-virtual-text").setup()
 require("dapui").setup({
   icons = { expanded = "", collapsed = "", current_frame = "" },
   mappings = {
-    -- Use a table to apply multiple mappings
+    -- A table applies multiple mappings.
     expand = { "<CR>", "<2-LeftMouse>" },
     open = "o",
     remove = "d",
@@ -54,28 +54,17 @@ require("dapui").setup({
     repl = "r",
     toggle = "t",
   },
-  -- Use this to override mappings for specific elements
+  -- Per-element mapping overrides.
   element_mappings = {
-    -- Example:
-    -- stacks = {
-    --   open = "<CR>",
-    --   expand = "o",
-    -- }
   },
-  -- Expand lines larger than the window
-  -- Requires >= 0.7
+  -- Expand lines larger than the window.
   expand_lines = vim.fn.has("nvim-0.7") == 1,
-  -- Layouts define sections of the screen to place windows.
-  -- The position can be "left", "right", "top" or "bottom".
-  -- The size specifies the height/width depending on position. It can be an Int
-  -- or a Float. Integer specifies height/width directly (i.e. 20 lines/columns) while
-  -- Float value specifies percentage (i.e. 0.3 - 30% of available lines/columns)
-  -- Elements are the elements shown in the layout (in order).
-  -- Layouts are opened in order so that earlier layouts take priority in window sizing.
+  -- Layouts place windows on screen; size is columns/lines as an int, or a
+  -- fraction of the total as a float.
   layouts = {
     {
       elements = {
-      -- Elements can be strings or table with id and size keys.
+      -- Elements are strings, or tables with id and size keys.
         { id = "scopes", size = 0.25 },
         "breakpoints",
         "stacks",
@@ -94,9 +83,8 @@ require("dapui").setup({
     },
   },
   controls = {
-    -- Requires Neovim nightly (or 0.8 when released)
     enabled = true,
-    -- Display controls in this element
+    -- Which element shows the controls.
     element = "repl",
     icons = {
       pause = "",

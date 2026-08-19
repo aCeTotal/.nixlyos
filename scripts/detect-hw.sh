@@ -1,14 +1,8 @@
 #!/usr/bin/env bash
-# Hardware-deteksjon foer hver eval (install, update, rebuild). Nix-eval er
-# pure og kan ikke lese /sys selv, saa dette scriptet skriver resultatet inn
-# i repoet:
-#
-#   modules/core/default.nix        cpu/ + gpu/-imports byttes ut
-#   modules/core/gpu/detected.nix   GENERERT: PCI-bus-IDer + NVIDIA-branch
-#   modules/core/hw/profile.nix     GENERERT: laptop/modell-spesifikke moduler
-#
-# Ingen forks i hot path: leser /sys og /proc direkte. Er alt allerede
-# korrekt, avsluttes scriptet uten aa roere en fil (normaltilfellet).
+# Hardware detection before every eval. Nix eval is pure and cannot read /sys,
+# so this script writes the result into the repo: the cpu/ and gpu/ imports in
+# modules/core/default.nix, plus the generated gpu/detected.nix and hw/*.nix.
+# No forks in the hot path, and nothing is touched when everything already matches.
 set -euo pipefail
 
 REPO=${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
@@ -18,16 +12,16 @@ DEFAULT_NIX="$REPO/modules/core/default.nix"
 
 REGISTER="$REPO/scripts/laptop-register"
 
-# Skriv fil bare naar innholdet endrer seg (holder repoet rent), og legg den
-# i git-indeksen om den er ny — flake-eval ser ikke untracked filer.
-# safe.directory: installer/systemd kjoerer som root paa et bruker-eid repo.
+# Write only when the content changes, and add new files to the git index, since
+# flake eval does not see untracked files.
+# safe.directory: the installer and systemd run as root on a user-owned repo.
 write_generated() {
   local path=$1 content=$2 rel=${1#"$REPO"/}
   if [[ -f $path ]] && [[ "$(<"$path")" == "$content" ]]; then
     return 0
   fi
   mkdir -p "$(dirname "$path")"
-  # Redirect (ikke mv) saa eier/modus beholdes naar scriptet kjoerer som root.
+  # Redirect, not mv, so owner and mode survive when running as root.
   printf '%s\n' "$content" > "$path"
   ui_info "wrote $rel"
   if [[ -d "$REPO/.git" ]] && command -v git >/dev/null 2>&1; then
@@ -45,7 +39,7 @@ slug() {
   printf '%s\n' "$s"
 }
 
-# ── CPU: vendor, kjerner, feature-nivaa ───────────────────────────────
+# CPU: vendor, cores, feature level.
 cpu_mod="" cpu_flags="" nproc=0
 while IFS= read -r line; do
   case "$line" in
@@ -57,8 +51,7 @@ while IFS= read -r line; do
 done < /proc/cpuinfo
 (( nproc > 0 )) || nproc=1
 
-# x86-64 psABI-nivaa. Brukes til aa velge konservative innstillinger paa
-# gammel CPU (se hw/resources.nix-konsumentene).
+# x86-64 psABI level, used to pick conservative settings on old CPUs.
 has_flag() { [[ $cpu_flags == *" $1 "* ]]; }
 cpu_level=1
 if has_flag sse4_2 && has_flag popcnt && has_flag cx16; then cpu_level=2; fi
@@ -75,20 +68,17 @@ while IFS= read -r line; do
 done < /proc/meminfo
 (( mem_gib > 0 )) || mem_gib=1
 
-# ── GPU ───────────────────────────────────────────────────────────────
-# PCI class 0x03xxxx = display controller. vendor: 10de=NVIDIA,
-# 8086=Intel, 1002=AMD.
+# GPU
+# PCI class 0x03xxxx is a display controller; 10de is NVIDIA, 8086 Intel, 1002 AMD.
 has_nvidia=0 has_amd=0 has_intel_igpu=0 has_intel_dgpu=0
 has_amd_igpu=0 has_amd_dgpu=0
 bus_nvidia="" bus_intel="" bus_amd="" dev_nvidia=""
 amd_legacy=0 intel_legacy=0
 
-# Intel DG2/Alchemist (Arc A310–A770). Alt annet fra 8086 behandles som iGPU.
+# Intel DG2 Arc; everything else from 8086 is treated as an iGPU.
 dg2_ids=" 5690 5691 5692 5693 5694 5695 5696 5697 56a0 56a1 56a2 56a3 56a5 56a6 "
 
-# Display-delen av en AMD APU. Brukes BARE til statuslinja (iGPU vs dedikert)
-# — modulvalget under bryr seg ikke om forskjellen. Alt annet fra 1002 er
-# dedikert.
+# The display part of an AMD APU, used only for the status line.
 amd_apu_ids=" 1114 13c0 150e 1586 15bf 15c8 15d8 15dd 15e7 1636 1638 163f 164c 164d 164e 1681 98e4 "
 amd_is_apu() {
   local d=$1 i=$2
@@ -101,12 +91,8 @@ amd_is_apu() {
   (( i >= 0x9900 && i <= 0x991f ))      # Trinity/Richland (ARUBA)
 }
 
-# AMD pre-GCN / GCN1 (Southern Islands) / GCN2 (Sea Islands). Disse maa
-# tvinges over paa amdgpu (eller bli paa radeon), og har ikke ppfeaturemask
-# eller moderne VA-API. Eksplisitte intervaller — AMDs ID-rom er ikke
-# monotont: Polaris starter paa 0x67c0 rett etter Hawaii (0x67a0-0x67bf), og
-# Vega (0x6860-0x687f) ligger MELLOM Pitcairn (0x6800-0x685f) og Evergreen
-# (0x6880+).
+# Old AMD cards that must be forced onto amdgpu or left on radeon. The ranges are
+# explicit because AMD's ID space is not monotonic.
 amd_is_legacy() {
   local i=$1
   (( i >= 0x1304 && i <= 0x131d )) ||   # Kaveri  (GCN2 APU)
@@ -117,15 +103,11 @@ amd_is_legacy() {
   (( i >= 0x6800 && i <= 0x685f )) ||   # Pitcairn/Verde (GCN1), Trinity APU
   (( i >= 0x6880 && i <= 0x68ff )) ||   # Evergreen (TeraScale 2)
   (( i >= 0x7100 && i <= 0x71ff )) ||   # R520/R580
-  # 0x9400-0x986f: R600/RS780/RS880 (TeraScale) + Kabini/Mullins (GCN2 APU).
-  # Stopper foer 0x9870 — Carrizo/Bristol (0x9870-0x9877) og Stoney (0x98e4)
-  # er GCN3 og hoerer paa amdgpu uten force-enable.
+  # Stops before 0x9870: Carrizo and Stoney are GCN3 and belong on plain amdgpu.
   (( i >= 0x9400 && i <= 0x986f ))
 }
 
-# Intel Gen7.5 og eldre: intel-media-driver (iHD) krever Gen8+/Broadwell, saa
-# disse maa ha i965. Broadwell starter paa 0x1602 — alt under 0x0f40 er
-# Ironlake/SNB/IVB/HSW/Bay Trail, 0x25xx-0x2fxx er Gen3/4, 0xa0xx Pineview.
+# Intel Gen7.5 and older need i965, since iHD requires Broadwell or newer.
 intel_is_legacy() {
   local i=$1
   (( i <= 0x0f3f )) ||
@@ -133,9 +115,7 @@ intel_is_legacy() {
   (( i >= 0xa000 && i <= 0xa0ff ))
 }
 
-# sysfs-adresse (hex, domain:bus:dev.fn) -> NixOS prime-busId. Merk:
-# hardware.nvidia.prime.*BusId tar DESIMAL adresse, mens lspci/sysfs er
-# hex — formatet er "PCI:bus@domain:device:function".
+# hardware.nvidia.prime.*BusId takes a DECIMAL address while sysfs is hex.
 to_bus_id() {
   local a=$1 dom bus slot fn
   dom=${a%%:*}; a=${a#*:}
@@ -173,17 +153,14 @@ for dev in /sys/bus/pci/devices/*; do
   esac
 done
 
-# ── NVIDIA-arkitektur -> driver-branch ────────────────────────────────
-# PCI-device-ID -> arkitektur. Intervallene under er DISJUNKTE og maa
-# sjekkes i rekkefoelge: Fermi og Kepler har interleavede ID-blokker
-# (GF119=0x1040, GK110=0x1003, GF114=0x1200, GK208=0x1290), saa et enkelt
-# "stoerre enn"-kutt er umulig. Heuristikk — pin branch i
-# scripts/laptop-register om et kort havner feil.
-#   595 (latest)  Turing og nyere (0x1e00+)
-#   580           Maxwell / Pascal / Volta  (droppet i 590+)
-#   470           Kepler
-#   390           Fermi
-#   340           Tesla
+# NVIDIA architecture to driver branch. The ranges are disjoint and must be
+# checked in order, since Fermi and Kepler have interleaved ID blocks. This is a
+# heuristic; pin the branch in scripts/laptop-register if a card lands wrong.
+#   latest  Turing and newer
+#   580     Maxwell, Pascal, Volta
+#   470     Kepler
+#   390     Fermi
+#   340     Tesla
 nvidia_arch="" nvidia_branch=""
 if (( has_nvidia )) && [[ -n $dev_nvidia ]]; then
   id=$((16#$dev_nvidia))
@@ -207,14 +184,13 @@ if (( has_nvidia )) && [[ -n $dev_nvidia ]]; then
     turing_plus)          nvidia_branch="latest";;
     maxwell_pascal_volta) nvidia_branch="legacy_580";;
     kepler)               nvidia_branch="legacy_470";;
-    # Fermi/Tesla trenger legacy_390/legacy_340, som er broken = true i
-    # nixpkgs (bygger ikke mot moderne kernel). Et system som ikke bygger er
-    # verre enn nouveau — se gpu/nvidia_nouveau.nix.
+    # legacy_390 and legacy_340 are broken in nixpkgs, and a system that does not
+    # build is worse than nouveau.
     fermi|tesla)          nvidia_branch="nouveau";;
   esac
 fi
 
-# ── DMI: laptop eller stasjonaer + modell ─────────────────────────────
+# DMI: laptop or desktop, plus model.
 dmi() { [[ -r /sys/class/dmi/id/$1 ]] && read -r _v < "/sys/class/dmi/id/$1" && printf '%s\n' "$_v" || true; }
 
 chassis=$(dmi chassis_type)
@@ -228,8 +204,8 @@ board=$(dmi board_name)
 is_laptop=0
 case "$chassis" in
   8|9|10|11|14|30|31|32) is_laptop=1;;
-  # Ukjent/feilrapportert chassis: fall tilbake paa et faktisk batteri.
-  # Krever type=Battery (en UPS eller et musbatteri melder Device/UPS).
+  # Unknown or misreported chassis: fall back to an actual battery.
+  # type=Battery is required, since a UPS or mouse battery reports Device or UPS.
   *) for b in /sys/class/power_supply/*; do
        [[ -r $b/type && -r $b/present ]] || continue
        read -r t < "$b/type"; [[ $t == Battery ]] || continue
@@ -238,7 +214,7 @@ case "$chassis" in
      done;;
 esac
 
-# Vendor-slug slik nixos-hardware navngir modulene sine.
+# Vendor slug as nixos-hardware names its modules.
 vendor_slug=""
 case "${sys_vendor,,}" in
   *micro-star*|*msi*)        vendor_slug=msi;;
@@ -267,23 +243,21 @@ case "${sys_vendor,,}" in
   *)                         vendor_slug=$(slug "$sys_vendor");;
 esac
 
-# Modell-kandidater i prioritert rekkefoelge. nixos-hardware har 400+
-# moduler navngitt <vendor>-<modell>; nix-sida importerer den FOERSTE som
-# faktisk finnes, saa en kandidat som ikke traeffer er gratis.
+# Model candidates in priority order; the nix side imports the first that exists,
+# so a candidate that does not match costs nothing.
 candidates=()
 [[ -n $vendor_slug && -n $product ]] && candidates+=("$vendor_slug-$(slug "$product")")
 [[ -n $vendor_slug && -n $board   ]] && candidates+=("$vendor_slug-$(slug "$board")")
 [[ -n $vendor_slug && -n $family  ]] && candidates+=("$vendor_slug-$(slug "$family")")
 
-# ── Register: eksplisitte overstyringer ───────────────────────────────
-# Format per linje:  vendor-glob | produkt-glob | moduler(komma) | nvidia-branch
-# Foerste treff vinner. Globs matches mot smaa bokstaver.
+# Register of explicit overrides, first match wins.
+# Line format: vendor-glob, product-glob, comma-separated modules, nvidia branch.
 reg_modules="" reg_branch=""
 if [[ -f $REGISTER ]]; then
   while IFS='|' read -r r_vendor r_product r_mods r_branch; do
     [[ -z ${r_vendor// } || ${r_vendor// } == \#* ]] && continue
     r_vendor=${r_vendor// }
-    # trim (ingen forks — registeret leses ved hver eval)
+    # Trim without forking; the register is read on every eval.
     r_product=${r_product#"${r_product%%[![:space:]]*}"}
     r_product=${r_product%"${r_product##*[![:space:]]}"}
     [[ ${vendor_slug,,} == ${r_vendor,,} || $r_vendor == '*' ]] || continue
@@ -295,7 +269,7 @@ if [[ -f $REGISTER ]]; then
 fi
 [[ -n $reg_branch ]] && nvidia_branch=$reg_branch
 
-# ── Generisk sett: laptop vs stasjonaer, SSD vs HDD ───────────────────
+# Generic set: laptop versus desktop, SSD versus HDD.
 rotational=1
 for b in /sys/block/*; do
   [[ -r $b/removable && -r $b/queue/rotational ]] || continue
@@ -313,11 +287,9 @@ else
   (( rotational )) && generic+=("common-pc-hdd") || generic+=("common-pc-ssd")
 fi
 
-# Register kan legge til moduler, og pseudo-modulen "no-model" slaar av den
-# DMI-utledede modellmodulen. Escape-luka finnes fordi nixos-hardware foelger
-# unstable: en modellmodul kan sette opsjoner som ikke finnes i den stable
-# nixpkgs dette flaket bruker (f.eks. hardware.intelgpu.vaapiDriver), og da
-# feiler hele evalueringen.
+# The register can add modules, and the "no-model" pseudo-module disables the
+# DMI-derived one, because a nixos-hardware model module can set options that do
+# not exist in the stable nixpkgs this flake uses, breaking the whole eval.
 if [[ -n $reg_modules ]]; then
   IFS=',' read -r -a extra <<< "$reg_modules"
   for m in "${extra[@]}"; do
@@ -329,38 +301,37 @@ if [[ -n $reg_modules ]]; then
   done
 fi
 
-# ── GPU-modulvalg ─────────────────────────────────────────────────────
+# GPU module selection.
 gpu_mods=()
 if (( has_nvidia )); then
   if [[ $nvidia_branch == nouveau ]]; then
     gpu_mods+=("./gpu/nvidia_nouveau.nix")
   elif [[ -n $nvidia_branch && $nvidia_branch != latest ]]; then
-    # Gammelt kort: eget profilmodul som pinner legacy-branchen og bare
-    # slaar paa prime naar det faktisk finnes en iGPU.
+    # Old card: a profile module that pins the legacy branch and only enables
+    # prime when an iGPU is actually present.
     gpu_mods+=("./gpu/nvidia_legacy.nix")
   elif (( has_intel_igpu )); then
-    # Hybrid/Optimus: prime-offload mot iGPU-drevet panel.
+    # Hybrid: prime offload against the iGPU-driven panel.
     gpu_mods+=("./gpu/nvidia_intel.nix")
   else
     gpu_mods+=("./gpu/nvidia_only.nix")
   fi
 fi
 (( has_intel_dgpu )) && gpu_mods+=("./gpu/intel.nix")
-# iGPU-modulen eier i915-firmware og VA-API-dekoding for kompositoren, saa
-# den skal med ogsaa naar NVIDIA driver sesjonen.
+# The iGPU module owns i915 firmware and VA-API decoding for the compositor, so
+# it is included even when NVIDIA drives the session.
 if (( has_intel_igpu )); then
   (( intel_legacy )) && gpu_mods+=("./gpu/intel_legacy.nix") || gpu_mods+=("./gpu/intel_igpu.nix")
 fi
-# AMD-modulen er felles for iGPU og dGPU, men dropp den naar NVIDIA driver
-# sesjonen — radeonsi-sessionVariables ville da peke feil.
+# The AMD module is shared by iGPU and dGPU, but dropped when NVIDIA drives the
+# session, since its radeonsi session variables would point at the wrong driver.
 if (( has_amd && !has_nvidia )); then
   (( amd_legacy )) && gpu_mods+=("./gpu/amd_legacy.nix") || gpu_mods+=("./gpu/amd.nix")
 fi
 
-# ── Enheter som skal styre tjenester ──────────────────────────────────
-# Bluetooth: controlleren dukker opp i /sys/class/bluetooth naar btusb/btintel
-# er lastet. USB-fallback for live-ISO der modulen ikke er lastet enda:
-# bDeviceClass e0 = Wireless Controller.
+# Devices that gate services.
+# The Bluetooth controller appears under /sys/class/bluetooth once btusb loads;
+# the USB fallback covers a live ISO where the module is not loaded yet.
 has_bt=0
 for b in /sys/class/bluetooth/*; do [[ -e $b ]] && { has_bt=1; break; }; done
 if (( !has_bt )); then
@@ -370,7 +341,7 @@ if (( !has_bt )); then
   done
 fi
 
-# Fingeravtrykksleser: kjente USB-vendorer for fprintd-stoettede lesere.
+# Known USB vendors for fprintd-supported fingerprint readers.
 fp_vendors=" 27c6 138a 06cb 1c7a 08ff 04f3 05ba 298d 1491 "
 has_fp=0
 for u in /sys/bus/usb/devices/*/idVendor; do
@@ -379,14 +350,14 @@ for u in /sys/bus/usb/devices/*/idVendor; do
   [[ $fp_vendors == *" $v "* ]] && { has_fp=1; break; }
 done
 
-# Thunderbolt: en domain dukker opp i /sys/bus/thunderbolt/devices naar
-# kontrolleren finnes. boltd trengs for enhetsgodkjenning.
+# A Thunderbolt domain appears once the controller is present; boltd handles
+# device authorisation.
 has_tb=0
 for t in /sys/bus/thunderbolt/devices/domain*; do [[ -e $t ]] && { has_tb=1; break; }; done
 
-# ── Skriv hw/devices.nix ──────────────────────────────────────────────
-# WiFi gates bevisst IKKE: NetworkManager maa vaere paa uansett (ethernet),
-# og wifi-innstillingene i networking.nix er no-ops uten et wifi-kort.
+# Write hw/devices.nix.
+# WiFi is deliberately not gated: NetworkManager is needed for ethernet anyway,
+# and the wifi settings are no-ops without a card.
 write_generated "$REPO/modules/core/hw/devices.nix" \
 "{ lib, ... }:
 
@@ -400,9 +371,8 @@ write_generated "$REPO/modules/core/hw/devices.nix" \
 ")
 }"
 
-# ── Skriv hw/dmi.nix ──────────────────────────────────────────────────
-# Ren data. Moduler som maa vite hvilken maskin de staar paa (msi-ec pinner
-# EC-firmware per hovedkort) leser herfra i stedet for aa hardkode.
+# Write hw/dmi.nix.
+# Pure data, read by modules that need to know which machine they run on.
 write_generated "$REPO/modules/core/hw/dmi.nix" \
 "{
   vendor = \"$sys_vendor\";
@@ -413,13 +383,9 @@ write_generated "$REPO/modules/core/hw/dmi.nix" \
   isLaptop = $( ((is_laptop)) && echo true || echo false );
 }"
 
-# ── Skriv hw/resources.nix ────────────────────────────────────────────
-# nix-bygg: max-jobs x cores maa holde seg innenfor RAM, ikke bare innenfor
-# kjernetallet — en parallell C++-link tar GiB, og nix-daemon har MemoryMax
-# 90 % (nix.nix). Ett job per 8 GiB og aldri mer enn en fjerdedel av
-# kjernene; cores per job begrenses av BAADE kjerner og RAM (1 per 4 GiB).
-# 16 GiB / 16 traader -> 1 x 3 (samme konservative profil som det hardkodede
-# 1/2). 128 GiB / 64 traader -> 16 x 2.
+# Write hw/resources.nix.
+# max-jobs times cores must fit in RAM, not just in the core count: one job per
+# 8 GiB, never more than a quarter of the cores, and cores per job capped by both.
 jobs=$(( mem_gib / 8 ))
 (( jobs > nproc / 4 )) && jobs=$(( nproc / 4 ))
 (( jobs < 1 )) && jobs=1
@@ -437,7 +403,7 @@ write_generated "$REPO/modules/core/hw/resources.nix" \
   buildCores = $build_cores;
 }"
 
-# ── Skriv gpu/detected.nix ────────────────────────────────────────────
+# Write gpu/detected.nix.
 write_generated "$REPO/modules/core/gpu/detected.nix" \
 "{
   nvidia = \"$bus_nvidia\";
@@ -447,24 +413,22 @@ write_generated "$REPO/modules/core/gpu/detected.nix" \
   nvidiaBranch = \"${nvidia_branch:-latest}\";
 }"
 
-# ── Skriv hw/profile.nix ──────────────────────────────────────────────
+# Write hw/profile.nix.
 cand_nix="" gen_nix=""
 for c in "${candidates[@]}"; do cand_nix+="    \"$c\"
 "; done
 for g in "${generic[@]}"; do gen_nix+="    \"$g\"
 "; done
 
-# msi-ec: EC-driver for MSI-laptoper (fan/shift-mode). Skal ikke lastes paa
-# annen hardware — gates her istedenfor i core/default.nix.
+# msi-ec must not load on non-MSI hardware, so it is gated here.
 extra_imports=""
 if (( is_laptop )) && [[ $vendor_slug == msi ]]; then
   extra_imports="
     ++ [ ../../system/msi-ec.nix ]"
 fi
 
-# TLP: common-pc-laptop slaar paa TLP naar power-profiles-daemon er av (som
-# den er i cpu/*.nix). TLP eier da governor/EPP og overstyrer
-# performance-governoren fra perf.nix — én eier, saa TLP holdes av.
+# common-pc-laptop enables TLP when power-profiles-daemon is off, and TLP would
+# then own the governor and override perf.nix, so it is kept off.
 tlp_line=""
 (( is_laptop )) && tlp_line="
 
@@ -494,7 +458,7 @@ lib.warnIf (missing != [ ])
     ++ lib.optional (model != null) hw.\${model}$extra_imports;$tlp_line
 }"
 
-# ── Er default.nix allerede korrekt? ─────────────────────────────────
+# Is default.nix already correct?
 wanted=()
 [[ -n $cpu_mod ]] && wanted+=("$cpu_mod")
 wanted+=("${gpu_mods[@]}")
@@ -509,8 +473,7 @@ case $cpu_mod in
   *amd*)   cpu_name="AMD";;
   *)       cpu_name="Unknown";;
 esac
-# iGPU-ene foerst, saa de dedikerte: "Intel CPU + Intel iGPU | Nvidia
-# dedicated GPU detected". CPU og foerste GPU bindes med "+", resten med "|".
+# iGPUs first, then the dedicated cards; the CPU and first GPU join with "+".
 gpu_names=()
 (( has_intel_igpu )) && gpu_names+=("Intel iGPU")
 (( has_amd_igpu )) && gpu_names+=("AMD iGPU")
@@ -530,7 +493,7 @@ if [[ "$have" == "$want" ]]; then
   exit 0
 fi
 
-# ── Bytt ut alle cpu/ + gpu/-linjer med de detekterte ────────────────
+# Replace every cpu/ and gpu/ line with the detected ones.
 tmp=$(mktemp)
 printf '%s\n' "${wanted[@]}" |
   awk -v RS='\n' 'NR==FNR { w[FNR]=$0; n=FNR; next }
@@ -538,8 +501,8 @@ printf '%s\n' "${wanted[@]}" |
       if (!seen) { for (i=1; i<=n; i++) print "    " w[i]; seen=1 }
       next
     }
-    # Ankeret i default.nix bestemmer hvor linjene havner. Mangler det (eller
-    # er alle cpu/gpu-linjene borte), settes de inn foer den lukkende ];
+    # The anchor in default.nix decides where the lines go; without it they are
+    # inserted before the closing bracket.
     /# <detect-hw: cpu \+ gpu>/ && !seen {
       print; for (i=1; i<=n; i++) print "    " w[i]; seen=1; next
     }

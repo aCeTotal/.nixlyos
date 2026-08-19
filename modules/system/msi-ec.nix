@@ -5,21 +5,16 @@ let
   msiEcPkg = if kp ? msi-ec then kp.msi-ec else if kp ? msi_ec then kp.msi_ec else null;
   mccPkg = if pkgs ? mcontrolcenter then pkgs.mcontrolcenter else null;
 
-  # Alle EC-firmwareversjoner msi-ec har en konfig for, hentet ut av
-  # driverkilden ved bygg. Formatet er <board><EMS-nr>.<revisjon>, f.eks.
-  # 16V3EMS1.106.
+  # Every EC firmware version msi-ec has a config for, extracted from the driver
+  # source at build time.
   fwList = pkgs.runCommand "msi-ec-firmware-list" { } ''
     grep -ohE '"[0-9A-Z]+E[A-Z0-9]+\.[0-9]+"' ${msiEcPkg.src}/msi-ec.c \
       | tr -d '"' | sort -u > $out
   '';
 
-  # msi-ec nekter aa laste hvis EC-firmwaren ikke staar i lista over kjente
-  # versjoner (load_configuration -> -EOPNOTSUPP). Mange MSI-laptoper kjoerer
-  # en revisjon som ikke er registrert enda, selv om hovedkortet er stoettet.
-  # Derfor: proev ren autodeteksjon foerst, og bare hvis den feiler, les
-  # EC-firmwaren selv (samme offset som driveren: 0xa0 = 160, 12 byte, via
-  # ec_sys) og pin til konfigen for samme hovedkort + EMS-nummer. Ingen
-  # treff paa hovedkortet = hardware msi-ec ikke stoetter; da lastes ingenting.
+  # msi-ec refuses to load on an unlisted EC firmware revision, so autodetection
+  # is tried first and, failing that, the firmware is read and pinned to the
+  # config for the same board and EMS number.
   autoload = pkgs.writeShellScript "msi-ec-autoload" ''
     set -u
     export PATH=${lib.makeBinPath [ pkgs.kmod pkgs.coreutils pkgs.gnugrep ]}
@@ -54,23 +49,22 @@ let
   '';
 in
 {
-  # Build the msi-ec kernel module for the running kernel, if available
+  # Build the msi-ec module for the running kernel, if available.
   boot.extraModulePackages = lib.mkAfter (lib.optional (msiEcPkg != null) msiEcPkg);
 
-  # ec_sys lastes her; msi-ec lastes av msi-ec-autoload (som kan trenge en
-  # firmware=-parameter). Ligger den i kernelModules i stedet, feiler
-  # systemd-modules-load.service paa hver boot naar firmwaren er ukjent.
+  # Only ec_sys here; msi-ec is loaded by msi-ec-autoload, since a firmware=
+  # parameter may be needed and systemd-modules-load would otherwise fail.
   boot.kernelModules = lib.mkAfter [ "ec_sys" ];
 
-  # Allow EC writes if you intend to change fan curves, etc.
+  # Allow EC writes, for fan curves and similar.
   boot.extraModprobeConfig = lib.mkAfter ''
     options ec_sys write_support=1
   '';
 
-  # Install mcontrolcenter if available (stable or unstable)
+  # Install mcontrolcenter if available.
   environment.systemPackages = lib.mkAfter (lib.optional (mccPkg != null) mccPkg);
 
-  # Make msi-ec sysfs nodes writable for userspace fan/shift control
+  # Make the msi-ec sysfs nodes writable from userspace.
   services.udev.extraRules = ''
     ACTION=="add|change", SUBSYSTEM=="platform", KERNEL=="msi-ec", RUN+="/bin/sh -c 'chmod 0666 /sys/devices/platform/msi-ec/fan_mode /sys/devices/platform/msi-ec/shift_mode /sys/devices/platform/msi-ec/cooler_boost 2>/dev/null || true'"
   '';
@@ -86,6 +80,5 @@ in
     };
   };
 
-  # shift_mode/fan_mode settes ikke herfra — modulen gjoer msi-ec tilgjengelig,
-  # valg av profil er opp til brukerspace (mcontrolcenter / sysfs).
+  # No shift_mode or fan_mode here; picking a profile is userspace's job.
 }

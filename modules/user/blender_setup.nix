@@ -3,15 +3,13 @@
 let
   cfg = config.nixly.blender;
 
-  # Official blender.org LTS binary: CUDA, OptiX, HIP and oneAPI kernels are all
-  # shipped precompiled, so one package covers every variant. `variant` now only
-  # picks which Cycles backend the bootstrap enables.
+  # The official LTS binary ships every Cycles kernel precompiled, so `variant`
+  # only picks which backend the bootstrap enables.
   blenderPkg = pkgs.Blender_bin_lts;
 
   blenderBin = lib.getExe blenderPkg;
 
-  # OPTIX gives RT-core acceleration on RTX cards; CUDA used as fallback for
-  # older NVIDIA. HIP is the only AMD path. ONEAPI covers Intel Arc.
+  # OPTIX for RTX, CUDA for older NVIDIA, HIP for AMD, ONEAPI for Intel Arc.
   cyclesDevice = {
     nvidia = "OPTIX";
     amd    = "HIP";
@@ -24,11 +22,10 @@ let
     intel  = [ "ONEAPI" ];
   }.${cfg.variant};
 
-  # Bundled in Blender 5.2 (scripts/addons_core/) — legacy module IDs.
+  # Bundled with Blender under legacy module IDs.
   bundledAddons = [ "node_wrangler" "rigify" ];
 
-  # extensions.blender.org pkg_ids. NOTE: "extra_curve_objectes" is the
-  # actual upstream ID (typo preserved).
+  # extensions.blender.org pkg_ids; the "extra_curve_objectes" typo is upstream's.
   extensionAddons = [
     "looptools"
     "f2"
@@ -39,8 +36,7 @@ let
     "extra_curve_objectes"
   ];
 
-  # Pinned zip artifacts from extensions.blender.org. URLs are content-addressed
-  # (sha256 in path) so the version is implied by the hash. Bump both together.
+  # Pinned zips whose URLs are content-addressed, so bump URL and hash together.
   fetchExt = url: sha256: pkgs.fetchurl { inherit url sha256; };
   extZips = {
     looptools = fetchExt
@@ -67,8 +63,7 @@ let
   };
   extZipPaths = lib.mapAttrsToList (_: zip: "${zip}") extZips;
 
-  # BlenderKit: GPL, on GitHub (not on extensions.blender.org). Symlink the
-  # source dir into legacy addons/ so addon_utils picks it up via __init__.py.
+  # BlenderKit lives on GitHub, so its source dir is symlinked into legacy addons/.
   blenderkitSrc = pkgs.fetchFromGitHub {
     owner = "BlenderKit";
     repo  = "BlenderKit";
@@ -89,23 +84,23 @@ let
         try: fn()
         except Exception as e: print(f"[setup] {label}: {e}")
 
-    # ===== Install pinned extensions from local zips =====
+    # Install pinned extensions from local zips.
     for z in extension_zips:
         safe(f"install {z}", lambda z=z: bpy.ops.extensions.package_install_files(
             filepath=z, repo="user_default", enable_on_install=True))
 
-    # ===== Enable bundled addons (legacy paths) + BlenderKit =====
+    # Enable bundled addons and BlenderKit.
     for a in bundled + ["blenderkit"]:
         safe(f"enable {a}", lambda a=a:
             addon_utils.enable(a, default_set=True, persistent=True))
 
-    # ===== Re-enable extensions just in case enable_on_install missed any =====
+    # Re-enable extensions in case enable_on_install missed any.
     for ext in extension_ids:
         mod = f"bl_ext.user_default.{ext}"
         safe(f"enable ext {ext}", lambda mod=mod:
             bpy.ops.preferences.addon_enable(module=mod))
 
-    # ===== Cycles compute device (per-variant) =====
+    # Cycles compute device.
     def setup_cycles():
         cprefs = bpy.context.preferences.addons["cycles"].preferences
         cprefs.compute_device_type = cycles_dev_type
@@ -114,18 +109,18 @@ let
             d.use = d.type in accepted_devs
     safe("cycles devices", setup_cycles)
 
-    # ===== System / performance =====
+    # System and performance
     sysprefs = bpy.context.preferences.system
     safe("gpu_backend",       lambda: setattr(sysprefs, "gpu_backend", "VULKAN"))
     safe("memory_cache",      lambda: setattr(sysprefs, "memory_cache_limit", 8192))
     safe("gpu_subdivision",   lambda: setattr(sysprefs, "use_gpu_subdivision", True))
 
-    # ===== Edit / undo =====
+    # Edit and undo
     edit = bpy.context.preferences.edit
     edit.undo_steps = 256
     edit.undo_memory_limit = 1024
 
-    # ===== Input: tablet/mouse =====
+    # Input
     inp = bpy.context.preferences.inputs
     inp.view_rotate_method            = "TURNTABLE"
     inp.use_zoom_to_mouse             = True
@@ -135,10 +130,10 @@ let
     inp.mouse_emulate_3_button_modifier = "ALT"
     safe("tablet_api", lambda: setattr(inp, "tablet_api", "AUTOMATIC"))
 
-    # ===== View / UI =====
+    # View and UI
     bpy.context.preferences.view.ui_scale = 1.5
 
-    # ===== Save =====
+    # Save
     bpy.ops.wm.save_userpref()
     print("[setup] complete")
   '';
@@ -153,16 +148,13 @@ in
   };
 
   config = {
-    # Only blender on the system — no source-built variants.
+    # Only blender on the system, no source-built variants.
     home.packages = [ blenderPkg ];
 
-    # BlenderKit: free GPL addon, not on extensions.blender.org.
+    # BlenderKit is a free GPL addon, not on extensions.blender.org.
     home.file.".config/blender/5.2/scripts/addons/blenderkit".source = blenderkitSrc;
 
-    # One-time bootstrap: install + enable addons, set Cycles device, apply
-    # performance / input prefs. Idempotent via flag file. Re-run on demand:
-    #   rm ~/.config/blender/.nix_setup_v2 && home-manager switch
-    # v2: Blender 5.2 uses a fresh ~/.config/blender/5.2 prefs dir.
+    # One-time bootstrap, idempotent via a flag file; delete it and re-switch to rerun.
     home.activation.blenderSetup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       FLAG="$HOME/.config/blender/.nix_setup_v2"
       if [ ! -f "$FLAG" ] && [ -x "${blenderBin}" ]; then

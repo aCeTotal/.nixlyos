@@ -1,21 +1,18 @@
 #!/usr/bin/env bash
-# Full oppdatering: bump stable-grena om ny NixOS-release finnes,
-# bump proton-ge-pin, oppdater ALLE flake-inputs, bygg for neste boot.
+# Full update: bump the stable branch if a new NixOS release exists, bump the
+# proton-ge pin, update every flake input and build for the next boot.
 set -euo pipefail
 
 REPO="$HOME/.nixlyos"
 FLAKE="$REPO/flake.nix"
 . "$REPO/scripts/ui.sh"
 
-# detect-hw.sh skriver genererte filer i repoet foer hver eval, saa treet er
-# alltid dirty. nix.settings.warn-dirty i nix.nix gjelder foerst etter neste
-# aktivering — env-varen slaar den av her og naa, ogsaa for barneprosessene
-# (nix-prefetch-url i bump-scriptene, nixos-rebuild sin eval).
+# The tree is always dirty because detect-hw.sh writes generated files, and the
+# setting in nix.nix only applies after the next activation.
 export NIX_CONFIG="warn-dirty = false"
 
-# Passordet spoerres FOERST, ikke etter en halvtime med bygging. Bakgrunns-
-# loopen holder sudo-timestampen varm saa `nixos-rebuild --sudo` til slutt
-# ikke rekker aa timeoute (default 5 min).
+# Ask for the password first, then keep the sudo timestamp warm so the final
+# rebuild does not hit the five-minute timeout.
 ui_head "NixlyOS update"
 sudo -v
 while sudo -n true 2>/dev/null; do sleep 50; done &
@@ -23,7 +20,7 @@ sudo_keepalive=$!
 trap 'kill "$sudo_keepalive" 2>/dev/null' EXIT
 
 ui_head "Hardware"
-# CPU/GPU-imports i modules/core/default.nix maa matche maskinen FOER eval.
+# The cpu/gpu imports must match the machine before eval.
 bash "$REPO/scripts/detect-hw.sh" "$REPO"
 
 cur=$(grep -oP 'nixpkgs/nixos-\K[0-9]{2}\.[0-9]{2}' "$FLAKE")
@@ -36,8 +33,8 @@ next_ver() {
 
 has_branch() { git ls-remote --exit-code --heads "$1" "$2" >/dev/null 2>&1; }
 
-# Hopper bare til en ny release naar BEGGE grenene finnes — home-manager
-# mot feil nixpkgs-base brekker evalueringen.
+# Only jump releases when both branches exist; home-manager against the wrong
+# nixpkgs base breaks eval.
 new=$cur
 while cand=$(next_ver "$new") &&
       has_branch https://github.com/NixOS/nixpkgs "nixos-$cand" &&
@@ -60,13 +57,11 @@ ui_head "nixlypkgs"
 bash "$REPO/scripts/bump-nixlypkgs.sh"
 
 ui_head "Flake inputs"
-# Kopi av lock-fila FOER oppdateringen: retry-runden under trenger de gamle
-# revisjonene for aa kunne rulle tilbake bare den kilden som feiler.
+# The retry round below needs the old revisions to roll back just the failing input.
 lockbak=$(mktemp -t nixlyos-lock.XXXXXX)
 cp "$REPO/flake.lock" "$lockbak"
 
-# Lock-diffen er stoey (to linjer med rev+narHash per input). Fanges opp og
-# vises bare naar kommandoen feiler; ellers oppsummeres den.
+# The lock diff is noise, so it is only printed when the command fails.
 if ! lockdiff=$(nix flake update --refresh --flake "$REPO" 2>&1); then
   printf '%s\n' "$lockdiff" >&2
   exit 1
@@ -75,16 +70,11 @@ updated=$(grep -oP "^• Updated input '\K[^'/]+(?=')" <<<"$lockdiff" | tr '\n' 
 [ -n "$updated" ] && ui_ok "updated: ${updated% }" || ui_ok "all inputs already current"
 
 ui_head "Rebuild"
-# switch foerst saa alt er brukbart med en gang; feiler aktiveringen, faller
-# vi tilbake til boot (samme bygg, bare pinnet til neste oppstart). --keep-going
-# bygger alt som KAN bygges selv om en avledning feiler. Output gaar til logg og
-# vises bare naar ingenting til slutt gikk gjennom.
-#
-# --sudo, ikke `sudo nixos-rebuild`: evalueringen maa skje som bruker, ellers
-# naar ikke fetcheren private flake-inputs over ssh. Kun aktivering blir root.
-# Bruker-tjenestene restartes ikke av switch — de blir liggende paa gamle
-# unit-filer til neste innlogging. Fragment-stiene lagres foer rebuild, saa
-# Post-update kan restarte akkurat de som faktisk endret seg.
+# switch first so everything is usable at once, falling back to boot if activation
+# fails. --sudo, not `sudo nixos-rebuild`: eval must run as the user so the fetcher
+# can reach private flake inputs over ssh.
+# switch does not restart user services, so their fragment paths are recorded here
+# and Post-update restarts exactly those that changed.
 user_units_before=$(
   systemctl --user list-units --type=service --state=running --no-legend 2>/dev/null |
     awk '{print $1}' |
@@ -93,14 +83,19 @@ user_units_before=$(
     done
 ) || true
 
-log=$(mktemp -t nixlyos-rebuild.XXXXXX)
+# Fixed path so the log can be tailed while the build runs and read afterwards.
+# Truncated per run, never deleted.
+log="${XDG_STATE_HOME:-$HOME/.local/state}/nixlyos/update.log"
+mkdir -p "$(dirname "$log")"
+: > "$log"
+
 rebuild() {
   nixos-rebuild switch --sudo --keep-going --flake "$REPO#nixlyos" >>"$log" 2>&1 && return 0
   nixos-rebuild boot --sudo --keep-going --flake "$REPO#nixlyos" >>"$log" 2>&1 && return 2
   return 1
 }
 
-# Pakkenavn fra drv-stiene i feillinjene. Tomt ved eval- eller nedlastingsfeil.
+# Package names from the drv paths in the error lines; empty on eval failures.
 failed_pkgs() {
   grep -E 'error:|failed' "$log" |
     grep -oP "/nix/store/[a-z0-9]{32}-\K[^' ]+(?=\.drv)" | sort -u | tr '\n' ' ' || true
@@ -109,10 +104,8 @@ failed_pkgs() {
 ui_info "building (log: $log)"
 rebuild && rc=0 || rc=$?
 
-# Systemlukningen er atomisk: feiler én pakke, finnes det ingen generasjon aa
-# aktivere. Naermeste vi kommer "resten oppdateres likevel" er aa rulle tilbake
-# BARE kilden som eier den feilende pakka og bygge paa nytt — da beholder alle
-# andre inputs sin nye revisjon.
+# The closure is atomic, so one failing package means no generation at all; rolling
+# back only the input that owns it lets every other input keep its new revision.
 if (( rc == 1 )); then
   failed=$(failed_pkgs)
   culprits=" " revert_proton=0
@@ -136,9 +129,8 @@ if (( rc == 1 )); then
   fi
 fi
 
-# Siste utvei: hele lock-fila og proton-pinnen tilbake til forrige kjoering, saa
-# maskina i det minste ender paa en generasjon som bygger. Hopper over naar
-# forrige forsoek allerede kjoerte akkurat den kombinasjonen.
+# Last resort: restore the whole lock file and the proton pin, so the machine at
+# least lands on a generation that builds.
 if (( rc == 1 )) && ! cmp -s "$lockbak" "$REPO/flake.lock"; then
   cp "$lockbak" "$REPO/flake.lock"
   git -C "$REPO" checkout -- pkgs/proton-ge/pin.json
@@ -148,8 +140,8 @@ fi
 
 rm -f "$lockbak"
 case $rc in
-  0) rm -f "$log"; ui_ok "activated";;
-  2) rm -f "$log"; ui_warn "activation failed — new generation set for next boot";;
+  0) ui_ok "activated";;
+  2) ui_warn "activation failed — new generation set for next boot";;
   *)
     failed=$(failed_pkgs)
     if [ -n "$failed" ]; then
@@ -163,10 +155,8 @@ case $rc in
     ;;
 esac
 
-# ── Hva kjoerer allerede paa nytt, og hva gjoer det ikke ──────────────
-# switch har restartet system-tjenestene som endret seg. Bruker-manageren maa
-# lese inn nye unit-filer selv, ellers kjoerer bruker-tjenestene paa gamle
-# fragmenter til neste innlogging.
+# switch restarted the system services it changed, but the user manager must
+# reload its own unit files or user services run stale ones until next login.
 if (( rc == 0 )); then
   ui_head "Post-update"
   systemctl --user daemon-reload || true
@@ -174,9 +164,8 @@ if (( rc == 0 )); then
   changed_units=()
   while read -r unit path; do
     [ -n "$unit" ] || continue
-    # dbus-broker eier sesjonsbussen — en restart river hele skrivebordet.
-    # Lyd-stacken hoppes over fordi en restart dreper aktive streams, mens den
-    # gamle daemonen fungerer helt fint til neste innlogging.
+    # Restarting dbus tears down the desktop, and restarting the audio stack
+    # kills active streams; both work fine until the next login.
     case $unit in
       dbus-*|pipewire*|wireplumber*) continue;;
     esac
@@ -191,17 +180,15 @@ if (( rc == 0 )); then
     ui_ok "restarted user services: ${changed_units[*]}"
   fi
 
-  # Kjernemodulene byttes ikke i en levende kjerne: bzImage, initrd og
-  # modultreet gjelder foerst etter reboot.
+  # bzImage, initrd and the module tree only take effect after a reboot.
   needs_reboot=""
   for part in kernel initrd kernel-modules; do
     [ "$(readlink -f "/run/booted-system/$part" 2>/dev/null)" = \
       "$(readlink -f "/run/current-system/$part" 2>/dev/null)" ] || needs_reboot+="$part "
   done
 
-  # NVIDIA: userspace (libGL/libcuda) og kjernemodulen maa ha samme versjon.
-  # Kjoerer en eldre modul enn generasjonen bruker, feiler GPU-apper foer
-  # modulen lastes paa nytt — og det krever at hele sesjonen slipper GPU-en.
+  # NVIDIA userspace and the kernel module must match, and reloading the module
+  # requires the whole session to release the GPU.
   nv_running=$(awk '/NVRM version/ {print $8}' /proc/driver/nvidia/version 2>/dev/null || true)
   nv_new=$(readlink -f /run/current-system/kernel-modules/lib/modules/*/kernel/drivers/video/nvidia.ko* 2>/dev/null |
     grep -oP 'nvidia-kernel-modules-\K[0-9.]+' | head -1 || true)
@@ -215,7 +202,7 @@ if (( rc == 0 )); then
   fi
 fi
 
-# Auto-commit: styres av "Auto commit changes" paa Git-siden i nixlycc.
+# Auto-commit is toggled from the Git page in nixlycc.
 CONF="$HOME/.local/nixlyos/git.conf"
 if [ -f "$CONF" ] && grep -qx 'autocommit=1' "$CONF"; then
   ui_head "Auto-commit"
@@ -223,6 +210,6 @@ if [ -f "$CONF" ] && grep -qx 'autocommit=1' "$CONF"; then
     git -C "$REPO" add -A
     git -C "$REPO" commit -m "auto: update $(date '+%Y-%m-%d %H:%M')"
   fi
-  # Rebuild er allerede ferdig — en feilet push skal ikke felle skriptet.
+  # The rebuild is already done, so a failed push must not fail the script.
   git -C "$REPO" push && ui_ok "pushed" || ui_warn "push failed"
 fi

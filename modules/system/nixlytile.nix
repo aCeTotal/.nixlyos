@@ -22,15 +22,12 @@
     XDG_SESSION_DESKTOP = "nixlytile";
   };
 
-  # services.xserver.enable fjernet: Wayland-only session (SDDM kjører
-  # wayland, X11-apper går via xwayland-satellite) — full Xorg-stack
-  # var ren closure/boot-bloat som ingenting startet.
+  # No services.xserver.enable: Wayland-only session, so the full Xorg stack was
+  # closure and boot bloat that nothing started.
   security.polkit.enable = true;
 
-  # Compositoren starter denne ved oppstart (etter import-environment) —
-  # men bare hvis unit-filen finnes i /etc/systemd/user. Uten den
-  # aktiveres aldri graphical-session.target, og alt som er WantedBy den
-  # (nixly-idled, polkit-agent, m.fl.) blir stående dødt.
+  # The compositor starts this at login, but only if the unit file is in
+  # /etc/systemd/user; without it graphical-session.target never activates.
   systemd.user.targets.nixlytile-session = {
     description = "nixlytile compositor session";
     bindsTo = [ "graphical-session.target" ];

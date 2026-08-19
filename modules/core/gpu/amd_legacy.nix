@@ -1,14 +1,8 @@
 { config, lib, pkgs, ... }:
 
-# Gamle AMD-kort: pre-GCN (TeraScale / R600 og eldre), GCN1 (Southern
-# Islands) og GCN2 (Sea Islands). detect-hw.sh velger denne ut fra
-# PCI-device-ID.
-#
-# Kjernepoenget er kernel-parameterne: SI/CIK er bygget inn i BEGGE driverne,
-# og kernelen gir dem til `radeon` som standard. radeon har ingen Vulkan og
-# ingen moderne VA-API, saa de tvinges over paa amdgpu. Parameterne er
-# ufarlige paa pre-GCN-kort — de matcher bare SI/CIK-IDer, saa et
-# TeraScale-kort blir vaerende paa radeon der det hoerer hjemme.
+# Old AMD cards: pre-GCN, GCN1 and GCN2, selected by detect-hw.sh from the PCI ID.
+# The kernel params force SI/CIK onto amdgpu, since the default `radeon` has no
+# Vulkan and no modern VA-API; pre-GCN cards do not match and stay on radeon.
 
 {
   services.xserver.videoDrivers = [ "modesetting" ];
@@ -41,13 +35,10 @@
     libva-utils
   ];
 
-  # LIBVA_DRIVER_NAME settes bevisst IKKE: radeonsi gjelder GCN, mens et
-  # pre-GCN-kort trenger r600-gallium. libva finner riktig driver selv naar
-  # variabelen er tom — en hardkodet radeonsi ville brutt VA-API paa
-  # TeraScale.
+  # No LIBVA_DRIVER_NAME: libva picks radeonsi or r600 itself, and hardcoding
+  # radeonsi would break VA-API on pre-GCN cards.
   environment.sessionVariables = {
-    # glthread: GL-kall paa egen traad. Gir mest paa nettopp gamle kort, der
-    # draw-call-loopen er flaskehalsen.
+    # glthread helps most on old cards, where the draw-call loop is the bottleneck.
     mesa_glthread = "true";
     NIXOS_OZONE_WL = "1";
     QT_QPA_PLATFORM = "wayland";

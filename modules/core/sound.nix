@@ -14,16 +14,8 @@
     wireplumber.enable = true;
 
     wireplumber.extraConfig = {
-      # WirePlumber 0.5 introduced a hard passthrough check: if the client
-      # requests spdif-<codec> and the target route's iec958Codecs list does
-      # not contain <codec>, linking is rejected with "no target node
-      # available". WP 0.4 did not enforce this, so upgrades inherited stale
-      # codec lists from persisted state and silently broke passthrough.
-      #
-      # Pin the iec958 codec list on every Intel HDMI codec to {PCM, AC3,
-      # EAC3} — the safe intersection that every HDMI-1.4+ TV understands.
-      # Matching by alsa.card_name regex makes this work on any host
-      # regardless of which PCI slot the Arc/iGPU lives in.
+      # Pin the iec958 codec list every HDMI 1.4+ TV understands; WP 0.5 rejects
+      # passthrough when the requested codec is missing from the route's list.
       "51-hdmi-iec958-codecs" = {
         "monitor.alsa.rules" = [
           {
@@ -39,15 +31,8 @@
         ];
       };
 
-      # PipeWire 1.6 slår på api.alsa.split-enable som default. I split-modus
-      # lages ingen ACP-profiler for kort uten tilgjengelige porter (typisk
-      # GPU-HDMI-audio uten skjerm koblet til): EnumProfile blir tom mens
-      # aktiv profil er "off". pipewire-pulse finner da ikke "off" i den
-      # tomme profillisten og rapporterer active_profile = NULL i
-      # pa_card_info — Steams 32-bit libaudio.so (Miles voice-enumerering)
-      # dereferer active_profile->name uten NULL-sjekk → Steam SIGSEGV ved
-      # hver oppstart. Skru av split på alle ALSA-kort så ACP alltid
-      # eksponerer profillisten (inkl. "off").
+      # Split mode leaves cards without available ports with an empty profile list,
+      # which makes Steam's 32-bit libaudio.so deref a NULL active_profile.
       "52-no-split-pcm" = {
         "monitor.alsa.rules" = [
           {
@@ -63,23 +48,8 @@
         ];
       };
 
-      # Kort der ingen port er tilgjengelig (typisk GPU-HDMI-audio uten
-      # skjerm i porten) endte likevel opp med TOM profilliste under
-      # PipeWire 1.6.6 — `pactl list cards` viste porter men verken
-      # "Profiles:" eller "Active Profile:". libpulse setter da
-      # pa_card_info.active_profile = NULL (den fylles kun når serverens
-      # aktive profilnavn finnes i den enumererte lista), og Steams
-      # 32-bit libaudio.so leser active_profile->name uten NULL-sjekk:
-      #
-      #   mov  0x18(%eax),%eax   ; ->active_profile  (offset 0x18, i386)
-      #   push (%eax)            ; ->name            → SIGSEGV
-      #
-      # WirePlumber setter api.acp.auto-profile = false på alle ALSA-kort
-      # fordi den styrer profilvalg selv, men for slike kort velger den
-      # ingenting og ACP eksponerer da ingen liste. Slå auto-profile på
-      # igjen: ACP faller tilbake til "off" og lista blir aldri tom.
-      # Kort WirePlumber faktisk styrer beholder sin profil (PCH står
-      # fortsatt i output:analog-stereo+input:analog-stereo).
+      # 52 alone did not hold on PipeWire 1.6.6; re-enabling auto-profile makes ACP
+      # fall back to "off" so the profile list is never empty.
       "53-acp-auto-profile" = {
         "monitor.alsa.rules" = [
           {
@@ -101,22 +71,14 @@
         "context.properties" = {
           "default.clock.rate" = 48000;
           "default.clock.allowed-rates" = [ 48000 44100 96000 192000 ];
-          # Default stays 128 (2.7ms) so games get low latency without
-          # asking. max-quantum was 256 and streams were pinned to
-          # node.latency=128 — that capped EVERY client (mpv asks ~200ms)
-          # to 2.7ms buffers, which drops out under GPU/compositor load
-          # (audio stutter during video playback). Let clients that want
-          # big buffers have them; the graph still follows the LOWEST
-          # active request, so a running game keeps quantum at 128.
+          # Default 128 (2.7 ms) for games, but let clients ask for bigger buffers;
+          # the graph follows the lowest active request.
           "default.clock.quantum" = 128;
           "default.clock.min-quantum" = 32;
           "default.clock.max-quantum" = 2048;
           "log.level" = 2;
         };
-        # resample.quality 9 → 4 (PipeWire-default): kvalitet 9 kostet
-        # målbar CPU per 44.1→48-resamplet stream; 4 er designet som
-        # transparent/CPU-balansen. 48k-native streams resamples uansett
-        # ikke.
+        # Quality 4 is the transparent/CPU balance; 9 cost measurable CPU per stream.
         "stream.properties" = {
           "resample.quality" = 4;
         };
@@ -129,12 +91,8 @@
     };
   };
 
-  # Migrate stale WP-0.4 persisted route state on first WP-0.5 start. WP
-  # otherwise keeps the old iec958Codecs list from the persisted file even
-  # though the rule above sets a new card-level list — WP merges the two and
-  # the persisted entry wins. Replace any iec958Codecs array in the state
-  # with the safe {PCM,AC3,EAC3} list so passthrough requests link cleanly.
-  # Idempotent: re-running over an already-rewritten file is a no-op.
+  # Rewrite stale WP 0.4 route state, whose persisted iec958Codecs list wins over
+  # the card-level rule above.
   systemd.user.services.wireplumber-route-migrate = {
     description = "Rewrite stale WirePlumber 0.4 route state for WP 0.5";
     before = [ "wireplumber.service" ];

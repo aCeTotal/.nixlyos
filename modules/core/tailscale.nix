@@ -1,8 +1,8 @@
 { pkgs, ... }:
 
 {
-  # Foerstegangsaktivering: `tailscale-init` — logger inn (viser link),
-  # venter til tilkoblet og bekrefter at ssh kun naas via tailnettet.
+  # Run `tailscale-init` once: it logs in, waits for the connection and confirms
+  # that ssh is reachable only over the tailnet.
   environment.systemPackages = [
     (pkgs.writeShellScriptBin "tailscale-init" ''
       set -e
@@ -26,9 +26,8 @@
 
   services.tailscale = {
     enable = true;
-    # Tailscale SSH: tailnet-identitet er innloggingen, ingen noekler/passord.
-    # NB: extraUpFlags brukes kun ved auto-up (authKeyFile); ved manuell
-    # foerste innlogging maa flagget med: sudo tailscale up --ssh
+    # Tailscale SSH authenticates by tailnet identity, with no keys or passwords.
+    # extraUpFlags only applies to auto-up, so pass --ssh on the first manual login.
     extraUpFlags = [ "--ssh" ];
   };
   networking.firewall.trustedInterfaces = [ "tailscale0" ];

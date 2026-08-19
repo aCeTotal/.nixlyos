@@ -17,7 +17,7 @@
                 "ls" = "eza --long --all --header --group --git --icons --color=always";
             };
 
-            # push: git add -A, prompt for commit message, commit + push
+            # push: add everything, prompt for a message, commit and push.
             initExtra = ''
                 push() {
                     local msg
@@ -40,8 +40,7 @@
                     git commit -m "$msg" && git push
                 }
 
-                # pull: fetch and fast-forward to upstream, but only when
-                # the remote is ahead and the working tree is clean
+                # pull: fast-forward to upstream, only when the remote is ahead and the tree is clean.
                 pull() {
                     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
                         echo "pull: not a git repo" >&2
@@ -65,8 +64,7 @@
                     git pull --ff-only
                 }
 
-                # hash: print fetchFromGitHub fields (owner/repo/rev/hash)
-                # for the repo's pushed HEAD, ready to paste into a derivation
+                # hash: print the fetchFromGitHub fields for the repo's pushed HEAD.
                 hash() {
                     local url owner_repo rev sha sri
                     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -100,8 +98,7 @@
                     echo "hash = \"$sri\";"
                 }
 
-                # auto-pull: ff-only pull, only when working tree is clean
-                # and remote is ahead. Silent no-op offline or without upstream.
+                # auto-pull: ff-only, and a silent no-op offline or without an upstream.
                 _auto_pull() {
                     [ -n "$(git status --porcelain 2>/dev/null)" ] && return 0
                     git fetch -q 2>/dev/null || return 0
@@ -113,7 +110,7 @@
                     fi
                 }
 
-                # run _auto_pull once when the prompt lands in a new git repo
+                # Run _auto_pull once when the prompt lands in a new git repo.
                 _git_enter_hook() {
                     local top
                     top=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -124,9 +121,7 @@
                 }
                 PROMPT_COMMAND="_git_enter_hook''${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 
-                # direnv only on editor launch, never on cd: in a git repo
-                # with a flake.nix, create/allow `use flake` and run nvim
-                # inside the devShell env via `direnv exec`.
+                # direnv only on editor launch, never on cd, via `direnv exec`.
                 nvim() {
                     local top
                     top=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -145,12 +140,10 @@
         };
         direnv = {
             enable = true;
-            # No shell hook: direnv must not load env on cd.
-            # Only `direnv exec` via the nvim wrapper uses it.
+            # No shell hook: only the nvim wrapper's `direnv exec` loads the env.
             enableBashIntegration = false;
             nix-direnv.enable = true;
-            # Auto-approve .envrc in own repos so direnv never asks
-            # for `direnv allow` (covers repos that ship an .envrc).
+            # Auto-approve .envrc in own repos so direnv never asks.
             config.whitelist.prefix = [ "${config.home.homeDirectory}/git" ];
         };
     };

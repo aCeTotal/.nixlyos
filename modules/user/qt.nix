@@ -1,11 +1,8 @@
 { pkgs, ... }:
 
 {
-  # Qt/KDE-tema for Dolphin & co. utenfor Plasma.
-  # QT_QPA_PLATFORMTHEME=kde + plasma-integration gjør at Qt-apper leser
-  # ~/.config/kdeglobals; QT_STYLE_OVERRIDE=breeze gir Breeze-widgetstilen.
-  # platformTheme.package settes eksplisitt for å slippe kdePackages.systemsettings
-  # (hele Plasma-closuren) som home-manager ellers drar inn for "kde".
+  # Qt/KDE theming for Dolphin and friends outside Plasma, reading kdeglobals.
+  # platformTheme.package is explicit to avoid pulling in the whole Plasma closure.
   qt = {
     enable = true;
     platformTheme = {
@@ -18,9 +15,8 @@
     };
   };
 
-  # kdeglobals = Breeze Dark-fargene fra breeze-pakken + ikoner/font/stil.
-  # Fargene må ligge som [Colors:*]-grupper i kdeglobals; "ColorScheme=BreezeDark"
-  # alene er bare et navn og gir fortsatt lyst tema.
+  # The colours must be spelled out as [Colors:*] groups; ColorScheme=BreezeDark
+  # alone is just a name and still yields a light theme.
   xdg.configFile."kdeglobals".source = pkgs.runCommand "kdeglobals" { } ''
     cp ${pkgs.kdePackages.breeze}/share/color-schemes/BreezeDark.colors $out
     chmod +w $out

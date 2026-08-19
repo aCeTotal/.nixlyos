@@ -1,8 +1,7 @@
 { pkgs, ... }:
 
 let
-  # Generert av scripts/detect-hw.sh: kjerner, RAM og utregnet
-  # byggparallellisme for DENNE maskinen.
+  # Cores, RAM and build parallelism for this machine, from scripts/detect-hw.sh.
   hw = import ./hw/resources.nix;
 in
 {
@@ -10,22 +9,17 @@ in
     package = pkgs.nixVersions.latest;
 
     settings = {
-      # auto-optimise-store av: hardlinket synkront under hver build (ekstra
-      # IO per rebuild). Ukentlig nix-optimise-timer (idle-prioritet) dekker
-      # samme jobb.
+      # No auto-optimise-store: the weekly nix-optimise timer does the same job
+      # without hardlinking synchronously during every build.
       sandbox = true;
       accept-flake-config = false;
-      # detect-hw.sh skriver genererte filer i repoet foer hver eval, saa
-      # treet er alltid dirty — advarselen er stoey.
+      # detect-hw.sh writes generated files before each eval, so the tree is always dirty.
       warn-dirty = false;
       experimental-features = [ "nix-command" "flakes" ];
       keep-outputs = true;
       keep-derivations = true;
       builders-use-substitutes = true;
-      # Skalert etter RAM og kjerner (hw/resources.nix). Ett job per 8 GiB,
-      # cores per job begrenset av baade kjerner og RAM — nix-daemon har
-      # MemoryMax 90 % lenger ned, saa et bygg som spretter over taket blir
-      # drept i stedet for aa dra ned skrivebordet.
+      # Scaled to RAM and cores: one job per 8 GiB, capped by both.
       max-jobs = hw.maxJobs;
       cores = hw.buildCores;
       http-connections = 50;
@@ -58,8 +52,7 @@ in
       automatic = true;
       dates = "Sun 04:30";
       options = "--delete-older-than 3d";
-      # persistent=false: don't run a missed GC immediately at boot
-      # (consumed 5.7G read I/O + 4.1G RAM, made desktop feel sluggish).
+      # No catch-up GC at boot; it cost gigabytes of read I/O and RAM.
       persistent = false;
       randomizedDelaySec = "30min";
     };
@@ -67,9 +60,7 @@ in
     optimise.automatic = true;
   };
 
-  # Run GC + store optimise at lowest CPU/I/O priority so they never
-  # contend with foreground apps. Takes longer overall, doesn't stall
-  # alacritty starts or anything else.
+  # GC and optimise run at idle priority so they never contend with foreground apps.
   systemd.services.nix-gc.serviceConfig = {
     CPUSchedulingPolicy = "idle";
     IOSchedulingClass = "idle";
@@ -82,9 +73,7 @@ in
     Nice = 19;
   };
 
-  # Memory cap on nix builds via cgroup. Kernel throttles at MemoryHigh,
-  # hard limit MemoryMax. Prevents OOM crashing desktop on 15G boxes.
-  # Builds slow down or get killed instead of taking down system.
+  # Cgroup memory cap so a runaway build is killed instead of the desktop.
   systemd.services.nix-daemon.serviceConfig = {
     MemoryAccounting = true;
     MemoryHigh = "80%";
@@ -92,7 +81,7 @@ in
     Delegate = "memory cpu io";
   };
 
-  # fstrim: same reasoning — async at night, never replay at boot.
+  # fstrim: same reasoning, async at night and never replayed at boot.
   services.fstrim = {
     interval = "Sun 04:00";
   };

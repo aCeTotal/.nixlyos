@@ -1,21 +1,11 @@
 { lib, ... }:
 
 {
-  # ═══════════════════════════════════════════════════════════════════
-  # Emulator Configuration Module
-  # ═══════════════════════════════════════════════════════════════════
-  # Writes optimal config files for all installed emulators.
-  # Target: 4K TV fullscreen, best quality + performance, Xbox controller.
-  # Configs are written on every home-manager activation (nixos-rebuild).
-  # Emulators can modify these files at runtime; changes persist until
-  # the next rebuild.
-  # ═══════════════════════════════════════════════════════════════════
+  # Writes 4K-fullscreen configs for every installed emulator on each activation.
 
   home.activation.emulatorConfigs = lib.hm.dag.entryAfter ["writeBoundary"] ''
 
-    # ─────────────────────────────────────────
-    #   Dolphin (GameCube / Wii)
-    # ─────────────────────────────────────────
+    # Dolphin (GameCube / Wii)
     mkdir -p "$HOME/.config/dolphin-emu"
 
     cat > "$HOME/.config/dolphin-emu/GFX.ini" << 'DOLPHINGFX'
@@ -64,9 +54,7 @@ EmulationSpeed = 1.00
 DOLPHININI
 
 
-    # ─────────────────────────────────────────
-    #   mGBA (Game Boy / GBC / GBA)
-    # ─────────────────────────────────────────
+    # mGBA (Game Boy / GBC / GBA)
     mkdir -p "$HOME/.config/mgba"
 
     cat > "$HOME/.config/mgba/config.ini" << 'MGBAINI'
@@ -84,9 +72,7 @@ pauseOnFocusLost=0
 MGBAINI
 
 
-    # ─────────────────────────────────────────
-    #   PPSSPP (PSP)
-    # ─────────────────────────────────────────
+    # PPSSPP (PSP)
     mkdir -p "$HOME/.config/ppsspp/PSP/SYSTEM"
 
     cat > "$HOME/.config/ppsspp/PSP/SYSTEM/ppsspp.ini" << 'PPSSPPINI'
@@ -139,9 +125,7 @@ HapticFeedback = False
 PPSSPPINI
 
 
-    # ─────────────────────────────────────────
-    #   PCSX2 (PlayStation 2)
-    # ─────────────────────────────────────────
+    # PCSX2 (PlayStation 2)
     mkdir -p "$HOME/.config/PCSX2/inis"
 
     cat > "$HOME/.config/PCSX2/inis/PCSX2.ini" << 'PCSX2INI'
@@ -176,9 +160,7 @@ vu1Instant = 1
 PCSX2INI
 
 
-    # ─────────────────────────────────────────
-    #   Flycast (Dreamcast)
-    # ─────────────────────────────────────────
+    # Flycast (Dreamcast)
     mkdir -p "$HOME/.config/flycast"
 
     cat > "$HOME/.config/flycast/emu.cfg" << 'FLYCASTCFG'
@@ -210,9 +192,7 @@ maple_sdl_joystick_0 = 0
 FLYCASTCFG
 
 
-    # ─────────────────────────────────────────
-    #   Blastem (Genesis / Mega Drive / SMS)
-    # ─────────────────────────────────────────
+    # Blastem (Genesis / Mega Drive / SMS)
     mkdir -p "$HOME/.config/blastem"
 
     cat > "$HOME/.config/blastem/blastem.cfg" << 'BLASTEMCFG'
@@ -226,9 +206,7 @@ video {
 BLASTEMCFG
 
 
-    # ─────────────────────────────────────────
-    #   Stella (Atari 2600)
-    # ─────────────────────────────────────────
+    # Stella (Atari 2600)
     mkdir -p "$HOME/.config/stella"
 
     cat > "$HOME/.config/stella/stellarc" << 'STELLARC'
@@ -245,9 +223,7 @@ joydeadzone = 6
 STELLARC
 
 
-    # ─────────────────────────────────────────
-    #   Xenia Canary (Xbox 360)
-    # ─────────────────────────────────────────
+    # Xenia Canary (Xbox 360)
     mkdir -p "$HOME/.config/xenia"
 
     cat > "$HOME/.config/xenia/xenia-canary.config.toml" << 'XENIACFG'
@@ -277,9 +253,7 @@ internal_display_resolution = 12
 XENIACFG
 
 
-    # ─────────────────────────────────────────
-    #   melonDS (Nintendo DS)
-    # ─────────────────────────────────────────
+    # melonDS (Nintendo DS)
     mkdir -p "$HOME/.config/melonDS"
 
     cat > "$HOME/.config/melonDS/melonDS.toml" << 'MELONDSTOML'
@@ -305,9 +279,7 @@ Volume = 256
 MELONDSTOML
 
 
-    # ─────────────────────────────────────────
-    #   Azahar / Citra (Nintendo 3DS)
-    # ─────────────────────────────────────────
+    # Azahar / Citra (Nintendo 3DS)
     mkdir -p "$HOME/.config/azahar/config"
 
     cat > "$HOME/.config/azahar/config/qt-config.ini" << 'AZAHARINI'
@@ -338,9 +310,7 @@ volume = 1
 AZAHARINI
 
 
-    # ─────────────────────────────────────────
-    #   Cemu (Wii U)
-    # ─────────────────────────────────────────
+    # Cemu (Wii U)
     mkdir -p "$HOME/.config/Cemu"
 
     cat > "$HOME/.config/Cemu/settings.xml" << 'CEMUXML'
@@ -371,9 +341,7 @@ AZAHARINI
 CEMUXML
 
 
-    # ─────────────────────────────────────────
-    #   RPCS3 (PlayStation 3)
-    # ─────────────────────────────────────────
+    # RPCS3 (PlayStation 3)
     mkdir -p "$HOME/.config/rpcs3"
 
     cat > "$HOME/.config/rpcs3/config.yml" << 'RPCS3YML'
@@ -421,62 +389,8 @@ Miscellaneous:
 RPCS3YML
 
 
-    # ─────────────────────────────────────────
-    #   Ryujinx (Nintendo Switch)
-    # ─────────────────────────────────────────
-    #
-    # Ryujinx uses a complex Config.json with many fields.
-    # It auto-detects Xbox controllers via SDL2 and defaults
-    # to docked mode. For 4K: set ResScale and
-    # start with --fullscreen via the launch command.
-    # On first launch, Ryujinx generates Config.json with
-    # sensible defaults. The launch command in
-    # The launch command in modules/core/emulators.nix already passes the ROM directly.
-    #
-
-
-    # ─────────────────────────────────────────
-    #   Mesen (NES / SNES / GB / GBC / GBA / SMS / GG / TG-16)
-    # ─────────────────────────────────────────
-    #
-    # Mesen uses settings.json with complex device-specific
-    # controller indices. It auto-detects Xbox controllers
-    # via SDL2 and maps them to the appropriate console
-    # controller automatically. On first launch, Mesen
-    # generates settings.json with good defaults.
-    # Video settings can be adjusted in the GUI.
-    #
-
-
-    # ─────────────────────────────────────────
-    #   RMG (Nintendo 64)
-    # ─────────────────────────────────────────
-    #
-    # RMG (Rosalie's Mupen GUI) auto-detects controllers
-    # via SDL2 and maps Xbox → N64 controller automatically.
-    # ParaLLEl-RDP provides high-resolution rendering.
-    # Settings are configured via the Qt GUI on first launch.
-    #
-
-
-    # ─────────────────────────────────────────
-    #   xemu (Xbox)
-    # ─────────────────────────────────────────
-    #
-    # xemu auto-detects Xbox controllers natively (it's an
-    # Xbox emulator). Display resolution scales with window.
-    # Fullscreen is passed via -full-screen CLI flag.
-    #
-
-
-    # ─────────────────────────────────────────
-    #   ares (Sega CD / 32X)
-    # ─────────────────────────────────────────
-    #
-    # ares uses Virtual Game-Pads that auto-adapt to each
-    # system. Xbox controllers are detected via SDL2.
-    # Fullscreen and --no-file-prompt passed via CLI.
-    #
+    # No config written for Ryujinx, Mesen, RMG, xemu or ares: all five
+    # auto-detect Xbox pads via SDL2 and generate sane defaults on first launch.
 
   '';
 }

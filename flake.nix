@@ -43,9 +43,8 @@
         config = {
           allowUnfree = true;
           permittedInsecurePackages = permittedInsecure;
-          # De gamle NVIDIA-branchene (legacy_470 og eldre) krever eksplisitt
-          # lisensgodkjenning i tillegg til allowUnfree — uten den feiler
-          # eval paa Kepler-og-eldre-maskiner. Se gpu/nvidia_legacy.nix.
+          # The old NVIDIA branches need explicit license acceptance on top of
+          # allowUnfree, or eval fails on Kepler and older machines.
           nvidia.acceptLicense = true;
         };
         overlays = [

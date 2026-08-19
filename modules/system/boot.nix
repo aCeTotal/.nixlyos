@@ -19,7 +19,7 @@
                 efiSysMountPoint = "/boot";
             };
 
-            # Bytt fra GRUB til systemd-boot
+            # systemd-boot instead of GRUB.
             systemd-boot = {
                 enable = true;
                 configurationLimit = 2;
@@ -32,12 +32,10 @@
         kernelParams = [
             "nvme_core.default_ps_max_latency_us=0"
             "intel_pstate=active"
-            # FBC AV: aktiv komprimering på plane 1A ga "Atomic update
-            # failure on pipe A" + EAGAIN-storm på hver nonblocking flip
-            # under fullscreen-video (nixlytile diag 2026-07-07).
+            # FBC off: compression on plane 1A caused atomic-commit failures on pipe A
+            # during fullscreen video.
             "i915.enable_fbc=0"      # Framebuffer compression
-            # PSR: panelet støtter ikke PSR (Sink support: no) — param
-            # er virkningsløs; satt til 0 for tydelighet.
+            # PSR: the panel does not support it, so this is set to 0 for clarity.
             "i915.enable_psr=0"      # Panel self refresh
             "i915.fastboot=1"        # Raskere oppstart
         ];
@@ -78,7 +76,7 @@
         };
         # BOOT settings
         supportedFilesystems = [ "ext4" "ntfs3" "vfat" ];
-        # NVIDIA modules are managed in core/gpu/nvidia.nix
+        # NVIDIA modules live in core/gpu/nvidia.nix.
         kernelModules = [ "tcp_bbr" ];
         initrd.systemd.enable = true;
         tmp.cleanOnBoot = true;

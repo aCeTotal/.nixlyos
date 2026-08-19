@@ -61,6 +61,6 @@ in
     };
   };
 
-  # Ctrl+Alt+Del skal ikke kunne reboote maskinen.
+  # Ctrl+Alt+Del must not reboot the machine.
   systemd.suppressedSystemUnits = [ "ctrl-alt-del.target" ];
 }

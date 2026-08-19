@@ -1,11 +1,10 @@
 { pkgs, lib, ... }:
 
 {
-  # Pakker som utvider Dolphin med moderne KDE-features.
-  # Ark sin "Extract here" trenger CLI-tools i PATH for hvert format.
-  # unrar/zip/unzip/rar er allerede systemwide i modules/system/packages.nix.
+  # Packages extending Dolphin with modern KDE features.
+  # Ark's "Extract here" needs a CLI tool on PATH per format.
   home.packages = with pkgs; [
-    # Arkiv-backends - Ark dispatcher kaller disse
+    # Archive backends the Ark dispatcher calls.
     p7zip          # 7z, zip, xz fallback
     unar           # unar/lsar - mange formater inkl. RAR/zip med encoding-fix
     lhasa          # LHA/LZH
@@ -14,18 +13,18 @@
     cpio           # cpio-arkiver (rpm-pakker)
     libarchive     # bsdtar - extra format-coverage
 
-    # KDE thumbnailers og bildeformater
+    # KDE thumbnailers and image formats
     kdePackages.kimageformats        # HEIC, AVIF, JXL, RAW
     kdePackages.qtimageformats       # TIFF, WebP, JP2, ICNS
     kdePackages.kdesdk-thumbnailers  # PS, EPS, plain text, srt
     kdePackages.svgpart              # SVG-preview/embed
 
-    # KIO-utvidelser
+    # KIO extensions
     kdePackages.kdenetwork-filesharing  # "Share via Samba" høyreklikk
     kdePackages.kio-gdrive              # gdrive:// protokoll
     kdePackages.kdialog                 # KDE-dialoger for scripts
 
-    # Standard openers Dolphin starter
+    # Default openers Dolphin launches
     kdePackages.gwenview    # bildeviser (default)
     kdePackages.okular      # PDF/dokumentviser
     kdePackages.filelight   # disk-usage analyse (Tools-menyen)
@@ -34,29 +33,23 @@
     kdiff3                  # 3-veis diff/merge
   ];
 
-  # Hardener mot henging når NFS/SMB-server er nede.
-  # Lagene er:
-  #   1. NFS: systemd automount + ping-sjekk i modules/core/nfs.nix (1s fail).
-  #   2. SMB: kort smbclient-timeout via ~/.smb/smb.conf.
-  #   3. KIO: kort connect/response-timeout for alle workers.
-  #   4. Baloo: ekskluder nettverksmounts fra indeksering.
-  #   5. Dolphin: ingen previews på remote URL (smb://, sftp://, nfs://).
+  # Hardening against hangs when an NFS or SMB server is down, in five layers:
+  # NFS automount, SMB timeout, KIO timeout, Baloo exclusion, no remote previews.
 
-  # libsmbclient (brukt av kio-extras smb-worker) leser denne.
-  # client connection timeout er i millisekunder; default 30000.
+  # Read by libsmbclient; the connect timeout is in milliseconds.
   home.file.".smb/smb.conf".text = ''
     [global]
         client min protocol = SMB2
         client max protocol = SMB3
         client ipc max protocol = SMB3
-        # Hopp over WINS/lmhosts som henger uten DNS/WINS-server.
+        # Skip WINS and lmhosts, which hang without a WINS server.
         name resolve order = host bcast
-        # Mislykket connect feiler etter 3s, ikke 30s.
+        # A failed connect gives up after 3 s instead of 30.
         client connection timeout = 3000
         socket options = TCP_NODELAY IPTOS_LOWDELAY
   '';
 
-  # KIO globale timeouts. Default ConnectTimeout er 20s.
+  # Global KIO timeouts; the default connect timeout is 20 s.
   xdg.configFile."kioslaverc".text = ''
     [Connection-Settings]
     ConnectTimeout=3
@@ -68,7 +61,7 @@
     Workgroup=
   '';
 
-  # Baloo skal ikke skanne nettverksmounts - stat på død mount kan henge.
+  # Baloo must not scan network mounts; stat on a dead mount can hang.
   xdg.configFile."baloofilerc".text = ''
     [Basic Settings]
     Indexing-Enabled=true
@@ -80,9 +73,8 @@
     only basic indexing=false
   '';
 
-  # Dolphin: ingen forhåndsvisning av remote-filer (smb/sftp/nfs).
-  # MaximumRemoteSize=0 → previews skrus av på alt som ikke er lokalt.
-  # Seed fil i stedet for symlink — Dolphin må kunne skrive vindustilstand selv.
+  # No previews for remote files.
+  # Seeded, not symlinked, since Dolphin writes window state to it.
   home.activation.dolphinrcSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     target="$HOME/.config/dolphinrc"
     if [ -L "$target" ] || [ ! -e "$target" ]; then

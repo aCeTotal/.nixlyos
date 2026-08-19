@@ -6,7 +6,7 @@
 }:
 
 {
-  # Kernel-moduler for nettverk og VPN
+  # Networking and VPN kernel modules.
   boot.kernelModules = [
     "tcp_bbr"
     # IPsec/IKEv2
@@ -26,11 +26,9 @@
     "nf_nat_pptp"
     # TUN/TAP for OpenVPN
     "tun"
-    # WireGuard (innebygd i moderne kernels)
+    # WireGuard
     "wireguard"
-    # iwlwifi laster op-mode-modulen iwlmvm via request_module() ved boot,
-    # og den lastingen kan feile stille (ingen wlan0, NM ser ingen wifi-hw).
-    # Tving lasting her så wifi alltid er tilgjengelig etter boot.
+    # Forced: iwlwifi's request_module("iwlmvm") can fail silently, leaving no wlan0.
     "iwlmvm"
   ];
 
@@ -44,7 +42,7 @@
     "net.ipv4.tcp_wmem" = "4096 262144 134217728";
     "net.core.optmem_max" = 65536;
 
-    # BBR + cake → minst bufferbloat, høyest gjennomstrømming.
+    # BBR plus cake: least bufferbloat, highest throughput.
     "net.core.default_qdisc" = "cake";
     "net.ipv4.tcp_congestion_control" = "bbr";
 
@@ -57,55 +55,47 @@
     "net.ipv4.tcp_window_scaling" = 1;
     "net.ipv4.tcp_timestamps" = 1;
 
-    # Send-side bufferbloat-cap (lavere latency for HTTP/2/3, gaming).
+    # Send-side bufferbloat cap, lower latency for HTTP/2 and 3.
     "net.ipv4.tcp_notsent_lowat" = 131072;
-    # Behold cwnd mellom keep-alive idle perioder → raskere gjenopptak.
+    # Keep cwnd across keep-alive idle periods for faster resume.
     "net.ipv4.tcp_slow_start_after_idle" = 0;
 
-    # Død-connection deteksjon: 60 s idle, 10 s probe-interval, 6 probes.
+    # Dead-connection detection: 60 s idle, 10 s probes, 6 tries.
     "net.ipv4.tcp_keepalive_time" = 60;
     "net.ipv4.tcp_keepalive_intvl" = 10;
     "net.ipv4.tcp_keepalive_probes" = 6;
 
-    # Connection churn (browser parallel-fetch, mange korte connections).
+    # Connection churn from browser parallel fetches.
     "net.ipv4.tcp_tw_reuse" = 1;
     "net.ipv4.tcp_fin_timeout" = 10;
     "net.ipv4.tcp_max_syn_backlog" = 8192;
 
-    # Listen-backlog + RX queue for høy throughput.
+    # Listen backlog and RX queue for high throughput.
     "net.core.somaxconn" = 4096;
     "net.core.netdev_max_backlog" = 250000;
     "net.core.netdev_budget" = 600;
     "net.core.netdev_budget_usecs" = 8000;
 
-    # Lokal port-pool — masse plass til parallelle HTTP-connections.
+    # Local port pool, room for parallel HTTP connections.
     "net.ipv4.ip_local_port_range" = "10240 65535";
 
-    # busy_poll/busy_read fjernet: systemvid busy-poll spinner CPU-en
-    # 50µs per blokkerende socket-read — konstant ekstra strømtrekk på
-    # laptop for en latencygevinst som er støy over WiFi (AX210 er
-    # eneste raske NIC her).
+    # No busy_poll: it spins the CPU per blocking socket read for a gain that is
+    # noise over WiFi.
 
-    # UDP-buffer minima — bedre QUIC/HTTP3 og spilltrafikk.
+    # UDP buffer minima, better for QUIC and game traffic.
     "net.ipv4.udp_rmem_min" = 16384;
     "net.ipv4.udp_wmem_min" = 16384;
 
-    # Receive Packet Steering: spred RX over CPU-kjerner.
+    # Receive packet steering: spread RX across cores.
     "net.core.rps_sock_flow_entries" = 32768;
   };
 
   services.resolved = {
     enable = true;
     settings.Resolve = {
-      # DNSSEC av: systemd-resolveds validering er buggy og blokkerer
-      # legitime domener (z.ai: "DNSSEC validation failed: no-signature").
-      # allow-downgrade hjelper ikke — nedgraderer kun når server mangler
-      # DNSSEC-støtte, ikke ved valideringsfeil per domene.
+      # DNSSEC off: resolved's validation blocks legitimate domains.
       DNSSEC = "false";
-      # Strict DoT: all DNS kryptert til Quad9 (blokkerer ogsaa kjente
-      # malware-domener). LAN/rogue-DHCP kan ikke spoofe eller avlytte
-      # oppslag. NB: captive portals paa aapne nett kan kreve midlertidig
-      # "opportunistic".
+      # DoT to Quad9; strict would break captive portals on open networks.
       DNSOverTLS = "opportunistic";
       FallbackDNS = [
         "1.1.1.1#cloudflare-dns.com"
@@ -116,36 +106,30 @@
     };
   };
 
-  # Quad9 som primaer-DNS (DoT-kapabel; DHCP-utdelt DNS ignoreres)
+  # Quad9 as primary DNS; the DHCP-supplied resolver is ignored.
   networking.nameservers = [
     "9.9.9.9#dns.quad9.net"
     "149.112.112.112#dns.quad9.net"
   ];
 
-  # Enable NetworkManager here instead, per request
   networking.networkmanager.enable = true;
   networking.networkmanager.dns = lib.mkDefault "systemd-resolved";
   networking.networkmanager.wifi.powersave = false;
 
-  # Stabil MAC: random MAC kan trigge AP/DHCP å kaste klienten.
+  # Stable MAC; randomised ones make some APs drop the client.
   networking.networkmanager.wifi.scanRandMacAddress = false;
   networking.networkmanager.wifi.macAddress = "permanent";
   networking.networkmanager.ethernet.macAddress = "permanent";
 
-  # IPv6 privacy extensions av (stabil adresse, færre rotasjoner).
+  # IPv6 privacy extensions off, for a stable address.
   networking.tempAddresses = "disabled";
 
-  # iwlwifi (Intel AX210) firmware-krasj fix:
-  # NMI_INTERRUPT_HOST på 6 GHz/Wi-Fi 6E → SW-reset → mister forbindelse.
-  # bt_coex_active=N: BT/WiFi antenne-coex av. power_save=0: ingen radio-sleep.
-  # 11n_disable=8: AMSDU-aggregation av. disable_11ax=1: ingen Wi-Fi 6/6E (faller til 11ac).
-  # power_scheme=1: iwlmvm full ytelse.
+  # Works around an AX210 firmware crash on 6 GHz by dropping to 11ac.
   boot.extraModprobeConfig = ''
     options iwlwifi bt_coex_active=N power_save=0 11n_disable=8 disable_11ax=1
     options iwlmvm power_scheme=1
   '';
 
-  # NetworkManager VPN plugins
   networking.networkmanager.plugins = with pkgs; [
     networkmanager-openvpn # OpenVPN
     networkmanager-vpnc # Cisco VPN
@@ -157,10 +141,10 @@
 
   systemd.services.NetworkManager-wait-online.enable = false;
 
-  # Sprer NIC-IRQer over alle CPU-kjerner → jevnere latency under last.
+  # Spreads NIC IRQs across cores for steadier latency under load.
   services.irqbalance.enable = true;
 
-  # StrongSwan for IKEv2/IPsec
+  # StrongSwan for IKEv2/IPsec.
   services.strongswan = {
     enable = true;
     secrets = [ "/etc/ipsec.secrets" ];
@@ -169,17 +153,16 @@
   environment.systemPackages = with pkgs; [
     networkmanagerapplet
 
-    # VPN-klienter
+    # VPN clients
     openvpn
     wireguard-tools
-    openconnect # Cisco AnyConnect-kompatibel
+    openconnect # Cisco AnyConnect compatible
     vpnc # Cisco VPN
-    sstp # SSTP-klient
+    sstp
     strongswan # IKEv2/IPsec
-    libreswan # Alternativ IPsec
+    libreswan # Alternative IPsec
     openfortivpn # Fortinet
 
-    # Nyttige verktøy
     iproute2
     iptables
     nftables

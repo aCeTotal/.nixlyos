@@ -5,8 +5,7 @@
 
   boot = {
     kernelModules = [ "kvm-amd" ];
-    # mkBefore maa omslutte HELE lista — den returnerer et prioritetssett, og
-    # `set ++ list` er en typefeil (samme moenster som cpu/intel.nix).
+    # mkBefore must wrap the whole list; `set ++ list` is a type error.
     kernelParams = lib.mkBefore ([
       "amd_pstate=active"
     ] ++ (lib.optionals (config.virtualisation.libvirtd.enable or false) [
@@ -17,7 +16,6 @@
     lm_sensors
     cpufrequtils
   ];
-  # ppd av: den eier governor/EPP og overstyrte performance-governoren fra
-  # perf.nix. Én eier — se kommentaren der.
+  # power-profiles-daemon off: it owns the governor and overrode perf.nix.
   services.power-profiles-daemon.enable = false;
 }

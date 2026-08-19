@@ -20,8 +20,7 @@
     # };
 
     initrd.systemd.enable = true;
-    # Preload NVMe + btrfs in initrd so disk + root FS come up immediately
-    # (hardware-configuration.nix omits these). Cuts ~seconds off device wait.
+    # Preload NVMe and btrfs so the root FS comes up without a device wait.
     initrd.availableKernelModules = [ "nvme" "nvme_core" ];
     initrd.kernelModules = [ "btrfs" ];
     consoleLogLevel = 3;
@@ -31,11 +30,7 @@
 
     supportedFilesystems = [ "ext4" "btrfs" "vfat" "ntfs3" ];
 
-    # Zen kernel — desktop-tuned, BORE-ish scheduler tweaks. Bygges for
-    # generisk x86-64, saa den kjoerer paa gammel CPU ogsaa; men paa
-    # pre-Nehalem (psABI-nivaa 1) faller vi tilbake til hovedkernelen, som er
-    # den eneste som faktisk testes paa slik hardware. Nivaaet detekteres av
-    # scripts/detect-hw.sh.
+    # Zen kernel, except on pre-Nehalem CPUs where only the main kernel is tested.
     kernelPackages =
       if (import ./hw/resources.nix).cpuLevel >= 2
       then pkgs.linuxPackages_zen
@@ -53,11 +48,7 @@
       "random.trust_cpu=on"
       "nowatchdog"
       "nmi_watchdog=0"
-      # Spectre/MDS/Retbleed-mitigations AV som standard (var tidligere kun i
-      # specialisation "gaming", som naa er fjernet). ~10-15% CPU paa eldre
-      # Intel, mindre paa Zen. Trusselmodell: single-user desktop uten
-      # ufortrodd lokal kode — samme avveining som
-      # NVreg_InitializeSystemMemoryAllocations=0 i gpu/nvidia_intel.nix.
+      # Worth 10-15 % CPU on older Intel; accepted on a single-user desktop.
       "mitigations=off"
       "split_lock_detect=off"
     ];
@@ -65,18 +56,16 @@
     blacklistedKernelModules = [ "8250_pci" ];
   };
 
-  # sbctl for å administrere Secure Boot-nøkler
+  # sbctl manages the Secure Boot keys.
   environment.systemPackages = [ pkgs.sbctl ];
 
-  # Aktiver TPM2-støtte
   security.tpm2 = {
     enable = true;
     pkcs11.enable = true;
     tctiEnvironment.enable = true;
   };
 
-  # Skip while lanzaboote disabled — sbctl status fork+grep on every
-  # activation costs ~hundreds of ms for nothing. Re-enable when needed.
+  # No sbctl status check on activation while lanzaboote is disabled.
 
   boot.kernel.sysctl = {
     "kernel.sysrq" = 1;
@@ -88,31 +77,30 @@
     "fs.protected_fifos" = 2;
     "fs.protected_regular" = 2;
 
-    # Nettverkshardening
+    # Network hardening
     "net.ipv4.conf.all.rp_filter" = 1;              # reverse path filtering
     "net.ipv4.conf.default.rp_filter" = 1;
-    "net.ipv4.conf.all.accept_redirects" = 0;        # avvis ICMP redirects
+    "net.ipv4.conf.all.accept_redirects" = 0;        # reject ICMP redirects
     "net.ipv4.conf.default.accept_redirects" = 0;
     "net.ipv6.conf.all.accept_redirects" = 0;
     "net.ipv6.conf.default.accept_redirects" = 0;
-    "net.ipv4.conf.all.send_redirects" = 0;           # ikke send ICMP redirects
+    "net.ipv4.conf.all.send_redirects" = 0;
     "net.ipv4.conf.default.send_redirects" = 0;
-    "net.ipv4.conf.all.accept_source_route" = 0;      # blokkerer source routing
+    "net.ipv4.conf.all.accept_source_route" = 0;      # block source routing
     "net.ipv6.conf.all.accept_source_route" = 0;
     "net.ipv4.icmp_echo_ignore_broadcasts" = 1;       # smurf attack protection
-    # log_martians av: jevn journald-skriving på støyete nett, leses aldri.
+    # No log_martians: constant journald writes on noisy networks, never read.
 
-    # Kernel anti-exploit hardening
-    "kernel.yama.ptrace_scope" = 1;                    # begrenser ptrace
-    "fs.suid_dumpable" = 0;                            # ingen core dumps fra SUID
+    # Anti-exploit hardening
+    "kernel.yama.ptrace_scope" = 1;                    # restrict ptrace
+    "fs.suid_dumpable" = 0;                            # no core dumps from SUID
 
-    # Gaming
-    "vm.max_map_count" = 2147483642; # Steam Deck-default; trygt tak for nyere titler
+    "vm.max_map_count" = 2147483642; # Steam Deck default
   };
 
   services.fstrim.enable = true;
 
-  # systemd-backlight save/restore tar 1s på intel_backlight (EC-treg).
-  # Niri/userland setter brightness selv; ingen grunn til å blokkere boot.
+  # systemd-backlight save/restore costs a second on intel_backlight, and
+  # userland sets brightness itself.
   systemd.services."systemd-backlight@backlight:intel_backlight".enable = lib.mkForce false;
 }

@@ -1,14 +1,9 @@
 { pkgs, ... }:
 
 {
-  # SSH-gate: LAN-ssh aapen til tailscale er logget inn, deretter helt
-  # stengt. Baseline i brannmuren er stengt (openssh.openFirewall =
-  # false i ssh.nix); gaten legger inn/fjerner en runtime-regel i
-  # nixos-fw/input-allow basert paa tailscale BackendState.
-  #
-  # Failsafe: logges tailscale ut (eller `tailscale down`) aapner
-  # LAN-ssh igjen innen ~10s — du laases aldri ute av egen boks.
-  # Brannmur-reload (rebuild) nullstiller regelen; loopen reetablerer.
+  # LAN ssh stays open until tailscale logs in, then closes; the gate adds and
+  # removes a runtime firewall rule based on tailscale's BackendState.
+  # Failsafe: logging tailscale out reopens LAN ssh within about ten seconds.
   systemd.services.ssh-tailscale-gate = {
     description = "Open LAN ssh until tailscale is logged in";
     wantedBy = [ "multi-user.target" ];

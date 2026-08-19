@@ -1,6 +1,5 @@
-# Felles utskriftsstil for repoets scripts. Sources, kjoeres ikke.
-# Farger bare naar stderr er en terminal — systemd-loggen (autoupdate.nix)
-# skal ikke fylles med escape-koder.
+# Shared output style for the repo's scripts; sourced, not executed.
+# Colours only when stderr is a terminal, to keep escape codes out of the journal.
 if [ -t 2 ]; then
   _ui_b=$'\e[1m' _ui_d=$'\e[2m' _ui_c=$'\e[36m'
   _ui_g=$'\e[32m' _ui_y=$'\e[33m' _ui_r=$'\e[31m' _ui_0=$'\e[0m'

@@ -17,10 +17,8 @@ in
 {
   home.packages = [ nixly-update-tray ];
 
-  # nixlytile-trayen ignorerer SNI Status=Passive, saa ikonet kan ikke
-  # "gjemme seg" selv — prosessen maa vaere av naar ingen oppdatering er
-  # klar. Path-uniten starter den kun naar pending-flagget finnes;
-  # scriptet avslutter selv naar flagget forsvinner.
+  # The tray ignores SNI Status=Passive, so the icon cannot hide itself and the
+  # process only runs while the pending flag exists.
   systemd.user.paths.nixly-update-tray = {
     Unit.Description = "Start update-trayikon naar prevalidert oppdatering ligger klar";
     Path.PathExists = "/var/lib/nixly-update/pending";
@@ -31,7 +29,7 @@ in
     Unit.Description = "NixlyOS update tray icon";
     Service = {
       ExecStart = "${nixly-update-tray}/bin/nixly-update-tray";
-      # Kan starte foer compositor/trayen er oppe ved boot med pending
+      # It can start before the tray is up at boot.
       Restart = "on-failure";
       RestartSec = 5;
     };

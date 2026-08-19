@@ -14,8 +14,7 @@
   };
 
   services.thermald.enable = true;
-  # ppd av: den eier governor/EPP og overstyrte performance-governoren fra
-  # perf.nix. Én eier — se kommentaren der.
+  # power-profiles-daemon off: it owns the governor and overrode perf.nix.
   services.power-profiles-daemon.enable = false;
   environment.systemPackages = with pkgs; [
     lm_sensors

@@ -7,7 +7,7 @@
         enable = true;
 
         extraConfig = ''
-          # ── Catppuccin Mocha fargetema ──────────────────────────────
+          # Catppuccin Mocha colours
           color background          color236  default
           color listnormal          color7    default
           color listnormal_unread   color4    default   bold
@@ -21,7 +21,7 @@
           color title               color5    default   bold
           color end-of-text-marker  color8    default
 
-          # Highlight for artikkelinnhold
+          # Highlight for article content
           highlight article "^Feed:.*"        color5  default bold
           highlight article "^Title:.*"       color4  default bold
           highlight article "^Author:.*"      color3  default
@@ -31,12 +31,12 @@
           highlight article "\\[link\\ [0-9]+\\]"    color6 default underline
           highlight article "https?://[^ ]+"  color6  default underline
 
-          # Highlight i feedlisten
+          # Highlight in the feed list
           highlight feedlist "linux"           color2  default bold
           highlight feedlist "valve|steam|proton" color4 default bold
           highlight feedlist "tech"            color5  default bold
 
-          # ── Formatering ─────────────────────────────────────────────
+          # Formatting
           feedlist-format     "%?T?%-14T ?%t %> %U/%c "
           articlelist-format  "%D  %?T?%-12T  ?%t %> %L"
           datetime-format     "%d/%m"
@@ -48,7 +48,7 @@
 
           text-width 90
 
-          # ── Oppforsel ───────────────────────────────────────────────
+          # Behaviour
           auto-reload yes
           reload-time 30
           reload-threads 4
@@ -59,12 +59,12 @@
           cleanup-on-quit yes
           max-items 200
 
-          # ── Nettleser ──────────────────────────────────────────────
+          # Browser
           browser "xdg-open %u"
           macro o set browser "xdg-open %u" ; open-in-browser ; set browser "xdg-open %u"
           macro v set browser "mpv %u" ; open-in-browser ; set browser "xdg-open %u"
 
-          # ── Tastatursnarvei (vim) ───────────────────────────────────
+          # Vim keybindings
           bind-key j down
           bind-key k up
           bind-key J next-feed articlelist
@@ -85,9 +85,7 @@
         '';
 
         urls = [
-          # =============================================
-          #  LINUX NYHETER
-          # =============================================
+          # Linux news
           { url = "https://www.phoronix.com/rss.php"; tags = [ "linux" "hardware" ]; title = "Phoronix"; }
           { url = "https://lwn.net/headlines/rss"; tags = [ "linux" "kernel" ]; title = "LWN.net"; }
           { url = "https://www.omgubuntu.co.uk/feed"; tags = [ "linux" "ubuntu" ]; title = "OMG! Ubuntu"; }
@@ -106,9 +104,7 @@
           { url = "https://discourse.nixos.org/c/announcements/8.rss"; tags = [ "linux" "nix" ]; title = "NixOS Announcements"; }
           { url = "https://planet.kernel.org/rss20.xml"; tags = [ "linux" "kernel" ]; title = "Planet Kernel"; }
 
-          # =============================================
-          #  VALVE / STEAM / PROTON
-          # =============================================
+          # Valve, Steam and Proton
           { url = "https://store.steampowered.com/feeds/news/app/593110"; tags = [ "valve" "steam" ]; title = "Steam Deck News"; }
           { url = "https://store.steampowered.com/feeds/news/app/1493710"; tags = [ "valve" "proton" ]; title = "Proton Experimental"; }
           { url = "https://store.steampowered.com/feeds/news/app/2180100"; tags = [ "valve" "proton" ]; title = "Proton Hotfix"; }
@@ -118,9 +114,7 @@
           { url = "https://www.valvesoftware.com/en/blog?feed=rss"; tags = [ "valve" ]; title = "Valve Blog"; }
           { url = "https://boilingsteam.com/feed/"; tags = [ "valve" "linux" "gaming" ]; title = "Boiling Steam"; }
 
-          # =============================================
-          #  TECH NYHETER
-          # =============================================
+          # Tech news
           { url = "https://arstechnica.com/feed/"; tags = [ "tech" ]; title = "Ars Technica"; }
           { url = "https://www.theverge.com/rss/index.xml"; tags = [ "tech" ]; title = "The Verge"; }
           { url = "https://techcrunch.com/feed/"; tags = [ "tech" ]; title = "TechCrunch"; }
@@ -138,15 +132,11 @@
           { url = "https://selfhosted.show/rss"; tags = [ "tech" "selfhost" ]; title = "Self-Hosted Podcast"; }
           { url = "https://blog.cloudflare.com/rss/"; tags = [ "tech" "web" ]; title = "Cloudflare Blog"; }
 
-          # =============================================
-          #  GPU / GRAFIKKORT
-          # =============================================
+          # GPUs
           { url = "https://videocardz.com/feed"; tags = [ "tech" "gpu" ]; title = "VideoCardz"; }
           { url = "https://www.nvidia.com/en-us/drivers/unix/feed.xml"; tags = [ "tech" "gpu" "nvidia" ]; title = "NVIDIA Unix Drivers"; }
 
-          # =============================================
-          #  OPEN SOURCE / FOSS
-          # =============================================
+          # Open source
           { url = "https://github.blog/feed/"; tags = [ "tech" "foss" ]; title = "GitHub Blog"; }
           { url = "https://www.opensourceforu.com/feed/"; tags = [ "tech" "foss" ]; title = "Open Source For You"; }
         ];

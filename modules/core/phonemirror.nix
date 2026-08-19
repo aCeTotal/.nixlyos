@@ -1,20 +1,10 @@
 { pkgs, ... }:
 
 {
-  # Live speiling av Android-skjerm i et vindu på maskinen (scrcpy).
-  # Lav latency, og mus/tastatur styrer telefonen.
-  #
-  # Krever USB-feilsøking på telefonen: Innstillinger → Om telefonen →
-  # trykk "Byggnummer" 7x → Utvikleralternativer → USB-feilsøking.
-  #
-  #   scrcpy                          USB — godkjenn dialogen på telefonen
-  #   adb tcpip 5555                  bytt til wifi (kabel fortsatt i)
-  #   adb connect <telefon-ip>:5555   deretter kan kabelen tas ut
-  #
-  # Nyttige flagg: --max-size 1920 --max-fps 60 --turn-screen-off --stay-awake
+  # Live Android screen mirroring via scrcpy, with mouse and keyboard control.
+  # Needs USB debugging enabled on the phone; `adb tcpip 5555` moves it to wifi.
 
-  # programs.adb/adbusers-gruppa er fjernet i nixpkgs — systemd 258 gir
-  # uaccess på USB-enheten selv, så adb trenger bare å ligge i PATH.
+  # No programs.adb needed: systemd grants uaccess on the USB device itself.
   environment.systemPackages = with pkgs; [
     scrcpy
     android-tools # adb

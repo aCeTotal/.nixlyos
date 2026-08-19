@@ -3,14 +3,14 @@
 let
   nvimConfig = ./nvim;
 in {
-  # Install Neovim system-wide
+  # Neovim system-wide.
   programs.neovim = {
     enable = true;
     viAlias = true;
     vimAlias = true;
   };
 
-  # Deploy pure-Lua Neovim config to ~/.config/nvim
+  # Pure-Lua config deployed to ~/.config/nvim.
   home-manager.sharedModules = [
     {
       xdg.configFile."nvim" = {
@@ -18,9 +18,9 @@ in {
         recursive = true;
       };
 
-      # LSP servers and development tools
+      # LSP servers and dev tools
       home.packages = with pkgs; [
-        # Build tools (for treesitter parsers)
+        # Build tools for treesitter parsers
         gcc
         gnumake
 

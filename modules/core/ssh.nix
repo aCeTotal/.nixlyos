@@ -3,8 +3,7 @@
 {
   services.openssh = {
     enable = true;
-    # SSH kun via tailscale (tailscale0 er trusted interface) — port 22
-    # aapnes ikke i brannmuren for LAN/internett.
+    # SSH over tailscale only; port 22 is not opened to the LAN or internet.
     openFirewall = false;
     settings = {
       PermitRootLogin = "no";
@@ -20,9 +19,7 @@
       MaxAuthTries = 3;
       LoginGraceTime = "20s";
       Compression = "no";
-      # Use per-option types expected by the OpenSSH module in 25.05.
-      # - Ciphers, KexAlgorithms: list of strings
-      # - MACs: string (comma-separated)
+      # Per-option types as the OpenSSH module expects them.
       KexAlgorithms = [
         "sntrup761x25519-sha512@openssh.com"
         "curve25519-sha256"

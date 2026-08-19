@@ -2,11 +2,8 @@
 
 {
 
-  # NetworkManager setup moved to core/networking.nix
-  # networking.networkmanager.enable handled in core
-  # networking.networkmanager.dns handled in core
+  # NetworkManager, its DNS and nm-applet all live in core/networking.nix.
 
-  # nm-applet managed via user service in core/networking.nix
 
   services.resolved = {
     enable = true;

@@ -3,10 +3,8 @@
 {
 
     imports = [
-      # user/steam.nix fjernet: skrev wildcard-CompatToolMapping med
-      # priority 250 (som autoconfig.nix dokumenterer at oedelegger Steam
-      # Linux Runtime-installasjon). modules/core/steam/autoconfig.nix
-      # eier all Steam-config naa, ved hver oppstart.
+      # No user/steam.nix: its wildcard CompatToolMapping at priority 250 broke
+      # the Steam Linux Runtime, and autoconfig.nix now owns all Steam config.
       ./modules/user/blender_setup.nix
       # programs
       ./modules/user/git.nix
@@ -49,13 +47,13 @@
      };
     };
 
-    # Calendar/accounts: set basePath to satisfy HM module defaults
+    # basePath satisfies the home-manager module defaults.
     accounts.calendar.basePath = ".calendar";
     accounts.contact.basePath = ".contacts";
 
     # Let Home Manager install and manage itself.
     programs.home-manager.enable = true;
 
-    # Set login keyring as default (auto-unlocked via PAM on login)
+    # The login keyring is auto-unlocked via PAM.
     home.file.".local/share/keyrings/default".text = "login";
 }

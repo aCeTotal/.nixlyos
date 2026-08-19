@@ -1,15 +1,8 @@
 { pkgs, lib, ... }:
 
 {
-  # ═══════════════════════════════════════════════════════════════════
-  # RetroArch — full installation with cores + XMB theme + controllers
-  # ═══════════════════════════════════════════════════════════════════
-  # Cores: NES, SNES, N64 (+ a few common extras for completeness).
-  # Controllers: USB + Bluetooth picked up from gaming.nix (xpadneo,
-  # xone, bluez, udev). Joypad driver = udev → hot-plug friendly.
-  # Config written via home-manager activation; user can still tweak
-  # in-app, changes persist until next nixos-rebuild.
-  # ═══════════════════════════════════════════════════════════════════
+  # RetroArch with cores, XMB theme and udev joypad autoconfig; config is written
+  # on each home-manager activation, so in-app tweaks last until the next rebuild.
 
   environment.systemPackages = with pkgs; [
     (retroarch.withCores (cores: [
@@ -25,7 +18,7 @@
       cores.snes9x
       cores.bsnes
 
-      # Bonus retro coverage (no extra setup needed)
+      # Bonus retro coverage.
       cores.genesis-plus-gx       # Mega Drive / SMS / Game Gear
       cores.gambatte              # GB / GBC
       cores.mgba                  # GBA
@@ -36,8 +29,7 @@
     retroarch-joypad-autoconfig
   ];
 
-  # XMB needs OpenGL + assets. udev rules + bluetooth already wired in
-  # gaming.nix — no duplication here.
+  # udev rules and bluetooth come from gaming.nix, not duplicated here.
 
   home-manager.users.total = { lib, ... }: {
     home.activation.retroarchConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -52,11 +44,9 @@
       mkdir -p "$RA_CFG_DIR/thumbnails"
 
       cat > "$RA_CFG_DIR/retroarch.cfg" << 'RACFG'
-      # ── Menu / theme ────────────────────────────────────
+      # Menu / theme
       menu_driver = "xmb"
-      # Icon pack: 0=monochrome (most popular & complete coverage of cores)
-      # In-app: Settings → User Interface → Appearance → Icon Theme to switch
-      # to systematic / retrosystem / dot-art / pixel / flatui / automatic etc.
+      # Icon pack 0 is monochrome; switch under Appearance in-app.
       menu_xmb_theme = "0"
       menu_xmb_menu_color_theme = "1"
       menu_xmb_shadows_enable = "true"
@@ -86,20 +76,17 @@
       assets_directory = "${pkgs.retroarch-assets}/share/retroarch/assets"
       xmb_font = ""
 
-      # ── Video ───────────────────────────────────────────
+      # Video
       video_driver = "vulkan"
       video_fullscreen = "true"
-      # Wayland: real fullscreen (xdg_toplevel.set_fullscreen) covers
-      # layer-shell top (waybar). Windowed-fullscreen = borderless window,
-      # waybar stays on top.
+      # Real fullscreen covers the layer-shell top; windowed-fullscreen does not.
       video_windowed_fullscreen = "false"
       video_vsync = "true"
       video_threaded = "true"
       video_smooth = "true"
       video_scale_integer = "false"
       video_aspect_ratio_auto = "true"
-      # Pure vsync path (no VRR). Triple-buffer + auto frame delay
-      # = smoother pacing without tearing or G-Sync-style runloop.
+      # Pure vsync: triple buffering plus auto frame delay, no VRR runloop.
       video_max_swapchain_images = "3"
       video_frame_delay = "0"
       video_frame_delay_auto = "true"
@@ -109,13 +96,13 @@
       video_shader_enable = "true"
       video_shader_dir = "$HOME/.config/retroarch/shaders"
 
-      # ── Audio ───────────────────────────────────────────
+      # Audio
       audio_driver = "pipewire"
       audio_enable = "true"
       audio_sync = "true"
       audio_volume = "0.0"
 
-      # ── Input / controllers ─────────────────────────────
+      # Input / controllers
       input_driver = "udev"
       input_joypad_driver = "udev"
       input_autodetect_enable = "true"
@@ -128,7 +115,7 @@
       # Autoconfig profiles directory (xpad, dualshock, etc.)
       joypad_autoconfig_dir = "${pkgs.retroarch-joypad-autoconfig}/share/libretro/autoconfig"
 
-      # ── Core / content paths ────────────────────────────
+      # Core / content paths
       libretro_directory = "$HOME/.config/retroarch/cores"
       libretro_info_path = "$HOME/.config/retroarch/cores"
       system_directory = "$HOME/.config/retroarch/system"
@@ -138,10 +125,7 @@
       playlist_directory = "$HOME/.config/retroarch/playlists"
       thumbnails_directory = "$HOME/.config/retroarch/thumbnails"
 
-      # ── Online updater (icon packs, thumbnail packs, cores) ─────
-      # Lets the in-app updater fetch additional XMB icon themes and
-      # the libretro-thumbnails packs (Nintendo - NES, SNES, N64, …)
-      # from the official buildbot. Trigger: Main Menu → Online Updater.
+      # Online updater: lets the in-app updater fetch icon and thumbnail packs.
       network_on_demand_thumbnails = "true"
       core_updater_buildbot_url = "https://buildbot.libretro.com/nightly/linux/x86_64/latest/"
       core_updater_buildbot_assets_url = "https://buildbot.libretro.com/assets/"
@@ -150,7 +134,7 @@
       menu_show_core_updater = "true"
       automatically_add_content_to_playlist = "true"
 
-      # ── Misc ────────────────────────────────────────────
+      # Misc
       pause_nonactive = "false"
       check_firmware_before_loading = "false"
       auto_screenshot_filename = "true"
@@ -159,9 +143,8 @@
       config_save_on_exit = "true"
       RACFG
 
-      # ── Per-core overrides: fill 4K screen ──────────────
-      # aspect_ratio_index=1 (16:9 stretch). Widescreen-hack enabled
-      # for 3D cores via .opt below; 2D cores stretch.
+      # Per-core overrides to fill the 4K screen: 3D cores get the widescreen
+      # hack below, 2D cores just stretch to 16:9.
       mkdir -p "$RA_CFG_DIR/config"
 
       for core in \
@@ -181,8 +164,7 @@
       CORECFG
       done
 
-      # ── Core options: widescreen-hack + 4K-friendly res ─
-      # upsert_opt preserves user in-app tweaks to other keys
+      # upsert_opt preserves the user's in-app tweaks to other keys.
       upsert_opt() {
         local file="$1" key="$2" value="$3"
         mkdir -p "$(dirname "$file")"
@@ -209,8 +191,7 @@
       upsert_opt "$PN64" "parallel-n64-parallel-rdp-upscaling" "4x"
       upsert_opt "$PN64" "parallel-n64-framerate" "original"
 
-      # Beetle PSX HW: widescreen-hack + 4x internal + PGXP
-      # CPU freq stays 100% → no physics/audio desync
+      # Beetle PSX HW: widescreen hack, 4x internal and PGXP, CPU freq left at 100 %.
       BPSX="$RA_CFG_DIR/config/Beetle PSX HW/Beetle PSX HW.opt"
       upsert_opt "$BPSX" "beetle_psx_hw_renderer" "hardware"
       upsert_opt "$BPSX" "beetle_psx_hw_renderer_software_fb" "enabled"
@@ -236,9 +217,7 @@
       upsert_opt "$BSNES" "bsnes_mode7_mosaic" "ON"
       upsert_opt "$BSNES" "bsnes_ips_headered" "ON"
 
-      # ── 2D-core shader preset: xBR upscale ──────────────
-      # Path resolves after first-run Online Updater → Update Slang Shaders.
-      # Until then preset is silently skipped by RetroArch.
+      # xBR upscale for 2D cores; the path only resolves after Update Slang Shaders.
       SHADER="$HOME/.config/retroarch/shaders/shaders_slang/xbr/xbr-lv2-multipass.slangp"
       for core in \
         "bsnes" "Snes9x" "FCEUmm" "Nestopia" \

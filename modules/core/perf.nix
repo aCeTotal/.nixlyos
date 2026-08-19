@@ -2,43 +2,23 @@
 
 {
   # Performance tunings on top of linuxPackages_zen.
-  # Kernel & sysctl already covered: ananicy-cpp + cachyos rules, scx_lavd,
-  # earlyoom, irqbalance, zram, BBR+fq, gamemode, btrfs noatime+zstd+ssd.
 
-  # CPU-governor: performance, alltid, paa alle maskiner. Én eier — derfor er
-  # power-profiles-daemon slaatt av (cpu/intel.nix, cpu/amd.nix) og
-  # desiredgov/defaultgov fjernet fra feral gamemode (gaming.nix). Med
-  # intel_pstate=active / amd_pstate=active betyr dette EPP=performance, dvs.
-  # maks turbo-residency ogsaa utenfor spill (menyer, shader-kompilering,
-  # kompilering). Kostnad: hoeyere idle-forbruk/varme paa laptop.
+  # Single owner of the governor: power-profiles-daemon and gamemode's own
+  # governor knobs are disabled elsewhere so this always wins.
   powerManagement.cpuFreqGovernor = "performance";
 
-  # Per-device IO scheduler: NVMe→none (ingen kø-omorganisering = lavest
-  # latency; NVMe har dyp hardware-kø og trenger ingen fairness-scheduler),
-  # SATA SSD/HDD→bfq. mq-deadline paa SATA-SSD ignorerer io-prioriteter:
-  # Steams idle-ioprio paa shader-kompilering og ananicys "ioclass idle"
-  # hadde null effekt, saa en stor Steam-oppdatering la desktopens
-  # page-fault-lesinger bakerst i samme kø — maskinen frøs i sekundvis
-  # under nedlasting. BFQ haandhever ioprio + per-prosess-fairness.
+  # NVMe gets none for lowest latency; SATA gets bfq, which unlike mq-deadline
+  # actually honours ioprio, so a Steam download no longer freezes the desktop.
   services.udev.extraRules = ''
     ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="none"
     ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/scheduler}="bfq"
   '';
 
-  # systemd-oomd already enabled in zram.nix; vm.dirty_*, vfs_cache_pressure
-  # and min_free_kbytes also defined there.
+  # systemd-oomd and the vm.dirty_* knobs live in zram.nix.
 
-  # Raise open-file + memlock limits for game engines, electron, IDEs.
-  # rtprio for @audio: lets PipeWire/mpv audio threads take RT scheduling
-  # directly via RLIMIT_RTPRIO (no rtkit round-trip needed) so audio never
-  # starves under GPU-composite/compositor load — the occasional playback
-  # audio dropouts on the HTPC.
-  #
-  # @gamemode faar rtprio + nice: uten RLIMIT_NICE staar gulvet paa 0, og
-  # nixlytile sin `setpriority(game, -10)` feilet med EACCES — hele
-  # prioriterings-halvdelen av game mode var en no-op. rtprio 95 her (ikke
-  # bare via @audio) saa compositor-RT-boosten virker paa maskiner der
-  # brukeren ikke er i audio-gruppa.
+  # Raise open-file and memlock limits for game engines, electron and IDEs.
+  # @audio gets rtprio so PipeWire never starves under compositor load, and
+  # @gamemode gets rtprio plus nice because setpriority(-10) otherwise EACCESes.
   security.pam.loginLimits = [
     { domain = "*"; type = "soft"; item = "nofile";  value = "524288";    }
     { domain = "*"; type = "hard"; item = "nofile";  value = "1048576";   }
@@ -59,15 +39,13 @@
     "fs.file-max"                   = 2097152;
     "fs.aio-max-nr"                 = 1048576;
 
-    # Skip split-lock detection (CachyOS default — perf cost on detection)
+    # Skip split-lock detection; detection itself costs performance.
     "kernel.split_lock_mitigate" = 0;
 
-    # No background memory compaction during gameplay — kcompactd bursts
-    # show up as frame-time spikes. nixlytile's game mode triggers an
-    # explicit compaction at game start, which covers the THP need.
+    # No background compaction: kcompactd bursts show up as frame-time spikes,
+    # and nixlytile's game mode compacts explicitly at game start.
     "vm.compaction_proactiveness" = 0;
-    # Don't let watermark boosting kick kswapd into aggressive reclaim on
-    # fragmentation (another background stutter source under memory load).
+    # Keep watermark boosting from kicking kswapd into aggressive reclaim.
     "vm.watermark_boost_factor" = 0;
   };
 }

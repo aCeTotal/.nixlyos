@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Bump alle aCeTotal-pakker i nixlypkgs (rev + hash) til nyeste upstream-HEAD,
-# commit + push nixlypkgs slik at `nix flake update` etterpaa plukker dem opp.
+# Bump every aCeTotal package in nixlypkgs to upstream HEAD, then commit and push
+# so a later `nix flake update` picks them up.
 set -euo pipefail
 
 NP="$HOME/git/nixlypkgs"
@@ -40,8 +40,8 @@ for f in "$NP"/pkgs/*/default.nix; do
   oldhash=$(grep -oP 'hash = "\Ksha256-[^"]+' "$f" | head -1)
   sed -i "s|$old|$new|; s|$oldhash|$sri|" "$f"
 
-  # cargoHash endres naar Cargo.lock endres: proevebygg, les riktig hash
-  # ut av mismatch-feilen, patch og verifiser med nytt bygg.
+  # cargoHash changes with Cargo.lock, so build once, read the correct hash out of
+  # the mismatch error, patch it and rebuild to verify.
   if grep -q 'cargoHash' "$f"; then
     pkg=$(basename "$(dirname "$f")")
     if ! out=$(nix build "$NP#$pkg" --no-link 2>&1); then

@@ -1,17 +1,15 @@
 { lib, pkgs, ... }:
 
 {
-  # nixpkgs-modulen legger nixpkgs.overlays oppaa vaart pkgs-sett, og
-  # nixlypkgs-modulen setter sitt eget overlay der. Uten mkAfter blir
-  # wfica-wrapperen under overskrevet av den uwrappede pakka.
+  # mkAfter, or the nixlypkgs overlay replaces the wfica wrapper below with the
+  # unwrapped package.
   nixpkgs.overlays = lib.mkAfter [ (import ../../pkgs/citrix/overlay.nix) ];
 
   environment.systemPackages = with pkgs; [
     citrix-workspace-nixly
   ];
 
-  # Uten denne daemonen skriver wfica ingen logger i det hele tatt
-  # (~/.ICAClient/logs/ICAClient.log blir aldri opprettet).
+  # Without this daemon wfica writes no logs at all.
   systemd.user.services.ctxcwalogd = {
     description = "Citrix Workspace log daemon";
     wantedBy = [ "default.target" ];
@@ -21,23 +19,18 @@
     };
   };
 
-  # .ica-filer (application/x-ica) aapnes automatisk med wfica.
+  # .ica files open in wfica.
   xdg.mime = {
     enable = true;
     addedAssociations."application/x-ica" = "wfica.desktop";
     defaultApplications."application/x-ica" = "wfica.desktop";
   };
 
-  # wfclient.ini eies av Citrix (wfica skriver den ved GUI-endringer), saa den
-  # kan ikke symlinkes fra store. Vi patcher bare noeklene vi trenger.
+  # wfclient.ini is owned by Citrix and cannot be symlinked from the store, so
+  # only the keys we need are patched.
   home-manager.users.total = { lib, ... }: {
-    # All_Regions.ini kopieres til ~/.ICAClient ved foerste kjoering og blir
-    # deretter aldri oppdatert. Nye klientversjoner legger til lockdown-noekler
-    # der (26.04 la til [Network\TCP-IP\HDXEnlightenedDataTransport] EDT=Allow),
-    # og mangler noekkelen i brukerkopien nekter wfica aa starte med
-    # "No value for (EDT) satisfies all lockdown requirements".
-    # Fila er en admin-lockdown-template som vi ikke redigerer, saa vi tar
-    # bare store-versjonen hver gang den endrer seg.
+    # All_Regions.ini is copied once and never updated, so a new client version's
+    # lockdown keys are missing and wfica refuses to start; refresh it from the store.
     home.activation.citrixAllRegionsIni = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       SRC="${pkgs.citrix-workspace-nixly}/opt/citrix-icaclient/config/All_Regions.ini"
       DST="$HOME/.ICAClient/All_Regions.ini"
@@ -49,21 +42,15 @@
     home.activation.citrixWfclientIni = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       INI="$HOME/.ICAClient/wfclient.ini"
       if [ -f "$INI" ]; then
-        # UseFullScreen=True (Citrix-default i wfclient.template) lager et
-        # vindu paa hele X-skjermen - 5360x1440 over begge monitorer - saa
-        # sesjonen starter "fullskjerm" med svart bakgrunn og innholdet paa
-        # DP-1-delen. nixlytile flislegger den foerst ved neste layout-event.
+        # Citrix's UseFullScreen default spans every monitor as one X window.
         ${pkgs.gnused}/bin/sed -i \
           's/^UseFullScreen[[:space:]]*=.*/UseFullScreen=False/' "$INI"
 
-        # A: i sesjonen mappes til hjemmemappa, ikke rota. $HOME ekspanderes
-        # av wfica selv (samme som PersistentCachePath i templaten).
+        # Map drive A: to the home directory; wfica expands $HOME itself.
         ${pkgs.gnused}/bin/sed -i \
           's|^DrivePathA[[:space:]]*=.*|DrivePathA=$HOME|' "$INI"
 
-        # SuperMetaToWinKeys=True (module.ini-default) sender lokal Super inn
-        # i sesjonen som Win-tast -> Windows startmeny popper opp hver gang.
-        # wfclient.ini vinner over module.ini.
+        # Otherwise the local Super key opens the Windows start menu in-session.
         if ${pkgs.gnugrep}/bin/grep -q '^SuperMetaToWinKeys' "$INI"; then
           ${pkgs.gnused}/bin/sed -i \
             's/^SuperMetaToWinKeys[[:space:]]*=.*/SuperMetaToWinKeys=False/' "$INI"
@@ -75,9 +62,7 @@
     '';
   };
 
-  # Chrome lagrer "aapne alltid denne filtypen" i profilen (extensions_to_open),
-  # og den forsvinner naar profilen resettes. Enterprise-policy gjoer det
-  # permanent: nedlastede .ica-filer aapnes rett i wfica.
+  # An enterprise policy, since Chrome's own "always open" setting is lost on profile reset.
   environment.etc."opt/chrome/policies/managed/citrix-ica.json".text =
     builtins.toJSON { AutoOpenFileTypes = [ "ica" ]; };
 }

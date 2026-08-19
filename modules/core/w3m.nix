@@ -5,16 +5,15 @@
     ({ pkgs, ... }: {
       home.packages = with pkgs; [ w3m ];
 
-      # ── w3m hovedconfig ──────────────────────────────────────────
-      # Lagres i ~/.w3m/config (ikke XDG)
+      # Main w3m config, stored in ~/.w3m/config rather than XDG.
       home.file.".w3m/config".text = ''
-        # Tegnsett
+        # Charset
         display_charset UTF-8
         document_charset UTF-8
         system_charset UTF-8
         auto_detect 2
 
-        # Visning
+        # Display
         color 1
         ansi_color 1
         use_mouse 1
@@ -26,7 +25,7 @@
         tabstop 4
         indent_incr 2
 
-        # Navigasjon
+        # Navigation
         nextpage_topline 1
         label_topline 1
         emacs_like_lineedit 1
@@ -48,9 +47,7 @@
         confirm_qq 0
         target_self 1
 
-        # Nedlasting til PWD
-        # SAVE_LINK ('a') prompter med PWD som default, trykk Enter for å lagre.
-        # 'D' bruker ekstern wget til PWD direkte (se keymap).
+        # Downloads land in PWD: 'a' prompts, 'D' shells out to wget.
         download_dir .
         decode_cte 1
         auto_uncompress 1
@@ -58,10 +55,10 @@
         # Editor / pager
         editor nvim
 
-        # Eksterne kommandoer (kalles via M / 2 M / 3 M på link, eller EXTERN_LINK)
-        # 1 = xdg-open (åpne i grafisk browser)
-        # 2 = wget til PWD (last ned med originalt filnavn)
-        # 3 = wl-copy (kopier URL til clipboard)
+        # External commands, invoked with M, 2 M or 3 M.
+        # 1 = xdg-open
+        # 2 = wget into PWD
+        # 3 = wl-copy
         extbrowser  sh -c 'xdg-open "%s" &'
         extbrowser2 sh -c 'wget --content-disposition -- "%s"'
         extbrowser3 sh -c 'echo -n "%s" | wl-copy'
@@ -71,17 +68,14 @@
         ssl_verify_server 1
         ssl_ca_file /etc/ssl/certs/ca-certificates.crt
 
-        # Søk
+        # Search
         case_sensitive 0
         wrap_search 1
       '';
 
-      # ── Keymap (vim-like) ────────────────────────────────────────
-      # Cycle links: Tab/S-Tab og C-n/C-p
-      # Click link: Enter
-      # Last ned: a (prompt PWD), D (auto wget til PWD)
+      # Vim-like keymap: Tab or C-n/C-p cycles links, Enter follows one.
       home.file.".w3m/keymap".text = ''
-        # ── Bevegelse ───────────────────────────────────────────────
+        # Movement
         keymap  j         MOVE_DOWN
         keymap  k         MOVE_UP
         keymap  h         MOVE_LEFT
@@ -95,30 +89,30 @@
         keymap  H         LINE_BEGIN
         keymap  L         LINE_END
 
-        # ── Cycle gjennom linker ───────────────────────────────────
+        # Cycle through links
         keymap  TAB       NEXT_LINK
         keymap  C-n       NEXT_LINK
         keymap  ESC-TAB   PREV_LINK
         keymap  C-p       PREV_LINK
 
-        # ── Følg link / submit form ────────────────────────────────
+        # Follow link or submit form
         keymap  RET       GOTO_LINK
         keymap  SPC       NEXT_PAGE
 
-        # ── Historikk / navigering mellom sider ────────────────────
+        # History
         keymap  u         BACK
         keymap  C-h       HISTORY
         keymap  U         GOTO
         keymap  r         RELOAD
         keymap  R         RELOAD
 
-        # ── Søk i side ─────────────────────────────────────────────
+        # In-page search
         keymap  /         SEARCH
         keymap  ?         SEARCH_BACK
         keymap  n         SEARCH_NEXT
         keymap  N         SEARCH_PREV
 
-        # ── Tabs ───────────────────────────────────────────────────
+        # Tabs
         keymap  t         NEW_TAB
         keymap  T         TAB_LINK
         keymap  C-w       CLOSE_TAB
@@ -127,24 +121,23 @@
         keymap  }         NEXT_TAB
         keymap  {         PREV_TAB
 
-        # ── Nedlasting / ekstern ───────────────────────────────────
-        # 'a' = SAVE_LINK (innebygd, prompter med PWD - bare Enter for å lagre)
+        # Download and external
+        # 'a' saves a link, prompting with PWD.
         keymap  a         SAVE_LINK
-        # 's' = SAVE (lagre nåværende side til fil)
+        # 's' saves the current page.
         keymap  s         SAVE
-        # 'd' = vis nedlastingskø
+        # 'd' shows the download queue.
         keymap  d         DOWNLOAD_LIST
-        # 'M' = åpne nåværende side i ekstern (extbrowser = xdg-open)
+        # 'M' opens the page in xdg-open.
         keymap  M         EXTERN
-        # Trykk '2 M' for å laste ned link med wget (extbrowser2)
-        # Trykk '3 M' for å kopiere link-URL til clipboard (extbrowser3)
-        # På link bruk EXTERN_LINK på samme måte med prefix-tall
+        # '2 M' downloads with wget.
+        # '3 M' copies the URL to the clipboard.
 
-        # ── Bookmarks ──────────────────────────────────────────────
+        # Bookmarks
         keymap  B         BOOKMARK
         keymap  M-b       ADD_BOOKMARK
 
-        # ── Diverse ────────────────────────────────────────────────
+        # Misc
         keymap  o         OPTIONS
         keymap  v         VIEW
         keymap  =         INFO
@@ -154,12 +147,12 @@
         keymap  :         COMMAND
         keymap  M-h       HELP
 
-        # ── URL i utklippstavle / yank ─────────────────────────────
+        # URL to clipboard
         keymap  y         PIPE_BUF
         keymap  Y         PIPE_SHELL
       '';
 
-      # Mailcap: hvilket program åpner hva
+      # Mailcap: which program opens what.
       home.file.".w3m/mailcap".text = ''
         image/*;             feh %s
         video/*;             mpv %s
