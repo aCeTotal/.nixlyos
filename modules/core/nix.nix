@@ -15,6 +15,9 @@ in
       # samme jobb.
       sandbox = true;
       accept-flake-config = false;
+      # detect-hw.sh skriver genererte filer i repoet foer hver eval, saa
+      # treet er alltid dirty — advarselen er stoey.
+      warn-dirty = false;
       experimental-features = [ "nix-command" "flakes" ];
       keep-outputs = true;
       keep-derivations = true;

@@ -4,13 +4,14 @@
 set -euo pipefail
 
 NP="$HOME/git/nixlypkgs"
+. "$HOME/.nixlyos/scripts/ui.sh"
 
 if [ ! -d "$NP/.git" ]; then
-  echo "nixlypkgs: $NP missing, skipping" >&2
+  ui_warn "$NP missing, skipping"
   exit 0
 fi
 if [ -n "$(git -C "$NP" status --porcelain)" ]; then
-  echo "nixlypkgs: uncommitted changes in $NP, skipping" >&2
+  ui_warn "uncommitted changes in $NP, skipping"
   exit 0
 fi
 
@@ -26,15 +27,14 @@ for f in "$NP"/pkgs/*/default.nix; do
 
   new=$(git ls-remote "https://github.com/aCeTotal/$repo" HEAD | cut -f1)
   if [ -z "$new" ]; then
-    echo "nixlypkgs: $repo: failed to fetch HEAD, skipping" >&2
+    ui_warn "$repo: failed to fetch HEAD, skipping"
     continue
   fi
   if [ "$new" = "$old" ]; then
-    echo "$repo: ${old:0:7} (Latest)"
     continue
   fi
 
-  echo "$repo: ${old:0:7} -> ${new:0:7}"
+  ui_ok "$repo: ${old:0:7} → ${new:0:7}"
   sha=$(nix-prefetch-url --unpack "https://github.com/aCeTotal/$repo/archive/$new.tar.gz" 2>/dev/null)
   sri=$(nix hash convert --hash-algo sha256 --to sri "$sha")
   oldhash=$(grep -oP 'hash = "\Ksha256-[^"]+' "$f" | head -1)
@@ -47,8 +47,8 @@ for f in "$NP"/pkgs/*/default.nix; do
     if ! out=$(nix build "$NP#$pkg" --no-link 2>&1); then
       got=$(grep -oP 'got:\s+\Ksha256-\S+' <<<"$out" | head -1)
       if [ -z "$got" ]; then
-        echo "$out" >&2
-        echo "nixlypkgs: $repo: build failed without hash mismatch" >&2
+        printf '%s\n' "$out" >&2
+        ui_err "$repo: build failed without hash mismatch"
         exit 1
       fi
       oldcargo=$(grep -oP 'cargoHash = "\K[^"]+' "$f")
@@ -63,5 +63,7 @@ if [ ${#bumped[@]} -gt 0 ]; then
   git -C "$NP" add -A
   git -C "$NP" commit -q -m "auto: bump ${bumped[*]}"
   git -C "$NP" push -q
-  echo "nixlypkgs: updated ${bumped[*]}"
+  ui_ok "pushed: ${bumped[*]}"
+else
+  ui_ok "all packages already at upstream HEAD"
 fi

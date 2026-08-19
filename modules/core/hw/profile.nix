@@ -1,22 +1,17 @@
-# GENERERT av scripts/detect-hw.sh — ikke rediger manuelt.
-# DMI: vendor="System manufacturer" product="System Product Name" chassis=3
-# Type: stasjonaer
 { inputs, lib, ... }:
 
 let
   hw = inputs.nixos-hardware.nixosModules;
 
-  # Modell-spesifikke kandidater i prioritert rekkefoelge (DMI + register).
-  # Foerste som finnes i nixos-hardware vinner; resten ignoreres.
   candidates = [
-    "system-manufacturer-system-product-name"
-    "system-manufacturer-strix-z270e-gaming"
-    "system-manufacturer-to-be-filled-by-o-e-m"
+    "msi-gs66-stealth-10ug"
+    "msi-ms-16v3"
+    "msi-gs"
   ];
 
   generic = [
-    "common-pc"
-    "common-pc-ssd"
+    "common-pc-laptop"
+    "common-pc-laptop-ssd"
   ];
 
   model = lib.findFirst (n: builtins.hasAttr n hw) null candidates;
@@ -28,5 +23,8 @@ lib.warnIf (missing != [ ])
 {
   imports =
     map (n: hw.${n}) generic'
-    ++ lib.optional (model != null) hw.${model};
+    ++ lib.optional (model != null) hw.${model}
+    ++ [ ../../system/msi-ec.nix ];
+
+  services.tlp.enable = lib.mkForce false;
 }

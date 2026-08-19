@@ -8,7 +8,6 @@
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
     lanzaboote.url = "github:nix-community/lanzaboote";
-    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
     totalvim = {
       url = "github:aCeTotal/totalvim";
       flake = false;
@@ -51,7 +50,6 @@
         };
         overlays = [
           nixlypkgs.overlays.default
-          inputs.nix-cachyos-kernel.overlays.default
           (import ./pkgs/proton-ge/overlay.nix)
           (import ./pkgs/chrome/overlay.nix)
         ];

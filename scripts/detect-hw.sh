@@ -12,8 +12,9 @@
 set -euo pipefail
 
 REPO=${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
+. "$REPO/scripts/ui.sh"
 DEFAULT_NIX="$REPO/modules/core/default.nix"
-[[ -f "$DEFAULT_NIX" ]] || { echo "[detect-hw] mangler $DEFAULT_NIX" >&2; exit 1; }
+[[ -f "$DEFAULT_NIX" ]] || { ui_err "missing $DEFAULT_NIX"; exit 1; }
 
 REGISTER="$REPO/scripts/laptop-register"
 
@@ -28,7 +29,7 @@ write_generated() {
   mkdir -p "$(dirname "$path")"
   # Redirect (ikke mv) saa eier/modus beholdes naar scriptet kjoerer som root.
   printf '%s\n' "$content" > "$path"
-  echo "[detect-hw] skrev $rel" >&2
+  ui_info "wrote $rel"
   if [[ -d "$REPO/.git" ]] && command -v git >/dev/null 2>&1; then
     git -C "$REPO" -c safe.directory='*' ls-files --error-unmatch "$rel" >/dev/null 2>&1 ||
       git -C "$REPO" -c safe.directory='*' add -f "$rel" || true
@@ -370,21 +371,14 @@ for t in /sys/bus/thunderbolt/devices/domain*; do [[ -e $t ]] && { has_tb=1; bre
 # WiFi gates bevisst IKKE: NetworkManager maa vaere paa uansett (ethernet),
 # og wifi-innstillingene i networking.nix er no-ops uten et wifi-kort.
 write_generated "$REPO/modules/core/hw/devices.nix" \
-"# GENERERT av scripts/detect-hw.sh — ikke rediger manuelt.
-# Tjenester som bare skal kjoere naar maskinen faktisk har enheten.
-{ lib, ... }:
+"{ lib, ... }:
 
 {$( ((has_bt)) || printf '%s' "
-  # Ingen bluetooth-controller funnet. gaming.nix/sound.nix slaar paa bluez +
-  # blueman ubetinget; her tvinges de av saa bluetooth.service ikke feiler i
-  # loop ved boot.
   hardware.bluetooth.enable = lib.mkForce false;
   services.blueman.enable = lib.mkForce false;
 ")$( ((has_fp)) && printf '%s' "
-  # Fingeravtrykksleser funnet (kjent fprintd-vendor).
   services.fprintd.enable = true;
 ")$( ((has_tb)) && printf '%s' "
-  # Thunderbolt-domain funnet — boltd godkjenner tilkoblede enheter.
   services.hardware.bolt.enable = true;
 ")
 }"
@@ -393,9 +387,7 @@ write_generated "$REPO/modules/core/hw/devices.nix" \
 # Ren data. Moduler som maa vite hvilken maskin de staar paa (msi-ec pinner
 # EC-firmware per hovedkort) leser herfra i stedet for aa hardkode.
 write_generated "$REPO/modules/core/hw/dmi.nix" \
-"# GENERERT av scripts/detect-hw.sh — ikke rediger manuelt.
-# Ren data (ingen NixOS-modul) — les med \`import ./hw/dmi.nix\`.
-{
+"{
   vendor = \"$sys_vendor\";
   vendorSlug = \"$vendor_slug\";
   product = \"$product\";
@@ -420,32 +412,20 @@ mem_cores=$(( mem_gib / 4 ))
 (( build_cores < 2 )) && build_cores=2
 
 write_generated "$REPO/modules/core/hw/resources.nix" \
-"# GENERERT av scripts/detect-hw.sh — ikke rediger manuelt.
-# Ren data (ingen NixOS-modul) — leses av nix.nix, zram.nix og boot.nix.
-{
+"{
   cores = $nproc;
   memGiB = $mem_gib;
-
-  # x86-64 psABI-nivaa: 1 = pre-Nehalem, 2 = SSE4.2/POPCNT,
-  # 3 = AVX2/BMI2/FMA, 4 = AVX-512.
   cpuLevel = $cpu_level;
-
-  # Utregnet nix-byggparallellisme (se kommentar i scripts/detect-hw.sh).
   maxJobs = $jobs;
   buildCores = $build_cores;
 }"
 
 # ── Skriv gpu/detected.nix ────────────────────────────────────────────
 write_generated "$REPO/modules/core/gpu/detected.nix" \
-"# GENERERT av scripts/detect-hw.sh — ikke rediger manuelt.
-# Bus-IDer er DESIMAL (PCI:bus@domain:device:function), slik
-# hardware.nvidia.prime.*BusId krever. Tom streng = ingen slik GPU.
-{
+"{
   nvidia = \"$bus_nvidia\";
   intel = \"$bus_intel\";
   amd = \"$bus_amd\";
-
-  # NVIDIA-arkitektur fra PCI-device-ID, og driver-branchen den trenger.
   nvidiaArch = \"$nvidia_arch\";
   nvidiaBranch = \"${nvidia_branch:-latest}\";
 }"
@@ -474,16 +454,11 @@ tlp_line=""
   services.tlp.enable = lib.mkForce false;"
 
 write_generated "$REPO/modules/core/hw/profile.nix" \
-"# GENERERT av scripts/detect-hw.sh — ikke rediger manuelt.
-# DMI: vendor=\"$sys_vendor\" product=\"$product\" chassis=$chassis
-# Type: $( ((is_laptop)) && echo laptop || echo stasjonaer )
-{ inputs, lib, ... }:
+"{ inputs, lib, ... }:
 
 let
   hw = inputs.nixos-hardware.nixosModules;
 
-  # Modell-spesifikke kandidater i prioritert rekkefoelge (DMI + register).
-  # Foerste som finnes i nixos-hardware vinner; resten ignoreres.
   candidates = [
 $cand_nix  ];
 
@@ -508,9 +483,21 @@ wanted=()
 wanted+=("${gpu_mods[@]}")
 
 if (( ${#wanted[@]} == 0 )); then
-  echo "[detect-hw] fant verken kjent CPU-vendor eller GPU — lar default.nix vaere" >&2
+  ui_warn "no known CPU vendor or GPU found — leaving default.nix alone"
   exit 0
 fi
+
+case $cpu_mod in
+  *intel*) cpu_name="Intel";;
+  *amd*)   cpu_name="AMD";;
+  *)       cpu_name="Unknown";;
+esac
+gpu_names=()
+(( has_nvidia )) && gpu_names+=("Nvidia")
+(( has_amd )) && gpu_names+=("AMD")
+(( has_intel_igpu || has_intel_dgpu )) && gpu_names+=("Intel")
+gpu_name=$(IFS=+; echo "${gpu_names[*]}")
+ui_ok "$cpu_name CPU and ${gpu_name//+/ + } GPU detected!"
 
 have=$(grep -oE '\./(cpu|gpu)/[a-z0-9_]+\.nix' "$DEFAULT_NIX" | grep -v '/detected\.nix' | sort || true)
 want=$(printf '%s\n' "${wanted[@]}" | sort)
@@ -538,4 +525,4 @@ printf '%s\n' "${wanted[@]}" |
 cat "$tmp" > "$DEFAULT_NIX"
 rm -f "$tmp"
 
-echo "[detect-hw] default.nix oppdatert: ${wanted[*]}" >&2
+ui_info "default.nix updated: ${wanted[*]}"
