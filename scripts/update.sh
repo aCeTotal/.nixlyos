@@ -119,31 +119,6 @@ failed_pkgs() {
 }
 
 ui_info "building (log: $log)"
-
-# One line per package as nix starts it, so the run shows what it is working on
-# instead of sitting silent. Reads the log because nixos-rebuild writes there.
-progress() {
-  local line name built=0 fetched=0
-  tail -n0 -F "$log" 2>/dev/null | while IFS= read -r line; do
-    case $line in
-      building\ \'/nix/store/*.drv\'*)
-        name=${line#*building \'/nix/store/}; name=${name#*-}; name=${name%%.drv\'*}
-        built=$((built + 1))
-        ui_step "[$built] building $name"
-        ;;
-      copying\ path\ \'/nix/store/*)
-        name=${line#*copying path \'/nix/store/}; name=${name#*-}; name=${name%%\'*}
-        fetched=$((fetched + 1))
-        ui_step "[$fetched] downloading $name"
-        ;;
-    esac
-  done
-}
-
-progress &
-progress_pid=$!
-trap 'kill "$sudo_keepalive" "$progress_pid" 2>/dev/null' EXIT
-
 rebuild && rc=0 || rc=$?
 
 # The closure is atomic, so one failing package means no generation at all; rolling
