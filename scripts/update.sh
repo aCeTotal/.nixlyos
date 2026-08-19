@@ -172,30 +172,9 @@ case $rc in
     ;;
 esac
 
-# switch restarted the system services it changed, but the user manager must
-# reload its own unit files or user services run stale ones until next login.
+# switch handles the services it changed itself; nothing is restarted here.
 if (( rc == 0 )); then
   ui_head "Post-update"
-  systemctl --user daemon-reload || true
-
-  changed_units=()
-  while read -r unit path; do
-    [ -n "$unit" ] || continue
-    # Restarting dbus tears down the desktop, and restarting the audio stack
-    # kills active streams; both work fine until the next login.
-    case $unit in
-      dbus-*|pipewire*|wireplumber*) continue;;
-    esac
-    now=$(readlink -f "$(systemctl --user show -p FragmentPath --value "$unit")" 2>/dev/null || true)
-    if [ -n "$now" ] && [ "$now" != "$path" ]; then
-      changed_units+=("$unit")
-    fi
-  done <<<"$user_units_before"
-
-  if (( ${#changed_units[@]} > 0 )); then
-    systemctl --user restart "${changed_units[@]}" || true
-    ui_ok "restarted user services: ${changed_units[*]}"
-  fi
 
   # bzImage, initrd and the module tree only take effect after a reboot.
   needs_reboot=""

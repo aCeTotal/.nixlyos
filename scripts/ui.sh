@@ -7,7 +7,7 @@ else
   _ui_b= _ui_d= _ui_c= _ui_g= _ui_y= _ui_r= _ui_0=
 fi
 
-ui_head() { printf '\n%s\n' "${_ui_c}${_ui_b}▌ $*${_ui_0}" >&2; }
+ui_head() { printf '\n%s %s\n' "${_ui_g}●${_ui_0}" "${_ui_c}${_ui_b}$*${_ui_0}" >&2; }
 ui_info() { printf '    %s\n' "$*" >&2; }
 ui_ok()   { printf '    %s\n' "$*" >&2; }
 ui_warn() { printf '  %s %s\n' "${_ui_y}!${_ui_0}" "$*" >&2; }
