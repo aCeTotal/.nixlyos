@@ -3,6 +3,7 @@
 {
   imports = [
     ./input.nix
+    ./distro.nix
     ./boot.nix
     ../system/SDDM.nix
     ./networking.nix

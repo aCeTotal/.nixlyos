@@ -7,6 +7,12 @@ REPO="$HOME/.nixlyos"
 FLAKE="$REPO/flake.nix"
 . "$REPO/scripts/ui.sh"
 
+# detect-hw.sh skriver genererte filer i repoet foer hver eval, saa treet er
+# alltid dirty. nix.settings.warn-dirty i nix.nix gjelder foerst etter neste
+# aktivering — env-varen slaar den av her og naa, ogsaa for barneprosessene
+# (nix-prefetch-url i bump-scriptene, nixos-rebuild sin eval).
+export NIX_CONFIG="warn-dirty = false"
+
 # Passordet spoerres FOERST, ikke etter en halvtime med bygging. Bakgrunns-
 # loopen holder sudo-timestampen varm saa `nixos-rebuild --sudo` til slutt
 # ikke rekker aa timeoute (default 5 min).

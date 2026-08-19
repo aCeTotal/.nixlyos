@@ -79,11 +79,27 @@ done < /proc/meminfo
 # PCI class 0x03xxxx = display controller. vendor: 10de=NVIDIA,
 # 8086=Intel, 1002=AMD.
 has_nvidia=0 has_amd=0 has_intel_igpu=0 has_intel_dgpu=0
+has_amd_igpu=0 has_amd_dgpu=0
 bus_nvidia="" bus_intel="" bus_amd="" dev_nvidia=""
 amd_legacy=0 intel_legacy=0
 
 # Intel DG2/Alchemist (Arc A310–A770). Alt annet fra 8086 behandles som iGPU.
 dg2_ids=" 5690 5691 5692 5693 5694 5695 5696 5697 56a0 56a1 56a2 56a3 56a5 56a6 "
+
+# Display-delen av en AMD APU. Brukes BARE til statuslinja (iGPU vs dedikert)
+# — modulvalget under bryr seg ikke om forskjellen. Alt annet fra 1002 er
+# dedikert.
+amd_apu_ids=" 1114 13c0 150e 1586 15bf 15c8 15d8 15dd 15e7 1636 1638 163f 164c 164d 164e 1681 98e4 "
+amd_is_apu() {
+  local d=$1 i=$2
+  [[ $amd_apu_ids == *" $d "* ]] ||
+  (( i >= 0x1304 && i <= 0x131d )) ||   # Kaveri
+  (( i >= 0x9640 && i <= 0x964f )) ||   # Trinity/Richland
+  (( i >= 0x9802 && i <= 0x980a )) ||   # Ontario/Zacate
+  (( i >= 0x9830 && i <= 0x9856 )) ||   # Kabini/Mullins
+  (( i >= 0x9870 && i <= 0x9877 )) ||   # Carrizo/Bristol
+  (( i >= 0x9900 && i <= 0x991f ))      # Trinity/Richland (ARUBA)
+}
 
 # AMD pre-GCN / GCN1 (Southern Islands) / GCN2 (Sea Islands). Disse maa
 # tvinges over paa amdgpu (eller bli paa radeon), og har ikke ppfeaturemask
@@ -143,6 +159,7 @@ for dev in /sys/bus/pci/devices/*; do
       has_amd=1
       [[ -n $bus_amd ]] || bus_amd=$(to_bus_id "$addr")
       amd_is_legacy "$((16#${did#0x}))" && amd_legacy=1
+      if amd_is_apu "${did#0x}" "$((16#${did#0x}))"; then has_amd_igpu=1; else has_amd_dgpu=1; fi
       ;;
     0x8086)
       if [[ $dg2_ids == *" ${did#0x} "* ]]; then
@@ -492,12 +509,20 @@ case $cpu_mod in
   *amd*)   cpu_name="AMD";;
   *)       cpu_name="Unknown";;
 esac
+# iGPU-ene foerst, saa de dedikerte: "Intel CPU + Intel iGPU | Nvidia
+# dedicated GPU detected". CPU og foerste GPU bindes med "+", resten med "|".
 gpu_names=()
-(( has_nvidia )) && gpu_names+=("Nvidia")
-(( has_amd )) && gpu_names+=("AMD")
-(( has_intel_igpu || has_intel_dgpu )) && gpu_names+=("Intel")
-gpu_name=$(IFS=+; echo "${gpu_names[*]}")
-ui_ok "$cpu_name CPU and ${gpu_name//+/ + } GPU detected!"
+(( has_intel_igpu )) && gpu_names+=("Intel iGPU")
+(( has_amd_igpu )) && gpu_names+=("AMD iGPU")
+(( has_nvidia )) && gpu_names+=("Nvidia dedicated GPU")
+(( has_amd_dgpu )) && gpu_names+=("AMD dedicated GPU")
+(( has_intel_dgpu )) && gpu_names+=("Intel dedicated GPU")
+
+line="$cpu_name CPU"
+for i in "${!gpu_names[@]}"; do
+  (( i == 0 )) && line+=" + ${gpu_names[i]}" || line+=" | ${gpu_names[i]}"
+done
+ui_ok "$line detected"
 
 have=$(grep -oE '\./(cpu|gpu)/[a-z0-9_]+\.nix' "$DEFAULT_NIX" | grep -v '/detected\.nix' | sort || true)
 want=$(printf '%s\n' "${wanted[@]}" | sort)
