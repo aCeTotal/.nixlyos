@@ -79,9 +79,36 @@ log="${XDG_STATE_HOME:-$HOME/.local/state}/nixlyos/update.log"
 mkdir -p "$(dirname "$log")"
 : > "$log"
 
+# Nix names the package it starts on its own line, so the whole output goes to the
+# log and the same stream drives the live line telling what is being built now.
+progress() {
+  local line name built=0 fetched=0
+  while IFS= read -r line; do
+    case $line in
+      *building\ \'/nix/store/*.drv\'*)
+        name=${line#*/nix/store/}; name=${name#*-}; name=${name%%.drv\'*}
+        built=$((built + 1))
+        ui_step "[$built] building $name"
+        ;;
+      *copying\ path\ \'/nix/store/*)
+        name=${line#*/nix/store/}; name=${name#*-}; name=${name%%\'*}
+        fetched=$((fetched + 1))
+        ui_step "[$fetched] downloading $name"
+        ;;
+    esac
+  done
+  ui_step_end
+}
+
+run_rebuild() {
+  nixos-rebuild "$1" --sudo --keep-going --flake "$REPO#nixlyos" 2>&1 |
+    tee -a "$log" | progress
+}
+
 rebuild() {
-  nixos-rebuild switch --sudo --keep-going --flake "$REPO#nixlyos" >>"$log" 2>&1 && return 0
-  nixos-rebuild boot --sudo --keep-going --flake "$REPO#nixlyos" >>"$log" 2>&1 && return 2
+  local -; set -o pipefail
+  run_rebuild switch && return 0
+  run_rebuild boot && return 2
   return 1
 }
 
