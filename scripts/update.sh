@@ -80,29 +80,10 @@ mkdir -p "$(dirname "$log")"
 : > "$log"
 
 # Nix names the package it starts on its own line, so the whole output goes to the
-# log and the same stream drives the live line telling what is being built now.
-progress() {
-  local line name built=0 fetched=0
-  while IFS= read -r line; do
-    case $line in
-      *building\ \'/nix/store/*.drv\'*)
-        name=${line#*/nix/store/}; name=${name#*-}; name=${name%%.drv\'*}
-        built=$((built + 1))
-        ui_step "[$built] building $name"
-        ;;
-      *copying\ path\ \'/nix/store/*)
-        name=${line#*/nix/store/}; name=${name#*-}; name=${name%%\'*}
-        fetched=$((fetched + 1))
-        ui_step "[$fetched] downloading $name"
-        ;;
-    esac
-  done
-  ui_step_end
-}
-
+# log and the same stream drives the live view in progress.sh.
 run_rebuild() {
   nixos-rebuild "$1" --sudo --keep-going --flake "$REPO#nixlyos" 2>&1 |
-    tee -a "$log" | progress
+    tee -a "$log" | bash "$REPO/scripts/progress.sh"
 }
 
 rebuild() {
@@ -119,6 +100,7 @@ failed_pkgs() {
 }
 
 ui_info "building (log: $log)"
+printf '\n' >&2
 rebuild && rc=0 || rc=$?
 
 # The closure is atomic, so one failing package means no generation at all; rolling
@@ -156,16 +138,17 @@ if (( rc == 1 )) && ! cmp -s "$lockbak" "$REPO/flake.lock"; then
 fi
 
 rm -f "$lockbak"
+printf '\n' >&2
 case $rc in
-  0) ui_ok "activated";;
-  2) ui_warn "activation failed — new generation set for next boot";;
+  0) ui_ok "Rebuild successful. Activation successful.";;
+  2) ui_warn "Rebuild successful, but activation failed. New generation set for next boot.";;
   *)
     failed=$(failed_pkgs)
     if [ -n "$failed" ]; then
-      ui_err "switch and boot both failed (Failed packages: ${failed% }). Try updating later or remove the failed package."
+      ui_err "Rebuild failed (failed packages: ${failed% }). Try updating later or remove the failed package."
     else
       cat "$log" >&2
-      ui_err "switch and boot both failed"
+      ui_err "Rebuild failed. Neither switch nor boot completed."
     fi
     ui_info "full log: $log"
     exit 1
