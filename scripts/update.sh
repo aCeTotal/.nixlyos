@@ -73,16 +73,6 @@ ui_head "Rebuild"
 # switch first so everything is usable at once, falling back to boot if activation
 # fails. --sudo, not `sudo nixos-rebuild`: eval must run as the user so the fetcher
 # can reach private flake inputs over ssh.
-# switch does not restart user services, so their fragment paths are recorded here
-# and Post-update restarts exactly those that changed.
-user_units_before=$(
-  systemctl --user list-units --type=service --state=running --no-legend 2>/dev/null |
-    awk '{print $1}' |
-    while read -r u; do
-      printf '%s %s\n' "$u" "$(readlink -f "$(systemctl --user show -p FragmentPath --value "$u")" 2>/dev/null)"
-    done
-) || true
-
 # Fixed path so the log can be tailed while the build runs and read afterwards.
 # Truncated per run, never deleted.
 log="${XDG_STATE_HOME:-$HOME/.local/state}/nixlyos/update.log"
