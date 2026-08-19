@@ -23,7 +23,6 @@ write_generated() {
   mkdir -p "$(dirname "$path")"
   # Redirect, not mv, so owner and mode survive when running as root.
   printf '%s\n' "$content" > "$path"
-  ui_info "wrote $rel"
   if [[ -d "$REPO/.git" ]] && command -v git >/dev/null 2>&1; then
     git -C "$REPO" -c safe.directory='*' ls-files --error-unmatch "$rel" >/dev/null 2>&1 ||
       git -C "$REPO" -c safe.directory='*' add -f "$rel" || true
@@ -512,5 +511,3 @@ printf '%s\n' "${wanted[@]}" |
 
 cat "$tmp" > "$DEFAULT_NIX"
 rm -f "$tmp"
-
-ui_info "default.nix updated: ${wanted[*]}"

@@ -1,7 +1,7 @@
 {
-  cores = 16;
-  memGiB = 15;
+  cores = 8;
+  memGiB = 31;
   cpuLevel = 3;
-  maxJobs = 1;
-  buildCores = 3;
+  maxJobs = 2;
+  buildCores = 2;
 }
