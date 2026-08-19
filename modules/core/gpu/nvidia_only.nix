@@ -50,7 +50,6 @@
     egl-wayland
     nvidia-vaapi-driver
     nvtopPackages.full
-    nvfancontrol
   ];
 
   # System-wide so SDDM sees them; without these the greeter renders black.
@@ -77,33 +76,6 @@
     LIBVA_DRIVER_NAME = "nvidia";
   };
 
-  # Fan curve for nvfancontrol: silent at idle, hard cap at 85 °C.
-  environment.etc."xdg/nvfancontrol.conf".text = ''
-    # Temp(°C)  Fan(%)
-    20  0
-    35  0
-    40  25
-    45  30
-    50  35
-    55  40
-    60  50
-    65  60
-    70  70
-    75  80
-    80  95
-    83  100
-  '';
-
-  systemd.services.nvfancontrol = {
-    description = "NVIDIA GPU Fan Control";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "nvidia-persistenced.service" ];
-    requires = [ "nvidia-persistenced.service" ];
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = "${pkgs.nvfancontrol}/bin/nvfancontrol -l 0,100 -f";
-      Restart = "on-failure";
-      RestartSec = 5;
-    };
-  };
+  # No fan control service: nvfancontrol talks NV-CONTROL, which only a real Xorg
+  # with the nvidia driver exports. Xwayland does not, so the GPU BIOS curve runs.
 }

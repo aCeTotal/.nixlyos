@@ -15,9 +15,19 @@ export NIX_CONFIG="warn-dirty = false"
 # rebuild does not hit the five-minute timeout.
 ui_head "NixlyOS update"
 sudo -v
-while sudo -n true 2>/dev/null; do sleep 50; done &
+# Own session and closed streams: killing the group takes the running sleep with
+# it, and it never holds the script's stdout open after the exit.
+setsid bash -c 'while sudo -n true; do sleep 50; done' </dev/null >/dev/null 2>&1 &
 sudo_keepalive=$!
-trap 'kill "$sudo_keepalive" 2>/dev/null' EXIT
+trap 'kill -- -"$sudo_keepalive" 2>/dev/null' EXIT
+
+STAMP="${XDG_STATE_HOME:-$HOME/.local/state}/nixlyos/last-build"
+mkdir -p "$(dirname "$STAMP")"
+
+# Flake eval only sees tracked files, so their contents plus the running system
+# identify the last known result. 14 ms, against 11 s for the eval it replaces.
+# cd, because ls-files prints paths relative to the repo, not to the caller's cwd.
+tree_key() { (cd "$REPO" && git ls-files -z | xargs -0 sha1sum) | sha1sum | cut -d' ' -f1; }
 
 ui_head "Hardware"
 # The cpu/gpu imports must match the machine before eval.
@@ -68,6 +78,31 @@ if ! lockdiff=$(nix flake update --refresh --flake "$REPO" 2>&1); then
 fi
 updated=$(grep -oP "^• Updated input '\K[^'/]+(?=')" <<<"$lockdiff" | tr '\n' ' ' || true)
 [ -n "$updated" ] && ui_ok "updated: ${updated% }" || ui_ok "all inputs already current"
+
+# Nothing to build when the config evaluates to the running system, so the whole
+# rebuild is skipped: activation scripts are not re-run and no generation is made.
+key=$(tree_key)
+running=$(readlink -f /run/current-system)
+
+up_to_date() {
+  rm -f "$lockbak"
+  printf '%s %s\n' "$key" "$running" > "$STAMP"
+  ui_head "Rebuild"
+  ui_ok "System is already up-to-date. Nothing to do."
+  exit 0
+}
+
+# Same files and same running system as the last check: the eval can only give the
+# same answer, so it is skipped entirely.
+skey="" ssys=""
+if [ -s "$STAMP" ]; then read -r skey ssys < "$STAMP"; fi
+[ "$skey" = "$key" ] && [ "$ssys" = "$running" ] && up_to_date
+
+# Eval only, no build. On eval errors fall through so nixos-rebuild prints them.
+if sys=$(nix eval --raw "$REPO#nixosConfigurations.nixlyos.config.system.build.toplevel" 2>/dev/null) &&
+   [ "$sys" = "$running" ]; then
+  up_to_date
+fi
 
 ui_head "Rebuild"
 # switch first so everything is usable at once, falling back to boot if activation
@@ -157,6 +192,9 @@ esac
 
 # switch handles the services it changed itself; nothing is restarted here.
 if (( rc == 0 )); then
+  # Recorded after the switch, so the next run skips the eval too.
+  printf '%s %s\n' "$(tree_key)" "$(readlink -f /run/current-system)" > "$STAMP"
+
   ui_head "Post-update"
 
   # bzImage, initrd and the module tree only take effect after a reboot.
