@@ -3,6 +3,7 @@
 let
   saveFile = "/run/nixly-gametune.swappiness";
   dpmFile = "/run/nixly-gametune.dpm";
+  oomStateDir = "/run/nixly-gametune";
 
   start = pkgs.writeShellScript "nixly-gametune-start" ''
     set -u
@@ -47,6 +48,61 @@ let
       rm -f ${dpmFile}
     fi
   '';
+
+  # OOM protection for the game tree. Lowering oom_score_adj needs
+  # CAP_SYS_RESOURCE, so the compositor cannot do it itself. The whole tree
+  # matters, not just the leader: a Proton game is a wine server plus several
+  # helper processes, and killing any of them ends the session just as
+  # effectively. Every old value is saved so unprotect restores it.
+  protect = pkgs.writeShellScript "nixly-gameprio-protect" ''
+    set -u
+    export PATH=${pkgs.coreutils}/bin:${pkgs.gawk}/bin
+
+    pid=''${1:-}
+    [ -n "$pid" ] || { echo "usage: $0 <pid>" >&2; exit 1; }
+    [ -d "/proc/$pid" ] || exit 0
+
+    state=${oomStateDir}/oom.$pid
+    : > "$state"
+
+    # One pass over /proc, repeated until no new descendant is picked up,
+    # so children that appear below an already-matched parent are caught.
+    matched=" $pid "
+    pass=0
+    while [ "$pass" -lt 3 ]; do
+      pass=$((pass + 1))
+      for proc in /proc/[0-9]*; do
+        p=''${proc#/proc/}
+        case "$matched" in *" $p "*) continue ;; esac
+        ppid=$(awk '/^PPid:/ {print $2; exit}' "$proc/status" 2>/dev/null) || continue
+        [ -n "''${ppid:-}" ] || continue
+        case "$matched" in *" $ppid "*) matched="$matched$p " ;; esac
+      done
+    done
+
+    for p in $matched; do
+      [ -f "/proc/$p/oom_score_adj" ] || continue
+      old=$(cat "/proc/$p/oom_score_adj" 2>/dev/null) || continue
+      printf '%s %s\n' "$p" "$old" >> "$state"
+      echo -900 > "/proc/$p/oom_score_adj" 2>/dev/null || true
+    done
+  '';
+
+  unprotect = pkgs.writeShellScript "nixly-gameprio-unprotect" ''
+    set -u
+    export PATH=${pkgs.coreutils}/bin
+
+    pid=''${1:-}
+    [ -n "$pid" ] || { echo "usage: $0 <pid>" >&2; exit 1; }
+    state=${oomStateDir}/oom.$pid
+    [ -f "$state" ] || exit 0
+
+    while read -r old_pid old_value; do
+      [ -f "/proc/$old_pid/oom_score_adj" ] || continue
+      echo "$old_value" > "/proc/$old_pid/oom_score_adj" 2>/dev/null
+    done < "$state"
+    rm -f "$state"
+  '';
 in
 {
   # The privileged half of nixlytile's game mode; everything else it used to
@@ -61,13 +117,30 @@ in
     };
   };
 
-  # nixlytile starts and stops the unit when ultra game mode kicks in.
+  # Per-game OOM protection; the game PID is the instance name.
+  systemd.services."nixly-gameprio@" = {
+    description = "OOM protection for game PID %i";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${protect} %i";
+      ExecStop = "${unprotect} %i";
+      # That is where the saved oom_score_adj values live.
+      RuntimeDirectory = "nixly-gametune";
+      RuntimeDirectoryPreserve = "yes";
+    };
+  };
+
+  # nixlytile starts and stops the units when ultra game mode kicks in.
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if (action.id == "org.freedesktop.systemd1.manage-units" &&
-          action.lookup("unit") == "nixly-gametune.service" &&
           subject.isInGroup("gamemode")) {
-        return polkit.Result.YES;
+        var unit = action.lookup("unit");
+        if (unit && (unit == "nixly-gametune.service" ||
+            unit.indexOf("nixly-gameprio@") == 0)) {
+          return polkit.Result.YES;
+        }
       }
     });
   '';
