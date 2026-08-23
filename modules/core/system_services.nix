@@ -33,31 +33,6 @@
   security.pam.services.ly.enableGnomeKeyring = true;
   security.pam.services.login.enableGnomeKeyring = true;
 
-  # Auto nice daemon for responsiveness.
-  services.ananicy = {
-    enable = true;
-    package = pkgs.ananicy-cpp;
-    # Drop the cachyos sddm rule: its SCHED_IDLE was inherited by the whole session.
-    rulesProvider = pkgs.runCommand "ananicy-rules-cachyos-no-sddm" { } ''
-      cp -r ${pkgs.ananicy-rules-cachyos} $out
-      chmod -R u+w $out
-      rm $out/etc/ananicy.d/00-default/DEs-and-WMs/sddm.rules
-    '';
-    settings = {
-      check_freq = 15;          # Full rescan every 15 seconds; new processes come via proc events
-      cgroup_load = true;
-      type_load = true;
-      rule_load = true;
-      apply_latnice = true;     # Latency nice (EEVDF scheduler)
-      apply_nice = true;
-      apply_ioclass = true;
-      apply_ionice = true;
-      apply_sched = true;
-      apply_oom_score_adj = true;
-      apply_cgroup = true;
-    };
-  };
-
   # Confine every IRQ to core 0's SMT threads so they never preempt a game frame.
   services.irqbalance.enable = true;
   systemd.services.irqbalance.serviceConfig.ExecStart = [

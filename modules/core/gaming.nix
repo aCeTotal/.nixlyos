@@ -3,17 +3,6 @@
 {
   imports = [ ./steam ];
 
-  # Let the gamemode group toggle ananicy-cpp without a password; its renice conflicts with gamemode's.
-  security.polkit.extraConfig = ''
-    polkit.addRule(function(action, subject) {
-      if (action.id == "org.freedesktop.systemd1.manage-units" &&
-          action.lookup("unit") == "ananicy-cpp.service" &&
-          subject.isInGroup("gamemode")) {
-        return polkit.Result.YES;
-      }
-    });
-  '';
-
   programs.gamemode = {
     enable = true;
     settings = {
@@ -39,15 +28,7 @@
         # nixlytile owns CPU affinity; two writers raced.
         pin_cores = "no";
       };
-      custom = {
-        # No notify-send: nixlytile shows its own "Game Mode On".
-        start = "${pkgs.writeShellScript "gamemode-start" ''
-          ${pkgs.systemd}/bin/systemctl stop ananicy-cpp.service || true
-        ''}";
-        end = "${pkgs.writeShellScript "gamemode-end" ''
-          ${pkgs.systemd}/bin/systemctl start ananicy-cpp.service || true
-        ''}";
-      };
+      # No custom start/end: nixlytile shows its own "Game Mode On" notification.
     };
   };
 
