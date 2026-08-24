@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Full update: bump the stable branch if a new NixOS release exists, bump the
-# proton-ge pin, update every flake input and build for the next boot.
+# Full update: bump the stable branch if a new NixOS release exists, update
+# every flake input (chaotic-nyx carries the prebuilt CachyOS kernel and
+# Proton-CachyOS) and build for the next boot.
 set -euo pipefail
 
 REPO="$HOME/.nixlyos"
@@ -52,16 +53,13 @@ while cand=$(next_ver "$new") &&
   new=$cand
 done
 
-ui_head "Channel"
+ui_head "Nixpkgs-channel"
 if [ "$new" != "$cur" ]; then
   ui_ok "Bumped channel from $cur to the newest: $new"
   sed -i "s|nixpkgs/nixos-$cur|nixpkgs/nixos-$new|; s|home-manager/release-$cur|home-manager/release-$new|" "$FLAKE"
 else
   ui_ok "Using the latest stable-channel: $cur"
 fi
-
-ui_head "Proton-GE"
-bash "$REPO/pkgs/proton-ge/bump.sh"
 
 ui_head "nixlypkgs"
 bash "$REPO/scripts/bump-nixlypkgs.sh"
@@ -142,10 +140,11 @@ rebuild && rc=0 || rc=$?
 # back only the input that owns it lets every other input keep its new revision.
 if (( rc == 1 )); then
   failed=$(failed_pkgs)
-  culprits=" " revert_proton=0
+  culprits=" "
   for p in $failed; do
     case $p in
-      proton-ge*) revert_proton=1;;
+      proton-cachyos*|nvidia-x11*|nvidia-kernel-modules*|linux-[0-9]*)
+                  culprits+="chaotic ";;
       nixly*)     culprits+="nixlypkgs ";;
       *)          culprits+="nixpkgs nixpkgs-unstable ";;
     esac
@@ -156,18 +155,16 @@ if (( rc == 1 )); then
   if [ -n "$failed" ]; then
     ui_warn "failed: ${failed% } — retrying without that source"
     cp "$lockbak" "$REPO/flake.lock"
-    (( revert_proton )) && git -C "$REPO" checkout -- pkgs/proton-ge/pin.json || true
     (( ${#keep[@]} > 0 )) && nix flake update --refresh --flake "$REPO" "${keep[@]}" >>"$log" 2>&1 || true
     rebuild && rc=0 || rc=$?
     (( rc == 1 )) || ui_warn "kept at previous version: ${failed% } — everything else updated"
   fi
 fi
 
-# Last resort: restore the whole lock file and the proton pin, so the machine at
-# least lands on a generation that builds.
+# Last resort: restore the whole lock file, so the machine at least lands on a
+# generation that builds.
 if (( rc == 1 )) && ! cmp -s "$lockbak" "$REPO/flake.lock"; then
   cp "$lockbak" "$REPO/flake.lock"
-  git -C "$REPO" checkout -- pkgs/proton-ge/pin.json
   rebuild && rc=0 || rc=$?
   (( rc == 1 )) || ui_warn "update rolled back — previous input revisions restored"
 fi

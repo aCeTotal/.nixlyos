@@ -1,4 +1,4 @@
-{ python3, writeScript, gameWrap, proton-ge-bin }:
+{ python3, writeScript, gameWrap, protonCachyos }:
 
 # Runs on the host before every Steam launch, via extraPreBwrapCmds.
 # Steam drops keys it did not set on exit, so these settings are reapplied each start.
@@ -6,7 +6,7 @@
 writeScript "steam-autoconfig" ''
   #!${python3}/bin/python3
   """Steam auto-configuration:
-    - GE-Proton as the global compat tool AND on every per-app override.
+    - Proton-CachyOS as the global compat tool AND on every per-app override.
     - Shader pre-caching + background Vulkan shader processing on.
     - Library as start-up location.
     - Friends/news/announcement popups and sounds off.
@@ -19,7 +19,7 @@ writeScript "steam-autoconfig" ''
 
   # CompatToolMapping needs the tool's internal name from this file; a mismatch
   # silently resolves to no compat tool at all.
-  GE_PROTON_VDF = "${proton-ge-bin.steamcompattool}/compatibilitytool.vdf"
+  PROTON_VDF = "${protonCachyos}/bin/compatibilitytool.vdf"
 
   def find_root():
       xdg = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
@@ -93,9 +93,9 @@ writeScript "steam-autoconfig" ''
               lines.append(f'{tab}"{ek}"\t\t"{_escape(str(v))}"')
       return "\n".join(lines)
 
-  def _ge_proton_name():
+  def _proton_name():
       try:
-          with open(GE_PROTON_VDF) as f:
+          with open(PROTON_VDF) as f:
               tools = parse(f.read())["compatibilitytools"]["compat_tools"]
           for k, v in tools.items():
               if isinstance(v, dict):
@@ -103,9 +103,9 @@ writeScript "steam-autoconfig" ''
       except Exception as e:
           print(f"[steam-autoconfig] compat tool name lookup failed: {e}",
                 file=sys.stderr)
-      return "GE-Proton"
+      return "Proton-CachyOS"
 
-  GE_PROTON = _ge_proton_name()
+  PROTON = _proton_name()
 
   def ensure(d, keys):
       for k in keys:
@@ -134,7 +134,7 @@ writeScript "steam-autoconfig" ''
       changed = False
       steam_cfg = ensure(data, ["InstallConfigStore", "Software", "Valve", "Steam"])
 
-      # Force every entry onto GE-Proton; the "0" wildcard must stay at priority 75,
+      # Force every entry onto Proton-CachyOS; the "0" wildcard must stay at priority 75,
       # since 250 forces Proton onto Linux-native apps including Steam Linux Runtime.
       compat = ensure(steam_cfg, ["CompatToolMapping"])
       if "0" not in compat or not isinstance(compat.get("0"), dict):
@@ -143,8 +143,8 @@ writeScript "steam-autoconfig" ''
           if not isinstance(entry, dict):
               continue
           prio = "75" if appid == "0" else "250"
-          if entry.get("name") != GE_PROTON or entry.get("priority") != prio:
-              entry["name"] = GE_PROTON
+          if entry.get("name") != PROTON or entry.get("priority") != prio:
+              entry["name"] = PROTON
               entry["config"] = ""
               entry["priority"] = prio
               changed = True

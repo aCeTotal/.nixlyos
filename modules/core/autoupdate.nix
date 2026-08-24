@@ -29,9 +29,8 @@
       # Run in the copy, so a hardware change is validated by the pre-build too.
       bash "$repo/scripts/detect-hw.sh" "$repo"
 
-      # Keep the old Proton-GE pin if the bump fails.
-      bash pkgs/proton-ge/bump.sh || true
-
+      # flake update also bumps chaotic-nyx, which carries the latest prebuilt
+      # CachyOS kernel and Proton-CachyOS.
       nix flake update --flake "$repo"
 
       # If anything fails to build we stop here and never touch the real repo.
@@ -48,7 +47,6 @@
       # Validated, so bump the real repo.
       cp "$repo/flake.lock" /home/total/.nixlyos/flake.lock
       cp "$repo/modules/core/default.nix" /home/total/.nixlyos/modules/core/default.nix
-      rsync -a "$repo/pkgs/proton-ge/" /home/total/.nixlyos/pkgs/proton-ge/
 
       echo "$new" > /var/lib/nixly-update/pending
     '';

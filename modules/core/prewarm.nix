@@ -1,6 +1,7 @@
-{ pkgs, ... }:
+{ pkgs, inputs, system, ... }:
 
 let
+  protonCachyos = import ./steam/proton.nix { inherit inputs system; };
   # Skip prewarm (exit 1) when a game runs or the box is busy.
   prewarmGate = pkgs.writeShellScript "nixly-prewarm-gate" ''
     set -u
@@ -125,9 +126,8 @@ let
       for d in "$S"/steamapps/common/SteamLinuxRuntime*; do
         warm "$d"
       done
-      # Newest GE-Proton, the one autoconfig picks.
-      ge=$(ls -dt "$S"/compatibilitytools.d/GE-Proton* 2>/dev/null | head -1)
-      [ -n "$ge" ] && warm "$ge"
+      # Proton-CachyOS from the store, the one autoconfig picks.
+      warm "${protonCachyos}"
       for d in "$S"/steamapps/common/Proton*; do
         warm "$d"
       done

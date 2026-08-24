@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 {
-  # Performance tunings on top of linuxPackages_zen.
+  # Performance tunings on top of linuxPackages_cachyos.
 
   # Single owner of the governor: power-profiles-daemon and gamemode's own
   # governor knobs are disabled elsewhere so this always wins.

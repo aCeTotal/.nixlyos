@@ -7,6 +7,9 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     nixlypkgs.url = "github:aCeTotal/nixlypkgs";
+    # Prebuilt CachyOS kernel + Proton-CachyOS. Never override its nixpkgs input:
+    # the nyxpkgs-unstable tag guarantees every store path exists in their cache.
+    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     lanzaboote.url = "github:nix-community/lanzaboote";
     totalvim = {
       url = "github:aCeTotal/totalvim";
@@ -49,7 +52,6 @@
         };
         overlays = [
           nixlypkgs.overlays.default
-          (import ./pkgs/proton-ge/overlay.nix)
           (import ./pkgs/chrome/overlay.nix)
         ];
       };
