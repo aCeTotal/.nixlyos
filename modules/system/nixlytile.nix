@@ -8,8 +8,13 @@
 
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
-    config.nixlytile.default = lib.mkForce [ "wlr" "gtk" ];
+    # nixlytile ships its own GlobalShortcuts backend (Discord/OBS
+    # global keybinds) — the .portal file lives in the package.
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr nixlytile ];
+    config.nixlytile = {
+      default = lib.mkForce [ "wlr" "gtk" ];
+      "org.freedesktop.impl.portal.GlobalShortcuts" = [ "nixlytile" ];
+    };
   };
 
   systemd.suppressedSystemUnits = [
@@ -40,11 +45,16 @@
     wantedBy = [ "graphical-session.target" ];
     wants = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
+    # Agenten er X11-basert og dør med "cannot open display :0" til
+    # Xwayland er oppe; med default start-limit (5 på 10 s) ga
+    # RestartSec=1 permanent failed unit hver boot -> ingen
+    # polkit-dialoger. Ubegrenset retry til display finnes.
+    unitConfig.StartLimitIntervalSec = 0;
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
       Restart = "on-failure";
-      RestartSec = 1;
+      RestartSec = 2;
       TimeoutStopSec = 10;
     };
   };

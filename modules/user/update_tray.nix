@@ -26,7 +26,12 @@ in
   };
 
   systemd.user.services.nixly-update-tray = {
-    Unit.Description = "NixlyOS update tray icon";
+    Unit = {
+      Description = "NixlyOS update tray icon";
+      # Uten ordering starter path-uniten oss foer compositoren har
+      # display -> GTK segfaulter i widget-oppretting ved hver boot.
+      After = [ "graphical-session.target" ];
+    };
     Service = {
       ExecStart = "${nixly-update-tray}/bin/nixly-update-tray";
       # It can start before the tray is up at boot.

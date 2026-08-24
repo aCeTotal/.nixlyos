@@ -78,12 +78,6 @@
     '')
   ];
 
-  # Latency-aware virtual deadline CPU scheduler.
-  services.scx = {
-    enable = true;
-    scheduler = "scx_lavd";
-  };
-
   # Early OOM killer, backing up systemd-oomd.
   services.earlyoom = {
     enable = true;

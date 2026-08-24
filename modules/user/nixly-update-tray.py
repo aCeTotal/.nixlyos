@@ -23,6 +23,12 @@ PENDING = "/var/lib/nixly-update/pending"
 if not os.path.exists(PENDING):
     sys.exit(0)
 
+# Uten display segfaulter GTK i widget-oppretting (_gtk_settings_get_screen)
+# naar path-uniten trigger foer compositoren er oppe. Exit 1 -> systemd
+# restarter om 5 s.
+if not Gtk.init_check()[0]:
+    sys.exit(1)
+
 indicator = AppIndicator.Indicator.new(
     "nixly-update",
     "software-update-available",
