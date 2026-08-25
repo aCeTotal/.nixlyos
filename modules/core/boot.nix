@@ -68,6 +68,13 @@
       # Worth 10-15 % CPU on older Intel; accepted on a single-user desktop.
       "mitigations=off"
       "split_lock_detect=off"
+      # NVMe APST and PCIe ASPM wakeups stall multi-ms mid asset-streaming;
+      # the idle-power cost is accepted on a gaming machine.
+      "nvme_core.default_ps_max_latency_us=0"
+      "pcie_aspm=performance"
+      # auditd is disabled, but the kernel audit path still taxes every
+      # syscall until told otherwise.
+      "audit=0"
     ];
 
     blacklistedKernelModules = [ "8250_pci" ];

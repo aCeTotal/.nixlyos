@@ -9,8 +9,8 @@
     ./networking.nix
     ./tailscale.nix
     ./ssh_gate.nix
-    ./autoupdate.nix
     ./nix.nix
+    ./lockscreen.nix
     ./nfs.nix
     ./ssh.nix
     ./gaming.nix

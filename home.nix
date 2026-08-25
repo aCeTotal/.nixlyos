@@ -12,7 +12,6 @@
       ./modules/user/btop.nix
       ./modules/user/starship.nix
       ./modules/user/alacritty.nix
-      ./modules/user/update_tray.nix
       ./modules/user/nixlytile.nix
       ./modules/user/env.nix
       ./modules/user/gtk.nix

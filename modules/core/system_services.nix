@@ -39,7 +39,9 @@
     ""
     (pkgs.writeShellScript "irqbalance-isolated" ''
       set -u
-      ncpu=$(${pkgs.coreutils}/bin/getconf _NPROCESSORS_ONLN)
+      # NOT getconf: that lives in glibc, not coreutils — the old path made
+      # ncpu empty and the banned mask a silent no-op on every boot.
+      ncpu=$(${pkgs.coreutils}/bin/nproc)
       sibs=$(${pkgs.coreutils}/bin/cat \
         /sys/devices/system/cpu/cpu0/topology/thread_siblings_list 2>/dev/null || echo 0)
 
@@ -48,13 +50,29 @@
       fi
 
       # thread_siblings_list is either "0,8" or "0-1".
-      allowed=""
-      IFS=, read -ra parts <<< "$sibs"
-      for p in "''${parts[@]}"; do
-        case "$p" in
-          *-*) for ((c=''${p%-*}; c<=''${p#*-}; c++)); do allowed="$allowed $c"; done ;;
-          *)   allowed="$allowed $p" ;;
-        esac
+      expand_sibs() {
+        local out="" p c
+        IFS=, read -ra parts <<< "$1"
+        for p in "''${parts[@]}"; do
+          case "$p" in
+            *-*) for ((c=''${p%-*}; c<=''${p#*-}; c++)); do out="$out $c"; done ;;
+            *)   out="$out $p" ;;
+          esac
+        done
+        printf '%s' "$out"
+      }
+      allowed=$(expand_sibs "$sibs")
+
+      # One physical core saturated in softirq during Steam downloads /
+      # asset streaming — that is itself a frame hitch. Give IRQs a second
+      # physical core: the lowest CPU not already allowed, plus siblings.
+      for ((c=1; c<ncpu; c++)); do
+        case " $allowed " in *" $c "*) continue ;; esac
+        sibs2=$(${pkgs.coreutils}/bin/cat \
+          "/sys/devices/system/cpu/cpu$c/topology/thread_siblings_list" \
+          2>/dev/null || echo "$c")
+        allowed="$allowed$(expand_sibs "$sibs2")"
+        break
       done
 
       # Hex mask of the disallowed CPUs, 32-bit groups, most significant first.
@@ -87,7 +105,11 @@
     # earlyoom matches on comm (15 chars), so "chrome" not "google-chrome-stable".
     extraArgs = [
       "--prefer" "^(Web Content|firefox|chrome|chromium|electron)$"
-      "--avoid" "^(sshd|systemd|dbus)$"
+      # Games outside ultra mode get no oom_score_adj protection, so keep
+      # earlyoom away from them (and the compositor) by comm pattern. comm
+      # is 15 chars: .exe names longer than that truncate past the suffix
+      # and stay unprotected — ultra mode's -900 is the real game shield.
+      "--avoid" "^(sshd|systemd|dbus|nixlytile|wineserver|wine|retroarch|gamescope)|\\.exe"
     ];
   };
 

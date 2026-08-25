@@ -74,7 +74,10 @@
           # Default 128 (2.7 ms) for games, but let clients ask for bigger buffers;
           # the graph follows the lowest active request.
           "default.clock.quantum" = 128;
-          "default.clock.min-quantum" = 32;
+          # 32 let one greedy client drag the whole graph to ~1500 RT
+          # wakeups/s at rtprio 95, preempting game and compositor. 64
+          # (1.3 ms) is still far below audible voice/PTT latency.
+          "default.clock.min-quantum" = 64;
           "default.clock.max-quantum" = 2048;
           "log.level" = 2;
         };

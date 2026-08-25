@@ -88,10 +88,24 @@ find_replayer() {
 
 have_nvidia() { [ -d /sys/module/nvidia ]; }
 
-# A game is running: Steam's per-game reaper wrapper lives exactly as
-# long as the launched game.  gamescope covers non-Steam sessions.
+# A game is running.  Steam's reaper wrapper only covers Steam launches,
+# so also check nixlytile's ultra-mode unit (any window it classified as a
+# game), gamemoded clients, and the wine/libretro processes that back
+# Lutris/Heroic/RetroArch launches — GPU shader replay next to any of
+# those is a frametime hit that nice/ionice cannot prevent.
 game_running() {
-	pgrep -x reaper >/dev/null 2>&1 || pgrep -x gamescope >/dev/null 2>&1
+	systemctl is-active -q nixly-gametune.service 2>/dev/null && return 0
+	if pgrep -x gamemoded >/dev/null 2>&1; then
+		clients=$(busctl --user get-property com.feralinteractive.GameMode \
+			/com/feralinteractive/GameMode com.feralinteractive.GameMode \
+			ClientCount 2>/dev/null | awk '{print $2}')
+		[ "${clients:-0}" -gt 0 ] && return 0
+	fi
+	pgrep -x reaper >/dev/null 2>&1 && return 0
+	pgrep -x gamescope >/dev/null 2>&1 && return 0
+	pgrep -x wineserver >/dev/null 2>&1 && return 0
+	pgrep -x retroarch >/dev/null 2>&1 && return 0
+	return 1
 }
 
 # Run the replayer command ($@) in its own process group, SIGSTOPping the

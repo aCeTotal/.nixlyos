@@ -3,6 +3,7 @@
 let
   saveFile = "/run/nixly-gametune.swappiness";
   dpmFile = "/run/nixly-gametune.dpm";
+  x3dFile = "/run/nixly-gametune.x3d";
   oomStateDir = "/run/nixly-gametune";
 
   start = pkgs.writeShellScript "nixly-gametune-start" ''
@@ -23,6 +24,17 @@ let
       [ -e "$f" ] || continue
       printf '%s %s\n' "$f" "$(cat "$f")" >> ${dpmFile}
       echo high > "$f" || true
+    done
+
+    # AMD X3D dual-CCD: bias the scheduler's core ranking toward the
+    # V-Cache CCD while the game runs (amd_3d_vcache driver; the glob
+    # matches nothing on every other machine). nixlytile additionally hard
+    # pins the game there — this covers the game's helper processes too.
+    : > ${x3dFile}
+    for f in /sys/bus/platform/devices/AMDI0101*/amd_x3d_mode; do
+      [ -e "$f" ] || continue
+      printf '%s %s\n' "$f" "$(cat "$f")" >> ${x3dFile}
+      echo cache > "$f" || true
     done
 
     # PM QoS 0 µs keeps the CPU out of deep C-states for as long as fd 3 stays
@@ -46,6 +58,12 @@ let
         [ -n "$path" ] && echo "$value" > "$path" 2>/dev/null
       done < ${dpmFile}
       rm -f ${dpmFile}
+    fi
+    if [ -r ${x3dFile} ]; then
+      while read -r path value; do
+        [ -n "$path" ] && echo "$value" > "$path" 2>/dev/null
+      done < ${x3dFile}
+      rm -f ${x3dFile}
     fi
   '';
 

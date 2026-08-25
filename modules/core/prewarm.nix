@@ -16,6 +16,12 @@ let
         | ${pkgs.gawk}/bin/awk '{print $2}')
       [ "''${clients:-0}" -gt 0 ] && exit 1
     fi
+    # Non-Steam launches that neither gametune nor gamemoded sees:
+    # wine/Proton outside Steam (Lutris, Heroic) and libretro.
+    ${pkgs.procps}/bin/pgrep -x wineserver >/dev/null 2>&1 && exit 1
+    ${pkgs.procps}/bin/pgrep -x retroarch >/dev/null 2>&1 && exit 1
+    ${pkgs.procps}/bin/pgrep -x gamescope >/dev/null 2>&1 && exit 1
+    ${pkgs.procps}/bin/pgrep -x reaper >/dev/null 2>&1 && exit 1
     # Busy? 1-min load over half the cores means something heavy runs.
     ncpu=$(${pkgs.coreutils}/bin/nproc)
     ${pkgs.gawk}/bin/awk -v n="$ncpu" '{exit ($1 > n/2) ? 1 : 0}' /proc/loadavg \
@@ -211,6 +217,7 @@ in
     description = "nixlytile Steam shader prewarm";
     serviceConfig = {
       Type = "oneshot";
+      ExecCondition = "${prewarmGate}";
       ExecStart = "${prewarm}/bin/nixly-prewarm run";
       Nice = 19;
       IOSchedulingClass = "idle";

@@ -7,6 +7,29 @@
   # governor knobs are disabled elsewhere so this always wins.
   powerManagement.cpuFreqGovernor = "performance";
 
+  # Demote background work (nix builds, indexers, updaters) to SCHED_IDLE/
+  # low nice via the CachyOS rule set. Complements gamemode, which only
+  # boosts the game itself. Touches nice/ionice only, never CPU affinity,
+  # so it cannot race nixlytile.
+  services.ananicy = {
+    enable = true;
+    package = pkgs.ananicy-cpp;
+    rulesProvider = pkgs.ananicy-rules-cachyos;
+    # The CachyOS "Game" type is nice -5; on titles in its list that reset
+    # gamemode's renice (-10) within 15 s. Redefine the type to match so
+    # the two agree instead of fighting.
+    extraTypes = [
+      { type = "Game"; nice = -10; ioclass = "best-effort"; ionice = 0; }
+    ];
+  };
+
+  # MGLRU: keep the last second of the working set out of reclaim so memory
+  # pressure refaults game pages less. Earlier OOM under pressure is fine:
+  # earlyoom plus the -900 oom_score_adj game tree handle that.
+  systemd.tmpfiles.rules = [
+    "w /sys/kernel/mm/lru_gen/min_ttl_ms - - - - 1000"
+  ];
+
   # NVMe gets none for lowest latency; SATA gets bfq, which unlike mq-deadline
   # actually honours ioprio, so a Steam download no longer freezes the desktop.
   services.udev.extraRules = ''
@@ -47,5 +70,8 @@
     "vm.compaction_proactiveness" = 0;
     # Keep watermark boosting from kicking kswapd into aggressive reclaim.
     "vm.watermark_boost_factor" = 0;
+    # Upstream default 5 lets page-lock holders re-steal the lock; long waiter
+    # stalls show as stutter during asset streaming. CachyOS ships 1.
+    "vm.page_lock_unfairness" = 1;
   };
 }

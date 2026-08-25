@@ -53,6 +53,7 @@
     vulkan-validation-layers
     vulkan-tools
     pkgsi686Linux.vulkan-loader # 32-bit Vulkan for Steam games
+    pkgsi686Linux.mangohud      # so the fps cap also reaches 32-bit games
 
     libnotify           # gamemode notifications
     schedtool
@@ -88,9 +89,10 @@
       LE = {
         MinAdvertisementInterval = 32;
         MaxAdvertisementInterval = 50;
-        # 60/30 = 50 % scan duty; 30/30 scanned continuously.
         ScanIntervalAutoConnect = 60;
-        ScanWindowAutoConnect = 30;
+        # 30/60 = 50 % duty jammed 2.4 GHz WiFi (bt_coex is off for the
+        # AX210 crash workaround); 15/60 still reconnects a pad in seconds.
+        ScanWindowAutoConnect = 15;
       };
       GATT = {
         Cache = "yes";

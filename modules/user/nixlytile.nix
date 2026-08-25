@@ -194,9 +194,6 @@ in
     // 20s utsettelse + nice 10 saa innloggingen aldri konkurrerer om CPU/IO.
     autostart "sh -c 'sleep 20; exec nice -n 10 steam -silent'"
     autostart "mcontrolcenter"
-    // update-trayikonet startes av systemd path-unit (update_tray.nix)
-    // kun naar en prevalidert oppdatering ligger klar — trayen her
-    // ignorerer SNI Passive, saa prosessen maa vaere av ellers.
 
     // ───────── keybindings ─────────
     // Applications

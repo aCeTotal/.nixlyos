@@ -61,7 +61,12 @@ in
       randomizedDelaySec = "30min";
     };
 
-    optimise.automatic = true;
+    optimise = {
+      automatic = true;
+      dates = [ "Sun 05:00" ];
+      # Same reasoning as gc: no catch-up hashing of the whole store at boot.
+      persistent = false;
+    };
   };
 
   # GC and optimise run at idle priority so they never contend with foreground apps.

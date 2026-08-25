@@ -13,6 +13,10 @@
     serviceConfig = {
       Restart = "always";
       RestartSec = 5;
+      # Root poll loop; idle priority so its 10 s bursts never preempt a game.
+      Nice = 19;
+      CPUSchedulingPolicy = "idle";
+      IOSchedulingClass = "idle";
     };
     script = ''
       while true; do

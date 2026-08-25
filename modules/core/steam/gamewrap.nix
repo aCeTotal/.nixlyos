@@ -64,6 +64,54 @@ writeScript "nixly-game-wrap" ''
           ok = False
       os.environ["PROTON_USE_NTSYNC"] = "1" if ok else "0"
 
+  def apply_fps_cap():
+      # Cap fps through MangoHud's Vulkan layer (no_display, so nothing is
+      # drawn). VRR output: refresh-4 keeps frametimes inside the VRR window;
+      # hitting the top of the range falls back to vsync pacing (judder).
+      # Fixed-Hz output: cap at exactly refresh, which stops render-queue
+      # buildup without fighting vsync. The focused monitor is where
+      # nixlytile puts the game; a MANGOHUD/MANGOHUD_CONFIG set by the user
+      # (Steam launch options or launchparams.nix) always wins.
+      if "MANGOHUD" in os.environ or "MANGOHUD_CONFIG" in os.environ:
+          return
+      sock_path = os.environ.get("NIRI_SOCKET")
+      if not sock_path:
+          return
+      import socket
+      try:
+          s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          s.settimeout(1.0)
+          s.connect(sock_path)
+          s.sendall(b'"Outputs"\n')
+          data = b""
+          while not data.endswith(b"\n"):
+              chunk = s.recv(65536)
+              if not chunk:
+                  break
+              data += chunk
+          s.close()
+          outputs = list(json.loads(data)["Ok"]["Outputs"].values())
+      except (OSError, ValueError, KeyError, TypeError):
+          return
+
+      def refresh_mhz(o):
+          try:
+              return o["modes"][o["current_mode"]]["refresh_rate"]
+          except (KeyError, IndexError, TypeError):
+              return 0
+
+      pick = next((o for o in outputs if o.get("focused")), None)
+      if pick is None or refresh_mhz(pick) <= 0:
+          pick = max(outputs, key=refresh_mhz, default=None)
+      if pick is None:
+          return
+      hz = refresh_mhz(pick) // 1000
+      if hz < 30:
+          return
+      cap = hz - 4 if pick.get("vrr_supported") else hz
+      os.environ["MANGOHUD"] = "1"
+      os.environ["MANGOHUD_CONFIG"] = f"no_display,fps_limit={cap}"
+
   def gpu_vendor():
       # The loaded driver picks the variant; Intel-only hosts get no per-vendor params.
       if os.path.exists("/proc/driver/nvidia/version"):
@@ -102,6 +150,8 @@ writeScript "nixly-game-wrap" ''
       apply_prime_offload()
       apply_ntsync()
       cmd = [GAMEMODERUN, *apply_launch_params(sys.argv[1:])]
+      # After apply_launch_params, so a per-game MANGOHUD_CONFIG wins.
+      apply_fps_cap()
       os.execvp(cmd[0], cmd)
 
   if __name__ == "__main__":
