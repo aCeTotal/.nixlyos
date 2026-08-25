@@ -1,0 +1,251 @@
+================================================================================
+STRØMFORBRUK-ANALYSE — nixlytest (MSI, i7-10870H / RTX 3070 Laptop)
+Dato: 2026-08-26
+Målt på batteri, uptime 15 min, live config = /home/total/.nixlyos/
+================================================================================
+
+KONKLUSJON
+--------------------------------------------------------------------------------
+5W er IKKE oppnåelig på denne maskinen med skjerm på.
+
+  i7-10870H = Comet Lake-H, 14nm, 45W TDP. SoC alene idler ~3-4W.
+  15,6" 1920x1080 panel + backlight ~2-3W.
+  Realistisk gulv med skjerm på:  ~7-8W
+  5W nås kun med skjerm av.
+
+Målt nå: 12,04 / 14,38 / 13,49 / 14,53 / 14,95 / 16,63 / 16,33 / 14,87 W
+(Claude Code sto på 32% CPU under målingen — ekte idle ligger ~11-12W.)
+
+Batteri: BAT1, 15,713 V, 96%, Discharging.
+
+
+HVA SOM ALLEREDE ER RIKTIG
+--------------------------------------------------------------------------------
+* dGPU sover ordentlig.
+  /proc/driver/nvidia/gpus/*/power:
+      Runtime D3 status:  Enabled (fine-grained)
+      Video Memory:       Off
+  MERK: `nvidia-smi` rapporterte "P3, 19,85 W" — men selve lesingen vekker
+  GPU-en. Den verdien er en måleartefakt, ikke faktisk forbruk.
+  Panelet drives av i915 (card1-eDP-1 connected), ikke av NVIDIA. Bra.
+
+* msi-ec shift_mode = eco
+* Turbo av: /sys/devices/system/cpu/intel_pstate/no_turbo = 1
+* Klokke kappet: scaling_max_freq = 1360000 (av 2200000)
+  => powersave.c sin cpuclock_cap(0.4) virker som tiltenkt
+* Backlight på 25200/120000 = 21%
+* Bluetooth soft-blocked (rfkill hci0)
+
+
+LEKKASJENE, RANGERT ETTER WATT
+================================================================================
+
+1. GOVERNOR "performance" + EPP "performance"          ~1,5 - 3 W
+--------------------------------------------------------------------------------
+   Fil:  modules/core/perf.nix:9
+         powerManagement.cpuFreqGovernor = "performance";
+
+   Live-status:
+         scaling_driver                    = intel_pstate
+         scaling_governor                  = performance
+         energy_performance_preference     = performance
+         hwp_dynamic_boost                 = 0
+
+   cpufreq.service kjører:
+         cpupower frequency-set --governor performance
+
+   Med intel_pstate i HWP-modus tvinger EPP=performance maks-ytelse-hint til
+   CPU-en selv når den kjører på 800 MHz. Governor og EPP endres aldri ved
+   overgang til batteri — powersave.c rører dem ikke i det hele tatt
+   (jf. kommentar i src/gamemode.c:262: scaling_governor er root-eid).
+
+   FIKS:
+   a) Legg til i perms-lista i modules/core/power.nix:
+        /sys/devices/system/cpu/cpufreq/policy*/scaling_governor
+        /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference
+   b) I nixlytile src/powersave.c — powersave_reassert():
+        batteri:  governor="powersave", EPP="power"
+        AC:       governor="performance", EPP="performance"
+
+
+2. pcie_aspm=performance                               ~1 - 2 W
+--------------------------------------------------------------------------------
+   Fil:  modules/core/boot.nix:74
+
+   Kommentaren over parameteren innrømmer kosten eksplisitt:
+     "NVMe APST and PCIe ASPM wakeups stall multi-ms mid asset-streaming;
+      the idle-power cost is accepted on a gaming machine."
+
+   Live: /sys/module/pcie_aspm/parameters/policy = [default] performance ...
+   ASPM er dermed slått av på samtlige PCIe-lenker, hele tiden.
+
+   FIKS: Fjern kernel-parameteren helt. Sett i stedet policy runtime per
+   power-state:
+        batteri:  echo powersave   > /sys/module/pcie_aspm/parameters/policy
+        AC:       echo performance > /sys/module/pcie_aspm/parameters/policy
+   Da beholder du gaming-oppførselen på strøm og får sparingen på batteri.
+
+
+3. nvme_core.default_ps_max_latency_us=0               ~0,7 - 1,5 W
+--------------------------------------------------------------------------------
+   Fil:  modules/core/boot.nix:73
+
+   APST (Autonomous Power State Transition) er deaktivert. NVMe-disken står
+   permanent i PS0 (full effekt), også når ingen I/O skjer.
+
+   FIKS: endre til "nvme_core.default_ps_max_latency_us=2000".
+   2 ms exit-latency tillater PS1/PS2 uten at asset-streaming merker det.
+   Verdien 0 -> 2000 må gjøres som boot-parameter; runtime-skriving til
+   /sys/module/nvme_core/parameters/default_ps_max_latency_us påvirker bare
+   enheter som probes ETTER skrivingen, altså ingen.
+
+
+4. PANELET KJØRER 300 Hz                               ~1 - 2 W
+--------------------------------------------------------------------------------
+   Fil:  ~/.local/nixlyos/monitors.conf
+         monitor = eDP-1 grid=0,0 1920x1080@300
+
+   src/powersave.c kapper compositor-FPS til 60 på batteri, men PANELET
+   fortsetter å scanne 300 Hz. Display-pipeline, eDP-link og scanout betaler
+   full pris uansett hvor få frames compositoren tegner.
+
+   Live-bekreftelse: IRQ 146 (i915) = 368 irq/s ved idle.
+
+   FIKS: bytt faktisk eDP-modus til 60 Hz ved batteri-engage i powersave.c,
+   ikke bare fps_limit_value. Dette er den største uadresserte posten.
+
+
+5. WIFI POWERSAVE AV                                   ~0,5 - 1,2 W
+--------------------------------------------------------------------------------
+   Live:
+         /sys/module/iwlwifi/parameters/power_save      = N
+         /sys/module/iwlmvm/parameters/power_scheme     = 1
+         nmcli 802-11-wireless.powersave                = 0 (default)
+
+   Interface wlp60s0 er oppe og aktiv. Radioen holdes i full mottaksmodus.
+
+   FIKS: networking.networkmanager.wifi.powersave = true;
+   Eventuelt bare på batteri via: iw dev wlp60s0 set power_save on
+
+
+6. TOUCHPAD VEKKER CPU 1108 GANGER PER SEKUND          ~0,3 - 0,8 W
+--------------------------------------------------------------------------------
+   Målt ved idle, ingen berøring:
+         IRQ 18  (i2c_designware.1)  = 1108 irq/s
+         IRQ 181 (CUST0001:00)       =   26 irq/s
+
+   Enheten: CUST0001:00 06CB:CDAD = Synaptics touchpad, driver i2c_hid_acpi.
+   Den leverer 26 HID-rapporter/sek uberørt; hver rapport koster ~42
+   I2C-kontroller-interrupts. Totalt 2,93 millioner IRQ på 15 min uptime.
+
+   Du bruker ekstern SteelSeries KLC (USB 1-7). Intern touchpad er ren
+   tapspost, og 1100 wakeups/sek hindrer pakken i å nå dype C-states.
+
+   FIKS: deaktiver intern touchpad når ekstern mus er tilkoblet.
+
+
+7. INGEN i915 PSR / FBC                                ~0,5 - 1,5 W
+--------------------------------------------------------------------------------
+   Live kernel-cmdline inneholder NULL i915-parametre.
+   Gamle /home/total/git/nixlyos_master/modules/system/boot.nix hadde:
+         "i915.enable_fbc=1"   # Framebuffer compression
+         "i915.enable_psr=1"   # Panel self refresh
+   Disse forsvant da configen ble flyttet til ~/.nixlyos.
+
+   FIKS: legg tilbake i modules/core/boot.nix kernelParams:
+         "i915.enable_psr=1"
+         "i915.enable_fbc=1"
+         "i915.enable_dc=2"
+   ADVARSEL: PSR gir flimmer på enkelte MSI eDP-paneler. Test før du beholder.
+
+
+8. PCI RUNTIME PM "on" I STEDET FOR "auto"             ~0,3 - 0,8 W
+--------------------------------------------------------------------------------
+   Disse enhetene har power/control = on og suspenderer derfor aldri:
+         00:14.0   xHCI USB controller
+         00:12.0   signal processing
+         00:14.2   signal processing
+         00:1f.0   ISA bridge
+         00:1f.5   SPI controller
+         3b:00.0   NVMe
+         3c:00.0   nettverk
+         3d:00.0   Ethernet  <-- enp61s0 er NO-CARRIER, ingen kabel tilkoblet
+
+   FIKS: udev-regel som setter power/control=auto. Ethernet-kontrolleren er
+   den enkleste gevinsten — den er helt ubrukt.
+
+
+9. C-STATES MISTENKELIG GRUNNE          ~1 - 3 W   [UVERIFISERT]
+--------------------------------------------------------------------------------
+   /sys/devices/system/cpu/cpuidle/current_driver = intel_idle
+   Men eksponerte states på cpu0:
+         state0  POLL
+         state1  C1_ACPI
+         state2  C2_ACPI
+         state3  C3_ACPI
+
+   "_ACPI"-navnene betyr at intel_idle kjører i ACPI _CST-fallback, ikke med
+   native Comet Lake-tabell. Ingen C6/C7s/C8/C9/C10 er tilgjengelig, så
+   pakken kommer trolig aldri under PC3/PC6. På 14nm CML er PC8/PC10 verdt
+   flere watt.
+
+   KUNNE IKKE VERIFISERES — verktøy mangler / rettigheter:
+         turbostat                       ikke installert
+         powertop                        ikke installert
+         dmesg                           Operation not permitted
+                                         (kernel.dmesg_restrict = 1)
+         /sys/class/powercap/intel-rapl:*/energy_uj    permission denied
+         /sys/kernel/debug/pmc_core/     tom / utilgjengelig
+         /sys/module/i915/parameters/*   permission denied
+
+   NESTE STEG: legg pkgs.powertop og turbostat i systemPackages, kjør
+        sudo turbostat --quiet --show PkgWatt,CorWatt,Pkg%pc2,Pkg%pc3,Pkg%pc6,Pkg%pc8,Pkg%pc10 sleep 10
+   Hvis PC8/PC10 = 0,00 er det en BIOS C-State-innstilling som må endres.
+
+
+10. SMÅTTERI
+--------------------------------------------------------------------------------
+   * nvidiaPersistenced = true  (modules/core/gpu/nvidia_intel.nix)
+     Holder NVIDIA-driveren resident. Marginalt på batteri siden VRAM er av,
+     men hindrer full modul-unload.
+   * thermald.service kjører.
+   * tailscale0 er oppe — jevnlige wakeups.
+   * Tre `blender <defunct>` zombier hengende under .appd-wrapped (PID 2362).
+     Dette er en reaping-bug i appd, ikke en strømpost. Bør fikses separat.
+   * Systemet er totalt sett bevisst tunet for gaming-latency, ikke for strøm.
+     Kernel-cmdline: mitigations=off, split_lock_detect=off, nowatchdog,
+     nmi_watchdog=0, transparent_hugepage=always, audit=0.
+
+
+ESTIMAT
+================================================================================
+                        NÅ          ETTER PUNKT 1-8
+   Idle, skjerm på     ~11,5 W        ~7,5 - 8,5 W
+   Skjerm av            ~7,0 W        ~4,5 - 5,5 W
+
+Anslått fordeling ved ekte idle i dag (~11,5 W):
+   SoC (CPU+iGPU, perf governor, grunne C-states)   ~5,0 W
+   Panel 1920x1080@300Hz + backlight 21%            ~3,0 W
+   NVMe (APST av, PS0)                              ~1,2 W
+   WiFi (powersave av)                              ~0,8 W
+   dGPU i D3 (restlekkasje)                         ~0,4 W
+   EC / vifter / hovedkort                          ~1,0 W
+
+5W nås altså kun med skjerm av. Med skjerm på er ~7,5W taket for denne
+plattformen.
+
+
+VALG SOM MÅ TAS
+================================================================================
+Punkt 2 og 3 (pcie_aspm og NVMe APST) er BEVISSTE valg i configen, dokumentert
+med kommentar om at idle-strøm ofres for asset-streaming-latency. Å endre dem
+til faste verdier reverserer et valg som ble tatt med vilje.
+
+Anbefalt kompromiss: gjør dem power-state-avhengige i stedet for faste —
+gaming-oppførsel på strøm, sparing på batteri. Det gjelder punkt 2 direkte
+(policy er runtime-skrivbar). Punkt 3 må være boot-parameter, så der er
+"2000" et fast kompromiss som i praksis ikke merkes.
+
+Punkt 1, 4, 5, 6, 7, 8 har ingen slik konflikt.
+
+================================================================================
