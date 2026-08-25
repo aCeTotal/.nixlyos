@@ -149,7 +149,7 @@ let
     avail_kb=$(${pkgs.gnugrep}/bin/grep MemAvailable /proc/meminfo \
       | ${pkgs.gawk}/bin/awk '{print $2}')
     if [ "''${avail_kb:-0}" -gt 8388608 ]; then
-      for app in steam google-chrome-stable alacritty dolphin mpv fuzzel; do
+      for app in steam google-chrome-stable alacritty nautilus mpv fuzzel; do
         bin=$(command -v "$app" 2>/dev/null) || continue
         store=$(${pkgs.coreutils}/bin/readlink -f "$bin") || continue
         ${pkgs.nix}/bin/nix-store -qR "''${store%/bin/*}" 2>/dev/null \

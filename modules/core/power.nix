@@ -23,6 +23,8 @@
                  /sys/devices/system/cpu/cpufreq/boost \
                  /sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq \
                  /sys/devices/system/cpu/cpufreq/policy*/scaling_min_freq \
+                 /sys/class/power_supply/BAT*/charge_control_start_threshold \
+                 /sys/class/power_supply/BAT*/charge_control_end_threshold \
                  /sys/class/backlight/*/brightness; do
           if [ -e "$f" ]; then
             ${pkgs.coreutils}/bin/chgrp users "$f"

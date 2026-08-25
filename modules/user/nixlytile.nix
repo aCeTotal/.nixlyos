@@ -7,7 +7,7 @@ in
 {
   imports = [
     ./clipman.nix
-    ./dolphin.nix
+    ./nautilus.nix
   ];
 
   home.packages = with pkgs; [
@@ -22,15 +22,6 @@ in
     blueman
     clipman
     fuzzel
-    kdePackages.dolphin
-    kdePackages.dolphin-plugins
-    kdePackages.kio
-    kdePackages.kio-extras
-    kdePackages.kio-fuse
-    kdePackages.kio-admin
-    kdePackages.ark
-    kdePackages.kdegraphics-thumbnailers
-    kdePackages.ffmpegthumbs
     kdePackages.breeze-icons
     kdePackages.qtwayland
     samba
@@ -156,7 +147,7 @@ in
     log-level "info"
 
     // Autostart — one process per entry.
-    // thunar --daemon fjernet: Dolphin er filbehandleren (Super+e), og
+    // thunar --daemon fjernet: Nautilus er filbehandleren (Super+e), og
     // thunar-daemonen dro med seg 5 residente gvfs-volume-monitors
     // (goa/gphoto2/afc/mtp/udisks) ved hver innlogging. Thunar starter
     // fortsatt on-demand om noe kaller den.
@@ -201,7 +192,7 @@ in
     bind "Super+p"            "spawn" "apptoggle"
     bind "Super+g"            "spawn" "fuzzel"
     bind "Super+i"            "spawn" "fuzzel"
-    bind "Super+e"            "spawn" "dolphin"
+    bind "Super+e"            "spawn" "nautilus --new-window"
     bind "Super+Escape"       "spawn" "nixly-lockscreen"
     bind "Super+F12"          "spawn" "nixly-lockscreen"
     // NIXOS_OZONE_WL=1 (modules/system/nixlytile.nix) gir Wayland uten flagg.
