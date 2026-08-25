@@ -33,11 +33,11 @@
     # before every eval, so none of them are committed here.
     # <detect-hw: cpu + gpu>
     ./cpu/intel.nix
-    ./gpu/nvidia_intel.nix
-    ./gpu/intel_igpu.nix
+    ./gpu/nvidia_only.nix
     ../system/nixlytile.nix
     ./newsboat.nix
     ./w3m.nix
+    ./viewers.nix
     ./mpv.nix
     ./retroarch.nix
     ./drawingtablet.nix

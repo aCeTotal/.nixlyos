@@ -154,7 +154,7 @@
 
       # Mailcap: which program opens what.
       home.file.".w3m/mailcap".text = ''
-        image/*;             feh %s
+        image/*;             swayimg %s
         video/*;             mpv %s
         audio/*;             mpv %s
         application/pdf;     zathura %s
