@@ -53,60 +53,33 @@ let
       libs=$(printf '%s\n%s\n' "$libs" "$extra" | ${pkgs.coreutils}/bin/sort -u)
     fi
 
-    # Priority each round: two most recently played plus the newest LastUpdated.
+    # Only the two most recently played games — nothing else.  The old
+    # full-library sweep is gone on purpose: prewarm must never fill RAM
+    # with games that aren't being played (directive Aug 2026: fresh
+    # boots stay lean, only the two last games get warmed).
     manifests() {
       for lib in $libs; do
         for m in "$lib"/steamapps/appmanifest_*.acf; do
           [ -f "$m" ] || continue
           ${pkgs.gawk}/bin/awk -F'"' -v lib="$lib" '
             /"installdir"/  { d = $4 }
-            /"LastUpdated"/ { u = $4 }
             /"LastPlayed"/  { p = $4 }
             END {
               if (d != "" && d !~ /^(Proton|SteamLinuxRuntime|Steamworks)/)
-                printf "%d|%d|%s/steamapps/common/%s\n", p, u, lib, d
+                printf "%d|%s/steamapps/common/%s\n", p, lib, d
             }' "$m"
         done
       done
     }
 
-    prio=$(manifests)
-    if [ -n "$prio" ]; then
-      played=$(printf '%s\n' "$prio" | ${pkgs.coreutils}/bin/sort -t'|' -k1,1 -rn \
-        | ${pkgs.gawk}/bin/awk -F'|' '$1 > 0 { print $3 }' | ${pkgs.coreutils}/bin/head -2)
-      installed=$(printf '%s\n' "$prio" | ${pkgs.coreutils}/bin/sort -t'|' -k2,2 -rn \
-        | ${pkgs.gawk}/bin/awk -F'|' 'NR == 1 { print $3 }')
-      # Here-string, not a pipe: a subshell would swallow the gate's exit.
-      prio_dirs=$(printf '%s\n%s\n' "$played" "$installed" \
-        | ${pkgs.gawk}/bin/awk 'NF && !seen[$0]++')
-      while IFS= read -r d; do
-        [ -n "$d" ] || continue
-        ${prewarmGate} || exit 0
-        warm "$d"
-      done <<< "$prio_dirs"
-    fi
-
-    # Cursor holds the last finished dir so the next round resumes instead of restarting.
-    CURSOR="''${XDG_CACHE_HOME:-$HOME/.cache}/nixly-prewarm-games.cursor"
-    last=$(${pkgs.coreutils}/bin/cat "$CURSOR" 2>/dev/null || true)
-    skip=0
-    [ -n "$last" ] && skip=1
-
-    for lib in $libs; do
-      for d in "$lib"/steamapps/common/*/; do
-        [ -d "$d" ] || continue
-        # Fast-forward to where the previous round stopped.
-        if [ "$skip" = 1 ]; then
-          [ "$d" = "$last" ] && skip=0
-          continue
-        fi
-        # Re-check the gate between games.
-        ${prewarmGate} || exit 0
-        warm "$d"
-        printf '%s\n' "$d" > "$CURSOR"
-      done
-    done
-    ${pkgs.coreutils}/bin/rm -f "$CURSOR"
+    played=$(manifests | ${pkgs.coreutils}/bin/sort -t'|' -k1,1 -rn \
+      | ${pkgs.gawk}/bin/awk -F'|' '$1 > 0 { print $2 }' | ${pkgs.coreutils}/bin/head -2)
+    # Here-string, not a pipe: a subshell would swallow the gate's exit.
+    while IFS= read -r d; do
+      [ -n "$d" ] || continue
+      ${prewarmGate} || exit 0
+      warm "$d"
+    done <<< "$played"
   '';
 
 
@@ -144,19 +117,42 @@ let
     warm "$HOME/.cache/mesa_shader_cache_db"
     warm "$HOME/.cache/nvidia/GLCache"
     warm "$HOME/.nv/GLCache"
-
-    # Full store closure for instant-open apps, only on roomy machines.
-    avail_kb=$(${pkgs.gnugrep}/bin/grep MemAvailable /proc/meminfo \
-      | ${pkgs.gawk}/bin/awk '{print $2}')
-    if [ "''${avail_kb:-0}" -gt 8388608 ]; then
-      for app in steam google-chrome-stable alacritty nautilus mpv fuzzel; do
-        bin=$(command -v "$app" 2>/dev/null) || continue
-        store=$(${pkgs.coreutils}/bin/readlink -f "$bin") || continue
-        ${pkgs.nix}/bin/nix-store -qR "''${store%/bin/*}" 2>/dev/null \
-          | while read -r p; do warm "$p"; done
-      done
-    fi
   '';
+
+  # Runs as a compositor autostart (needs the session env for steam).
+  # Waits until the user has accumulated 5 minutes of mouse activity —
+  # /dev/input/mice delivers a byte on any pointer motion — then brings
+  # Steam up silently and warms the two last played games.  Nothing runs
+  # at boot, so a fresh session stays at minimal RAM until the machine
+  # is demonstrably in use.
+  activityPrewarm = pkgs.writeShellApplication {
+    name = "nixly-activity-prewarm";
+    runtimeInputs = with pkgs; [ coreutils systemd ];
+    text = ''
+      need=300
+      step=10
+      credit=0
+      while [ "$credit" -lt "$need" ]; do
+        t0=$(date +%s)
+        if [ -r /dev/input/mice ]; then
+          # One byte within the window = activity; credit the whole step.
+          if timeout "$step" head -c1 /dev/input/mice >/dev/null 2>&1; then
+            credit=$((credit + step))
+          fi
+        else
+          # No aggregate pointer node: fall back to a plain 5 min delay.
+          credit=$((credit + step))
+        fi
+        t1=$(date +%s)
+        el=$((t1 - t0))
+        [ "$el" -lt "$step" ] && sleep $((step - el))
+      done
+      if command -v steam >/dev/null 2>&1; then
+        nice -n 10 steam -silent >/dev/null 2>&1 &
+      fi
+      exec systemctl --user start nixly-prewarm-games.service
+    '';
+  };
 
   # Replays downloaded Vulkan pipeline caches into the driver caches, and provides
   # the `readahead <appid>` the compositor calls on Play.
@@ -179,27 +175,16 @@ in
   # steam-run gives fossilize_replay its FHS env; prewarm must sit on system PATH.
   environment.systemPackages = [
     prewarm
+    activityPrewarm
     pkgs.steam-run
     pkgs.vmtouch
-    pkgs.swayidle
   ];
 
-  # User services, not system: they need $HOME, and nixlytile only reaches default.target.
-  systemd.user.services.nixly-pagecache = {
-    description = "Preload launch-critical files into page cache";
-    wantedBy = [ "default.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = pagecacheScript;
-      IOSchedulingClass = "idle";
-      CPUSchedulingPolicy = "idle";
-      Nice = 19;
-    };
-  };
-
-  # Idle re-warm: swayidle starts this after 5 min and stops it on the first input.
+  # Started by nixly-activity-prewarm after 5 min of mouse activity —
+  # never at boot/login (fresh sessions stay at minimal RAM).  Warms the
+  # Steam launch chain plus the two last played games.
   systemd.user.services.nixly-prewarm-games = {
-    description = "Preload Steam launch chain and installed games into page cache";
+    description = "Preload Steam launch chain and the two last played games";
     serviceConfig = {
       Type = "oneshot";
       ExecCondition = "${prewarmGate}";

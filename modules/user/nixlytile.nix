@@ -161,28 +161,22 @@ in
     autostart "sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do DISPLAY=:0 xrandr --output DP-1 --primary 2>/dev/null && break; sleep 1; done'"
     autostart "sh -c 'wl-paste --type text --watch clipman store --no-persist'"
     autostart "sh -c 'wl-paste --primary --type text --watch clipman store --no-persist'"
-    // Prewarm av spill naar maskinen staar urort: 5 min uten input starter
-    // nixly-prewarm-games (varmer launch-kjede + alle installerte spill,
-    // se prewarm.nix); foerste input etterpaa stopper den momentant.
-    // Spillstart krever input, saa resume-stoppen treffer alltid foer et
-    // spill er oppe — i tillegg nekter service-gaten aa kjoere naar
-    // gametune/gamemoded melder aktivt spill.
-    // Shader-replay (nixly-prewarm) startes ogsaa ved idle og stoppes paa
-    // samme resume: scriptet pauser fossilize naar et SPILL kjoerer, men
-    // ikke naar du bare bruker skrivebordet. Flock + stampfiler gjoer at
-    // et avbrutt pass er billig aa ta om igjen.
-    autostart "sh -c 'exec swayidle -w timeout 300 \"systemctl --user start nixly-prewarm-games.service nixly-prewarm.service\" resume \"systemctl --user stop nixly-prewarm-games.service nixly-prewarm.service\"'"
+    // Prewarm foerst etter 5 min akkumulert MUSAKTIVITET (ikke idle, og
+    // ingenting ved boot — nyoppstartet system skal ha lavest mulig
+    // RAM-bruk): nixly-activity-prewarm venter paa aktivitet, starter saa
+    // Steam stille i tray og varmer KUN de to sist spilte spillene
+    // (se prewarm.nix). Service-gaten nekter fortsatt aa kjoere naar
+    // gametune/gamemoded melder aktivt spill eller maskinen er travel.
+    autostart "nixly-activity-prewarm"
     // appd walker HELE $HOME ved oppstart (fileindex + gitscan) og bygger
     // et ikon-indeks paa ~21k entries. Rett etter innlogging konkurrerer
     // det med kompositoren om CPU og disk, og musen fryser 2-3s. Utsatt
     // 8s (kompositor + Wayland-klienter er oppe da) og nice 19 saa
     // indekseringen aldri preempter frame-pathen. Super+p virker fra ~8s.
     autostart "sh -c 'sleep 8; exec nice -n 19 appd'"
-    // Steam forvarmes i tray etter innlogging: klienten + steamwebhelper
-    // er da allerede oppe og shader-cache/VDF-er ligger i page cache, saa
-    // "Play" gaar rett i spillstart i stedet for 15-20s klientoppstart.
-    // 20s utsettelse + nice 10 saa innloggingen aldri konkurrerer om CPU/IO.
-    autostart "sh -c 'sleep 20; exec nice -n 10 steam -silent'"
+    // Steam startes IKKE ved innlogging lenger — nixly-activity-prewarm
+    // bringer den opp i tray foerst etter 5 min musaktivitet, saa en
+    // nyoppstartet maskin ikke bruker RAM paa klient + steamwebhelper.
     autostart "mcontrolcenter"
 
     // ───────── keybindings ─────────
