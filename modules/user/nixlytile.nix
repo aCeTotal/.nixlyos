@@ -36,7 +36,6 @@ in
     samba
     cifs-utils
     foot
-    dunst
     brightnessctl
     playerctl
     wireplumber

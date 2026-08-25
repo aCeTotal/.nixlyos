@@ -1,5 +1,5 @@
 {
-  cores = 16;
+  cores = 15;
   memGiB = 15;
   cpuLevel = 3;
   maxJobs = 1;

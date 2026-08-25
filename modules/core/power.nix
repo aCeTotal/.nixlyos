@@ -1,13 +1,15 @@
 { pkgs, ... }:
 
 {
-  # nixlytile's battery popup reads and writes the power profile directly
-  # via sysfs (power-profiles-daemon is intentionally disabled — perf.nix
-  # owns the governor). Backends: ACPI platform_profile, or msi-ec
-  # shift_mode on MSI laptops. sysfs is root-owned, so make whichever
-  # file exists group-writable at boot; no-op on machines without one.
+  # nixlytile reads and writes power knobs directly via sysfs
+  # (power-profiles-daemon is intentionally disabled — perf.nix owns the
+  # governor): the battery popup's platform profile (ACPI platform_profile,
+  # or msi-ec shift_mode on MSI laptops), CPU clock caps + turbo for the
+  # powersave/presence modules, and the backlight for auto-brightness.
+  # sysfs is root-owned, so make whatever exists group-writable at boot;
+  # no-op on machines without the files.
   systemd.services.platform-profile-perms = {
-    description = "Make power-profile sysfs files writable for the users group";
+    description = "Make power/clock/backlight sysfs files writable for the users group";
     wantedBy = [ "multi-user.target" ];
     # msi-ec loads via its own autoload service — shift_mode must exist
     # before the perms pass runs
@@ -16,7 +18,12 @@
       Type = "oneshot";
       ExecStart = pkgs.writeShellScript "platform-profile-perms" ''
         for f in /sys/firmware/acpi/platform_profile \
-                 /sys/devices/platform/msi-ec/shift_mode; do
+                 /sys/devices/platform/msi-ec/shift_mode \
+                 /sys/devices/system/cpu/intel_pstate/no_turbo \
+                 /sys/devices/system/cpu/cpufreq/boost \
+                 /sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq \
+                 /sys/devices/system/cpu/cpufreq/policy*/scaling_min_freq \
+                 /sys/class/backlight/*/brightness; do
           if [ -e "$f" ]; then
             ${pkgs.coreutils}/bin/chgrp users "$f"
             ${pkgs.coreutils}/bin/chmod 0664 "$f"
