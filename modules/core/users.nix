@@ -11,7 +11,6 @@
     initialPassword = "nixly";
     extraGroups = [
       "wheel"
-      "networkmanager"
       "bluetooth"
       "disk"
       "power"

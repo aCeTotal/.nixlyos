@@ -18,8 +18,6 @@ in
     sway-contrib.grimshot
     swappy
     swaybg
-    networkmanagerapplet
-    blueman
     clipman
     fuzzel
     kdePackages.breeze-icons
@@ -152,8 +150,8 @@ in
     // (goa/gphoto2/afc/mtp/udisks) ved hver innlogging. Thunar starter
     // fortsatt on-demand om noe kaller den.
     autostart "swaybg -i \"$HOME/.nixlyos/wallpapers/beach.jpg\" -m fill"
-    autostart "nm-applet --indicator"
-    autostart "blueman-applet"
+    // nm-applet/blueman-applet fjernet: nettverk + bluetooth er innebygd
+    // i nixlytile (egne tray-ikoner med popup, direkte mot kernel/bluez).
     autostart "xwayland-satellite"
     // Uten RandR-primary regner Wine/UE4 første monitor (HDMI, 1080p) som
     // primær display-enhet, så exclusive fullscreen bare tilbyr 1080p-moduser.

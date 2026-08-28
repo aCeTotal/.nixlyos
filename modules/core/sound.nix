@@ -3,7 +3,8 @@
 {
   security.rtkit.enable = true;
   services.pulseaudio.enable = false;
-  services.blueman.enable = true;
+  # Bluetooth UI lives in nixlytile (talks straight to bluetoothd);
+  # blueman is gone.
 
   services.pipewire = {
     enable = true;
@@ -118,6 +119,7 @@
   environment.systemPackages = with pkgs; [
     pipewire           # provides pw-cli, pw-top, pw-dump, pw-link
     wireplumber        # provides wpctl
+    bluez              # bluetoothctl for scripting/debugging
 
     pavucontrol
     pwvucontrol

@@ -355,14 +355,13 @@ has_tb=0
 for t in /sys/bus/thunderbolt/devices/domain*; do [[ -e $t ]] && { has_tb=1; break; }; done
 
 # Write hw/devices.nix.
-# WiFi is deliberately not gated: NetworkManager is needed for ethernet anyway,
-# and the wifi settings are no-ops without a card.
+# WiFi is deliberately not gated: wpa_supplicant is a no-op without a card
+# and nixlytile hides the wifi UI when no adapter exists.
 write_generated "$REPO/modules/core/hw/devices.nix" \
 "{ lib, ... }:
 
 {$( ((has_bt)) || printf '%s' "
   hardware.bluetooth.enable = lib.mkForce false;
-  services.blueman.enable = lib.mkForce false;
 ")$( ((has_fp)) && printf '%s' "
   services.fprintd.enable = true;
 ")$( ((has_tb)) && printf '%s' "

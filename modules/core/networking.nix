@@ -112,14 +112,65 @@
     "149.112.112.112#dns.quad9.net"
   ];
 
-  networking.networkmanager.enable = true;
-  networking.networkmanager.dns = lib.mkDefault "systemd-resolved";
-  networking.networkmanager.wifi.powersave = false;
+  # Minimal kernel-adjacent stack: systemd-networkd for addressing/DHCP,
+  # wpa_supplicant for WPA (driven by nixlytile over its control socket).
+  # nixlytile itself renders the tray icons/popups and enforces the
+  # wifi-off-while-ethernet policy via rfkill.
+  networking.useDHCP = false;
+  networking.useNetworkd = true;
+  systemd.network.enable = true;
+  systemd.network.networks."40-wired" = {
+    matchConfig.Name = "en* eth*";
+    networkConfig.DHCP = "yes";
+    dhcpV4Config.RouteMetric = 100;
+    linkConfig.RequiredForOnline = "no";
+  };
+  systemd.network.networks."45-wifi" = {
+    matchConfig.Name = "wl*";
+    networkConfig.DHCP = "yes";
+    # Wired wins when both are up.
+    dhcpV4Config.RouteMetric = 600;
+    linkConfig.RequiredForOnline = "no";
+  };
+  systemd.network.wait-online.enable = false;
 
-  # Stable MAC; randomised ones make some APs drop the client.
-  networking.networkmanager.wifi.scanRandMacAddress = false;
-  networking.networkmanager.wifi.macAddress = "permanent";
-  networking.networkmanager.ethernet.macAddress = "permanent";
+  networking.wireless = {
+    enable = true;
+    # nixlytile (wheel user) talks to the wpa_supplicant control socket.
+    userControlled.enable = true;
+    # Networks saved from the popup land in imperative.conf (update_config=1).
+    allowAuxiliaryImperativeNetworks = true;
+    scanOnLowSignal = false;
+  };
+
+  # VPN start/stop + autoconnect toggles from the nixlytile popup:
+  # wheel may manage the VPN units without a password prompt.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (!subject.isInGroup("wheel"))
+        return polkit.Result.NOT_HANDLED;
+      // start/stop: manage-units carries the unit name as a detail
+      if (action.id == "org.freedesktop.systemd1.manage-units") {
+        var unit = action.lookup("unit");
+        if (unit &&
+            (unit.indexOf("wg-quick") == 0 ||
+             unit.indexOf("openvpn-") == 0 ||
+             unit.indexOf("openconnect-") == 0 ||
+             unit.indexOf("openfortivpn-") == 0 ||
+             unit.indexOf("strongswan") == 0 ||
+             unit.indexOf("tailscaled") == 0)) {
+          return polkit.Result.YES;
+        }
+      }
+      // enable/disable: manage-unit-files has no unit detail, so it
+      // cannot be scoped per-unit — wheel can sudo anyway
+      if (action.id == "org.freedesktop.systemd1.manage-unit-files" ||
+          action.id == "org.freedesktop.systemd1.reload-daemon") {
+        return polkit.Result.YES;
+      }
+      return polkit.Result.NOT_HANDLED;
+    });
+  '';
 
   # IPv6 privacy extensions off, for a stable address.
   networking.tempAddresses = "disabled";
@@ -129,17 +180,6 @@
     options iwlwifi bt_coex_active=N power_save=0 11n_disable=8 disable_11ax=1
     options iwlmvm power_scheme=1
   '';
-
-  networking.networkmanager.plugins = with pkgs; [
-    networkmanager-openvpn # OpenVPN
-    networkmanager-vpnc # Cisco VPN
-    networkmanager-openconnect # Cisco AnyConnect / OpenConnect
-    networkmanager-fortisslvpn # Fortinet SSL VPN
-    networkmanager-l2tp # L2TP/IPsec
-    networkmanager-sstp # SSTP (Microsoft)
-  ];
-
-  systemd.services.NetworkManager-wait-online.enable = false;
 
   # Spreads NIC IRQs across cores for steadier latency under load.
   services.irqbalance.enable = true;
@@ -151,8 +191,6 @@
   };
 
   environment.systemPackages = with pkgs; [
-    networkmanagerapplet
-
     # VPN clients
     openvpn
     wireguard-tools
