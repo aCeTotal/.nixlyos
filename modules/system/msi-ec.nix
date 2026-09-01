@@ -69,6 +69,22 @@ in
     ACTION=="add|change", SUBSYSTEM=="platform", KERNEL=="msi-ec", RUN+="/bin/sh -c 'chmod 0666 /sys/devices/platform/msi-ec/fan_mode /sys/devices/platform/msi-ec/shift_mode /sys/devices/platform/msi-ec/cooler_boost 2>/dev/null || true'"
   '';
 
+  # Root helper for the statusbar Fans popup: EC fan-table writes (curve
+  # control) go through its socket on /run/nixly-fand.sock, so ec_sys
+  # write_support stays behind a validated interface.  Without it the
+  # popup shows "Curve control needs nixly-fand · helper off".
+  systemd.services.nixly-fand = {
+    description = "nixlytile fan control helper";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-modules-load.service" "msi-ec-autoload.service" ];
+    serviceConfig = {
+      Type = "exec";
+      ExecStart = "${pkgs.nixlytile}/bin/nixly-fand";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+  };
+
   systemd.services.msi-ec-autoload = lib.mkIf (msiEcPkg != null) {
     description = "Load msi-ec with a matching EC firmware configuration";
     after = [ "systemd-modules-load.service" ];
