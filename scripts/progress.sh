@@ -8,20 +8,29 @@ set -uo pipefail
 tty=0; [ -t 2 ] && tty=1
 frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
 frame=0 started=0
-# nixos-rebuild evaluates before it prints anything, which is the longest silent
-# stretch of the run, so the view starts out naming that phase.
-current="evaluating configuration" tag=""
+# nix evaluates before it prints anything, which is the longest silent stretch
+# of the run, so the view starts out naming that phase. --activate feeds the
+# switch-to-configuration output instead: no eval, no version diff to build.
+mode=${1-}
+if [ "$mode" = --activate ]; then
+  current="activating configuration"
+else
+  current="evaluating configuration"
+fi
+tag=""
 builds=0 fetches=0 build_total=0 fetch_total=0
 
 declare -A old_ver seen
 
 # Name and version of everything in the running system, so a package can be shown
 # as old → new the moment nix starts on it.
-while read -r p; do
-  nv=${p##*/}; nv=${nv#*-}
-  [[ $nv =~ ^(.+)-([0-9][a-zA-Z0-9._+]*)(-(dev|man|doc|lib|bin|out|info|debug))?$ ]] || continue
-  old_ver[${BASH_REMATCH[1]}]=${BASH_REMATCH[2]}
-done < <(nix-store -q --requisites /run/current-system 2>/dev/null || true)
+if [ "$mode" != --activate ]; then
+  while read -r p; do
+    nv=${p##*/}; nv=${nv#*-}
+    [[ $nv =~ ^(.+)-([0-9][a-zA-Z0-9._+]*)(-(dev|man|doc|lib|bin|out|info|debug))?$ ]] || continue
+    old_ver[${BASH_REMATCH[1]}]=${BASH_REMATCH[2]}
+  done < <(nix-store -q --requisites /run/current-system 2>/dev/null || true)
+fi
 
 # The spinner line is redrawn in place; upgrades scroll above it.
 spin() {

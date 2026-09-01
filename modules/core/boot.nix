@@ -24,7 +24,12 @@
     initrd.availableKernelModules = [ "nvme" "nvme_core" ];
     initrd.kernelModules = [ "btrfs" ];
     consoleLogLevel = 3;
-    tmp.cleanOnBoot = true;
+    # tmpfs instead of cleanOnBoot: the on-disk /tmp purge ran inside
+    # the initrd ("Create Volatile Files and Directories in the Real
+    # Root") and cost ~2 s of every boot.  tmpfs is empty by nature and
+    # costs RAM only for what is actually in it; zram+earlyoom handle
+    # the pathological cases.
+    tmp.useTmpfs = true;
 
     plymouth.enable = false;
 

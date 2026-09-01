@@ -119,38 +119,55 @@ let
     warm "$HOME/.nv/GLCache"
   '';
 
-  # Runs as a compositor autostart (needs the session env for steam).
-  # Waits until the user has accumulated 5 minutes of mouse activity —
-  # /dev/input/mice delivers a byte on any pointer motion — then brings
-  # Steam up silently and warms the two last played games.  Nothing runs
-  # at boot, so a fresh session stays at minimal RAM until the machine
-  # is demonstrably in use.
+  # Runs as a compositor autostart.  Steam is never started from here —
+  # the user starts it themselves.  Once Steam is running AND the mouse
+  # has been idle for 10 minutes (/dev/input/mice delivers a byte on any
+  # pointer motion, so a silent window = no motion), the two last played
+  # games get warmed.  Any mouse motion during the warm aborts it.
   activityPrewarm = pkgs.writeShellApplication {
     name = "nixly-activity-prewarm";
-    runtimeInputs = with pkgs; [ coreutils systemd ];
+    runtimeInputs = with pkgs; [ coreutils procps systemd ];
     text = ''
-      need=300
+      need=600
       step=10
-      credit=0
-      while [ "$credit" -lt "$need" ]; do
-        t0=$(date +%s)
-        if [ -r /dev/input/mice ]; then
-          # One byte within the window = activity; credit the whole step.
-          if timeout "$step" head -c1 /dev/input/mice >/dev/null 2>&1; then
-            credit=$((credit + step))
-          fi
-        else
-          # No aggregate pointer node: fall back to a plain 5 min delay.
-          credit=$((credit + step))
+      while :; do
+        # Steam must already be running; never started from here.
+        if ! pgrep -x steam >/dev/null 2>&1; then
+          sleep 60
+          continue
         fi
-        t1=$(date +%s)
-        el=$((t1 - t0))
-        [ "$el" -lt "$step" ] && sleep $((step - el))
+        if [ ! -r /dev/input/mice ]; then
+          # No pointer node: idleness can't be measured, so never warm.
+          sleep 600
+          continue
+        fi
+        # A byte within the window = motion; reset the idle counter.
+        idle=0
+        while [ "$idle" -lt "$need" ]; do
+          if timeout "$step" head -c1 /dev/input/mice >/dev/null 2>&1; then
+            idle=0
+          else
+            idle=$((idle + step))
+          fi
+        done
+        pgrep -x steam >/dev/null 2>&1 || continue
+        systemctl --user start nixly-prewarm-games.service &
+        spid=$!
+        aborted=0
+        while kill -0 "$spid" 2>/dev/null; do
+          if timeout "$step" head -c1 /dev/input/mice >/dev/null 2>&1; then
+            aborted=1
+            systemctl --user stop nixly-prewarm-games.service
+            break
+          fi
+        done
+        wait "$spid" 2>/dev/null || true
+        # Completed untouched: done for this session.  Aborted: go back
+        # to waiting for the next 10 min idle stretch.
+        if [ "$aborted" -eq 0 ]; then
+          exit 0
+        fi
       done
-      if command -v steam >/dev/null 2>&1; then
-        nice -n 10 steam -silent >/dev/null 2>&1 &
-      fi
-      exec systemctl --user start nixly-prewarm-games.service
     '';
   };
 
@@ -180,9 +197,10 @@ in
     pkgs.vmtouch
   ];
 
-  # Started by nixly-activity-prewarm after 5 min of mouse activity —
-  # never at boot/login (fresh sessions stay at minimal RAM).  Warms the
-  # Steam launch chain plus the two last played games.
+  # Started by nixly-activity-prewarm once Steam runs and the mouse has
+  # been idle 10 min — never at boot/login (fresh sessions stay at
+  # minimal RAM).  Warms the Steam launch chain plus the two last
+  # played games.
   systemd.user.services.nixly-prewarm-games = {
     description = "Preload Steam launch chain and the two last played games";
     serviceConfig = {

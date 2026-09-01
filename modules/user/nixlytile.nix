@@ -159,12 +159,11 @@ in
     autostart "sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do DISPLAY=:0 xrandr --output DP-1 --primary 2>/dev/null && break; sleep 1; done'"
     autostart "sh -c 'wl-paste --type text --watch clipman store --no-persist'"
     autostart "sh -c 'wl-paste --primary --type text --watch clipman store --no-persist'"
-    // Prewarm foerst etter 5 min akkumulert MUSAKTIVITET (ikke idle, og
-    // ingenting ved boot — nyoppstartet system skal ha lavest mulig
-    // RAM-bruk): nixly-activity-prewarm venter paa aktivitet, starter saa
-    // Steam stille i tray og varmer KUN de to sist spilte spillene
-    // (se prewarm.nix). Service-gaten nekter fortsatt aa kjoere naar
-    // gametune/gamemoded melder aktivt spill eller maskinen er travel.
+    // Prewarm KUN naar Steam allerede kjoerer (startes aldri herfra) OG
+    // musen har vaert inaktiv i 10 min; avbrytes straks musen roerer seg.
+    // Varmer KUN de to sist spilte spillene (se prewarm.nix). Service-
+    // gaten nekter fortsatt aa kjoere naar gametune/gamemoded melder
+    // aktivt spill eller maskinen er travel.
     autostart "nixly-activity-prewarm"
     // appd walker HELE $HOME ved oppstart (fileindex + gitscan) og bygger
     // et ikon-indeks paa ~21k entries. Rett etter innlogging konkurrerer
@@ -172,9 +171,8 @@ in
     // 8s (kompositor + Wayland-klienter er oppe da) og nice 19 saa
     // indekseringen aldri preempter frame-pathen. Super+p virker fra ~8s.
     autostart "sh -c 'sleep 8; exec nice -n 19 appd'"
-    // Steam startes IKKE ved innlogging lenger — nixly-activity-prewarm
-    // bringer den opp i tray foerst etter 5 min musaktivitet, saa en
-    // nyoppstartet maskin ikke bruker RAM paa klient + steamwebhelper.
+    // Steam startes ALDRI automatisk — hverken ved innlogging eller av
+    // nixly-activity-prewarm. Brukeren starter den selv.
     autostart "mcontrolcenter"
 
     // ───────── keybindings ─────────

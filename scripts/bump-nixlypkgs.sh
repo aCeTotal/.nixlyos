@@ -17,15 +17,25 @@ fi
 
 git -C "$NP" pull --ff-only -q
 
-bumped=()
+# One ls-remote per package, all at once — the round-trips dominate, not the work.
+tmp=$(mktemp -d -t nixlypkgs.XXXXXX)
+trap 'rm -rf "$tmp"' EXIT
+files=() repos=() olds=()
 for f in "$NP"/pkgs/*/default.nix; do
   grep -q 'fetchFromGitHub' "$f" || continue
   owner=$(grep -oP 'owner = "\K[^"]+' "$f" | head -1)
   [ "$owner" = "aCeTotal" ] || continue
   repo=$(grep -oP 'repo = "\K[^"]+' "$f" | head -1)
   old=$(grep -oP 'rev = "\K[0-9a-f]{40}' "$f" | head -1)
+  files+=("$f") repos+=("$repo") olds+=("$old")
+  git ls-remote "https://github.com/aCeTotal/$repo" HEAD >"$tmp/$repo" 2>/dev/null &
+done
+wait
 
-  new=$(git ls-remote "https://github.com/aCeTotal/$repo" HEAD | cut -f1)
+bumped=()
+for i in "${!repos[@]}"; do
+  f=${files[i]} repo=${repos[i]} old=${olds[i]}
+  new=$(cut -f1 "$tmp/$repo")
   if [ -z "$new" ]; then
     ui_warn "$repo: failed to fetch HEAD, skipping"
     continue

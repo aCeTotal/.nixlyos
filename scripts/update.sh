@@ -20,7 +20,8 @@ sudo -v
 # it, and it never holds the script's stdout open after the exit.
 setsid bash -c 'while sudo -n true; do sleep 50; done' </dev/null >/dev/null 2>&1 &
 sudo_keepalive=$!
-trap 'kill -- -"$sudo_keepalive" 2>/dev/null' EXIT
+tmp=$(mktemp -d -t nixlyos.XXXXXX)
+trap 'kill -- -"$sudo_keepalive" 2>/dev/null; rm -rf "$tmp"' EXIT
 
 STAMP="${XDG_STATE_HOME:-$HOME/.local/state}/nixlyos/last-build"
 mkdir -p "$(dirname "$STAMP")"
@@ -30,9 +31,21 @@ mkdir -p "$(dirname "$STAMP")"
 # cd, because ls-files prints paths relative to the repo, not to the caller's cwd.
 tree_key() { (cd "$REPO" && git ls-files -z | xargs -0 sha1sum) | sha1sum | cut -d' ' -f1; }
 
-ui_head "Hardware"
+# Everything without an ordering dependency starts immediately and is collected
+# where its result is needed: the two branch listings feed the channel bump
+# (which must precede the flake update), detect-hw only has to finish before
+# the eval. One ls-remote per repo lists every release branch at once, instead
+# of one round-trip per candidate version.
+git ls-remote --heads https://github.com/NixOS/nixpkgs 'nixos-[0-9]*' >"$tmp/np" 2>/dev/null &
+np_pid=$!
+git ls-remote --heads https://github.com/nix-community/home-manager 'release-*' >"$tmp/hm" 2>/dev/null &
+hm_pid=$!
 # The cpu/gpu imports must match the machine before eval.
-bash "$REPO/scripts/detect-hw.sh" "$REPO"
+bash "$REPO/scripts/detect-hw.sh" "$REPO" >"$tmp/hw" 2>&1 &
+hw_pid=$!
+
+ui_head "nixlypkgs"
+bash "$REPO/scripts/bump-nixlypkgs.sh"
 
 cur=$(grep -oP 'nixpkgs/nixos-\K[0-9]{2}\.[0-9]{2}' "$FLAKE")
 
@@ -42,18 +55,17 @@ next_ver() {
   if [ "$m" = "05" ]; then echo "$y.11"; else printf '%02d.05\n' $((10#$y + 1)); fi
 }
 
-has_branch() { git ls-remote --exit-code --heads "$1" "$2" >/dev/null 2>&1; }
-
+ui_head "Nixpkgs-channel"
+wait "$np_pid" || true
+wait "$hm_pid" || true
 # Only jump releases when both branches exist; home-manager against the wrong
-# nixpkgs base breaks eval.
+# nixpkgs base breaks eval. Offline both files are empty, so the channel stays.
 new=$cur
 while cand=$(next_ver "$new") &&
-      has_branch https://github.com/NixOS/nixpkgs "nixos-$cand" &&
-      has_branch https://github.com/nix-community/home-manager "release-$cand"; do
+      grep -q "refs/heads/nixos-$cand\$" "$tmp/np" &&
+      grep -q "refs/heads/release-$cand\$" "$tmp/hm"; do
   new=$cand
 done
-
-ui_head "Nixpkgs-channel"
 if [ "$new" != "$cur" ]; then
   ui_ok "Bumped channel from $cur to the newest: $new"
   sed -i "s|nixpkgs/nixos-$cur|nixpkgs/nixos-$new|; s|home-manager/release-$cur|home-manager/release-$new|" "$FLAKE"
@@ -61,12 +73,9 @@ else
   ui_ok "Using the latest stable-channel: $cur"
 fi
 
-ui_head "nixlypkgs"
-bash "$REPO/scripts/bump-nixlypkgs.sh"
-
 ui_head "Flake inputs"
 # The retry round below needs the old revisions to roll back just the failing input.
-lockbak=$(mktemp -t nixlyos-lock.XXXXXX)
+lockbak="$tmp/flake.lock"
 cp "$REPO/flake.lock" "$lockbak"
 
 # The lock diff is noise, so it is only printed when the command fails.
@@ -77,52 +86,68 @@ fi
 updated=$(grep -oP "^• Updated input '\K[^'/]+(?=')" <<<"$lockdiff" | tr '\n' ' ' || true)
 [ -n "$updated" ] && ui_ok "updated: ${updated% }" || ui_ok "all inputs already current"
 
-# Nothing to build when the config evaluates to the running system, so the whole
-# rebuild is skipped: activation scripts are not re-run and no generation is made.
+ui_head "Hardware"
+if ! wait "$hw_pid"; then
+  cat "$tmp/hw" >&2
+  ui_err "hardware detection failed"
+  exit 1
+fi
+cat "$tmp/hw" >&2
+
 key=$(tree_key)
 running=$(readlink -f /run/current-system)
 
 up_to_date() {
-  rm -f "$lockbak"
   printf '%s %s\n' "$key" "$running" > "$STAMP"
-  ui_head "Rebuild"
   ui_ok "System is already up-to-date. Nothing to do."
   exit 0
 }
 
+ui_head "Rebuild"
 # Same files and same running system as the last check: the eval can only give the
 # same answer, so it is skipped entirely.
 skey="" ssys=""
 if [ -s "$STAMP" ]; then read -r skey ssys < "$STAMP"; fi
 [ "$skey" = "$key" ] && [ "$ssys" = "$running" ] && up_to_date
 
-# Eval only, no build. On eval errors fall through so nixos-rebuild prints them.
-if sys=$(nix eval --raw "$REPO#nixosConfigurations.nixlyos.config.system.build.toplevel" 2>/dev/null) &&
-   [ "$sys" = "$running" ]; then
-  up_to_date
-fi
-
-ui_head "Rebuild"
-# switch first so everything is usable at once, falling back to boot if activation
-# fails. --sudo, not `sudo nixos-rebuild`: eval must run as the user so the fetcher
-# can reach private flake inputs over ssh.
 # Fixed path so the log can be tailed while the build runs and read afterwards.
 # Truncated per run, never deleted.
 log="${XDG_STATE_HOME:-$HOME/.local/state}/nixlyos/update.log"
 mkdir -p "$(dirname "$log")"
 : > "$log"
 
-# Nix names the package it starts on its own line, so the whole output goes to the
-# log and the same stream drives the live view in progress.sh.
-run_rebuild() {
-  nixos-rebuild "$1" --sudo --keep-going --flake "$REPO#nixlyos" 2>&1 |
-    tee -a "$log" | bash "$REPO/scripts/progress.sh"
+ATTR="$REPO#nixosConfigurations.nixlyos.config.system.build.toplevel"
+
+# One nix build does eval and build in a single pass — nixos-rebuild would eval
+# a second time on top of the up-to-date check. Built as the user so the fetcher
+# can reach private flake inputs over ssh; only profile-set and activation run
+# as root. stdout carries the out path into a file, stderr the raw build lines
+# into the log and the live view.
+build_sys() {
+  local -; set -o pipefail
+  nix build --no-link --print-out-paths --keep-going "$ATTR" \
+    2>&1 1>"$tmp/out" | tee -a "$log" | bash "$REPO/scripts/progress.sh"
 }
 
-rebuild() {
+# switch-to-configuration inside a transient unit, like nixos-rebuild does, so
+# activation survives if it restarts the very session this script runs in.
+activate() { # switch|boot
   local -; set -o pipefail
-  run_rebuild switch && return 0
-  run_rebuild boot && return 2
+  sudo systemd-run --collect --no-ask-password --pipe --quiet --wait \
+    --service-type=exec --unit="nixlyos-$1-$$" \
+    "$sys/bin/switch-to-configuration" "$1" 2>&1 |
+    tee -a "$log" | bash "$REPO/scripts/progress.sh" --activate
+}
+
+# 0 activated, 2 built but only set for next boot, 3 nothing new, 1 failed.
+rebuild() {
+  build_sys || return 1
+  sys=$(<"$tmp/out")
+  [ "$sys" = "$running" ] && return 3
+  # Profile first, so the bootloader entry exists before activation.
+  sudo nix-env -p /nix/var/nix/profiles/system --set "$sys" || return 1
+  activate switch && return 0
+  activate boot && return 2
   return 1
 }
 
@@ -135,6 +160,7 @@ failed_pkgs() {
 ui_info "building (log: $log)"
 printf '\n' >&2
 rebuild && rc=0 || rc=$?
+(( rc == 3 )) && up_to_date
 
 # The closure is atomic, so one failing package means no generation at all; rolling
 # back only the input that owns it lets every other input keep its new revision.
@@ -157,6 +183,7 @@ if (( rc == 1 )); then
     cp "$lockbak" "$REPO/flake.lock"
     (( ${#keep[@]} > 0 )) && nix flake update --refresh --flake "$REPO" "${keep[@]}" >>"$log" 2>&1 || true
     rebuild && rc=0 || rc=$?
+    (( rc == 3 )) && rc=0
     (( rc == 1 )) || ui_warn "kept at previous version: ${failed% } — everything else updated"
   fi
 fi
@@ -166,10 +193,10 @@ fi
 if (( rc == 1 )) && ! cmp -s "$lockbak" "$REPO/flake.lock"; then
   cp "$lockbak" "$REPO/flake.lock"
   rebuild && rc=0 || rc=$?
+  (( rc == 3 )) && rc=0
   (( rc == 1 )) || ui_warn "update rolled back — previous input revisions restored"
 fi
 
-rm -f "$lockbak"
 printf '\n' >&2
 case $rc in
   0) ui_ok "Rebuild successful. Activation successful.";;
