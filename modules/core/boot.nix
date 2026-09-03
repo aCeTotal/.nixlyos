@@ -73,16 +73,26 @@
       # Worth 10-15 % CPU on older Intel; accepted on a single-user desktop.
       "mitigations=off"
       "split_lock_detect=off"
-      # NVMe APST and PCIe ASPM wakeups stall multi-ms mid asset-streaming;
-      # the idle-power cost is accepted on a gaming machine.
-      "nvme_core.default_ps_max_latency_us=0"
-      "pcie_aspm=performance"
+      # Battery target (95 Wh / 10 h ≈ 9.5 W) needs these idle savings:
+      # NVMe Autonomous Power State Transition (deep drive sleep after ~100 ms
+      # idle) and PCIe Active State Power Management (link L1). Tradeoff: a
+      # multi-ms wake stall is possible mid asset-streaming; accepted for the
+      # battery budget. Was 0 / performance (gaming-latency biased).
+      "nvme_core.default_ps_max_latency_us=100000"
+      "pcie_aspm=powersave"
       # auditd is disabled, but the kernel audit path still taxes every
       # syscall until told otherwise.
       "audit=0"
     ];
 
     blacklistedKernelModules = [ "8250_pci" ];
+
+    # Idle power: HD-audio codec autosuspend (steady idle draw otherwise), and
+    # i915 panel self-refresh + framebuffer compression (panel/iGPU savings).
+    extraModprobeConfig = ''
+      options snd_hda_intel power_save=1 power_save_controller=Y
+      options i915 enable_fbc=1 enable_psr=1
+    '';
   };
 
   # sbctl manages the Secure Boot keys.

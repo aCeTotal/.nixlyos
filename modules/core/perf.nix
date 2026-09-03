@@ -35,6 +35,15 @@
   services.udev.extraRules = ''
     ACTION=="add|change", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/scheduler}="none"
     ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/scheduler}="bfq"
+
+    # Let the compositor's on-battery powersave own the CPU governor + EPP
+    # (src/cpuclock.c writes scaling_governor=powersave, EPP=power on battery).
+    # These ship root-only; grant the users group write.
+    ACTION=="add|change", SUBSYSTEM=="cpu", RUN+="${pkgs.bash}/bin/sh -c 'chgrp users /sys/devices/system/cpu/cpufreq/policy*/scaling_governor /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference 2>/dev/null; chmod 0664 /sys/devices/system/cpu/cpufreq/policy*/scaling_governor /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference 2>/dev/null || true'"
+
+    # Idle power: runtime-autosuspend PCI + USB devices (idle → D3/suspend).
+    ACTION=="add", SUBSYSTEM=="pci", TEST=="power/control", ATTR{power/control}="auto"
+    ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
   '';
 
   # systemd-oomd and the vm.dirty_* knobs live in zram.nix.

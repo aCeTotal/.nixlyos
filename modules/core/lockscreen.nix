@@ -61,6 +61,34 @@ in
     };
   };
 
+  # Lock before the machine sleeps so lid-open lands on the password prompt,
+  # the exact session restored behind it. Launches the session-lock client in
+  # the user's Wayland session and waits briefly for the lock surface to come
+  # up before suspend proceeds. KillMode=none so the backgrounded locker is not
+  # reaped when this oneshot exits — it must live across the suspend/resume and
+  # until the user authenticates. A redundant locker (idle daemon also fired)
+  # gets `finished` from the compositor and exits: the lock is single-holder.
+  systemd.services.nixly-lock-before-sleep = {
+    description = "Lock the Wayland session before sleep";
+    before = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    wantedBy = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      KillMode = "none";
+      User = "total";
+      Group = "users";
+      Environment = [
+        "XDG_RUNTIME_DIR=/run/user/1000"
+        "WAYLAND_DISPLAY=wayland-0"
+        "NIXLY_LOCKSCREEN_PAM_SERVICE=${pamService}"
+      ];
+      ExecStart = pkgs.writeShellScript "nixly-lock-before-sleep" ''
+        ${lockscreen}/bin/nixly-lockscreen &
+        ${pkgs.coreutils}/bin/sleep 0.5
+      '';
+    };
+  };
+
   # Ctrl+Alt+Del must not reboot the machine.
   systemd.suppressedSystemUnits = [ "ctrl-alt-del.target" ];
 }

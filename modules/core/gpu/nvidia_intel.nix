@@ -24,9 +24,16 @@ in
 
   hardware.nvidia = {
     modesetting.enable = true;
-    nvidiaPersistenced = true;
-    powerManagement.enable = false;
-    powerManagement.finegrained = false;
+    # Persistenced keeps the dGPU initialized (awake) at all times — the main
+    # idle drain. Off, so the driver can drop the GPU when nothing uses it.
+    nvidiaPersistenced = false;
+    # Save/restore dGPU state across S3 so a closed lid actually sleeps it.
+    powerManagement.enable = true;
+    # Fully power the dGPU off (D3cold, ~0 W) whenever no offload client is
+    # running — always, on battery. Intel drives the panel (PRIME offload
+    # below), so the dGPU has no outputs and can suspend. Games that need it
+    # get it via set_dgpu_env()/nvidia-offload and wake it (~200 ms first use).
+    powerManagement.finegrained = true;
     open = false;
     nvidiaSettings = false;
     # `cachyos` is chaotic-nyx's prebuilt driver matched to the CachyOS kernel;

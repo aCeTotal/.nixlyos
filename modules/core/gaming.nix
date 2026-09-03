@@ -54,13 +54,19 @@
     vulkan-tools
     pkgsi686Linux.vulkan-loader # 32-bit Vulkan for Steam games
     pkgsi686Linux.mangohud      # so the fps cap also reaches 32-bit games
+  ] ++ lib.optional (pkgs ? low-latency-layer)
+    # Implicit Vulkan layer: VK_NV_low_latency2 (Reflex) + VK_AMD_anti_lag
+    # on any GPU. Opt-in per game — gamewrap sets LOW_LATENCY_LAYER=1.
+    # From nixlypkgs; the guard keeps eval green until that rev is pushed.
+    pkgs.low-latency-layer
+  ++ (with pkgs; [
 
     libnotify           # gamemode notifications
     schedtool
 
     mpv
     yt-dlp
-  ];
+  ]);
 
   hardware.xpadneo.enable = true;   # Xbox Bluetooth
   hardware.xone.enable = true;      # Xbox USB dongle and wired pads

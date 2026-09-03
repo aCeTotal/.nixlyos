@@ -146,12 +146,25 @@ writeScript "nixly-game-wrap" ''
               args.append(tok)
       return cmd + args
 
+  def apply_low_latency():
+      # Opt into the implicit low-latency Vulkan layer (hardware-agnostic
+      # VK_NV_low_latency2/Reflex + VK_AMD_anti_lag). Safe on NVIDIA too:
+      # in its default anti_lag mode the layer dedups against driver
+      # extensions and never touches VK_NV_low_latency2, so native Reflex
+      # passes through untouched while Anti-Lag titles (e.g. CS2) gain
+      # VK_AMD_anti_lag the NVIDIA driver lacks. Never combine with
+      # LOW_LATENCY_LAYER_REFLEX=1 on NVIDIA - that mode intercepts the
+      # driver's native Reflex implementation. setdefault: a per-game
+      # LOW_LATENCY_LAYER/DISABLE_LOW_LATENCY_LAYER always wins.
+      os.environ.setdefault("LOW_LATENCY_LAYER", "1")
+
   def main():
       apply_prime_offload()
       apply_ntsync()
       cmd = [GAMEMODERUN, *apply_launch_params(sys.argv[1:])]
       # After apply_launch_params, so a per-game MANGOHUD_CONFIG wins.
       apply_fps_cap()
+      apply_low_latency()
       os.execvp(cmd[0], cmd)
 
   if __name__ == "__main__":

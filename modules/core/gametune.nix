@@ -1,151 +1,69 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
-  saveFile = "/run/nixly-gametune.swappiness";
-  dpmFile = "/run/nixly-gametune.dpm";
-  x3dFile = "/run/nixly-gametune.x3d";
-  oomStateDir = "/run/nixly-gametune";
-
-  start = pkgs.writeShellScript "nixly-gametune-start" ''
-    set -u
-    export PATH=${pkgs.coreutils}/bin
-
-    # Lower swappiness while a game runs; zram compression steals cycles from
-    # the game cores. The real value is saved so ExecStop restores it.
-    cat /proc/sys/vm/swappiness > ${saveFile} || true
-    echo 10 > /proc/sys/vm/swappiness || true
-
-    # One explicit compaction, replacing the background one perf.nix disables.
-    echo 1 > /proc/sys/vm/compact_memory || true
-
-    # AMD DPM to high; a no-op where the sysfs file does not exist.
-    : > ${dpmFile}
-    for f in /sys/class/drm/card*/device/power_dpm_force_performance_level; do
-      [ -e "$f" ] || continue
-      printf '%s %s\n' "$f" "$(cat "$f")" >> ${dpmFile}
-      echo high > "$f" || true
-    done
-
-    # AMD X3D dual-CCD: bias the scheduler's core ranking toward the
-    # V-Cache CCD while the game runs (amd_3d_vcache driver; the glob
-    # matches nothing on every other machine). nixlytile additionally hard
-    # pins the game there — this covers the game's helper processes too.
-    : > ${x3dFile}
-    for f in /sys/bus/platform/devices/AMDI0101*/amd_x3d_mode; do
-      [ -e "$f" ] || continue
-      printf '%s %s\n' "$f" "$(cat "$f")" >> ${x3dFile}
-      echo cache > "$f" || true
-    done
-
-    # PM QoS 0 µs keeps the CPU out of deep C-states for as long as fd 3 stays
-    # open, hence the exec sleep; the existence check keeps VMs from failing.
-    if [ -e /dev/cpu_dma_latency ]; then
-      exec 3>/dev/cpu_dma_latency
-      head -c4 /dev/zero >&3
-    fi
-    exec sleep infinity
-  '';
-
-  stop = pkgs.writeShellScript "nixly-gametune-stop" ''
-    set -u
-    export PATH=${pkgs.coreutils}/bin
-    if [ -r ${saveFile} ]; then
-      cat ${saveFile} > /proc/sys/vm/swappiness || true
-      rm -f ${saveFile}
-    fi
-    if [ -r ${dpmFile} ]; then
-      while read -r path value; do
-        [ -n "$path" ] && echo "$value" > "$path" 2>/dev/null
-      done < ${dpmFile}
-      rm -f ${dpmFile}
-    fi
-    if [ -r ${x3dFile} ]; then
-      while read -r path value; do
-        [ -n "$path" ] && echo "$value" > "$path" 2>/dev/null
-      done < ${x3dFile}
-      rm -f ${x3dFile}
-    fi
-  '';
-
-  # OOM protection for the game tree. Lowering oom_score_adj needs
-  # CAP_SYS_RESOURCE, so the compositor cannot do it itself. The whole tree
-  # matters, not just the leader: a Proton game is a wine server plus several
-  # helper processes, and killing any of them ends the session just as
-  # effectively. Every old value is saved so unprotect restores it.
-  protect = pkgs.writeShellScript "nixly-gameprio-protect" ''
-    set -u
-    export PATH=${pkgs.coreutils}/bin:${pkgs.gawk}/bin
-
-    pid=''${1:-}
-    [ -n "$pid" ] || { echo "usage: $0 <pid>" >&2; exit 1; }
-    [ -d "/proc/$pid" ] || exit 0
-
-    state=${oomStateDir}/oom.$pid
-    : > "$state"
-
-    # One pass over /proc, repeated until no new descendant is picked up,
-    # so children that appear below an already-matched parent are caught.
-    matched=" $pid "
-    pass=0
-    while [ "$pass" -lt 3 ]; do
-      pass=$((pass + 1))
-      for proc in /proc/[0-9]*; do
-        p=''${proc#/proc/}
-        case "$matched" in *" $p "*) continue ;; esac
-        ppid=$(awk '/^PPid:/ {print $2; exit}' "$proc/status" 2>/dev/null) || continue
-        [ -n "''${ppid:-}" ] || continue
-        case "$matched" in *" $ppid "*) matched="$matched$p " ;; esac
-      done
-    done
-
-    for p in $matched; do
-      [ -f "/proc/$p/oom_score_adj" ] || continue
-      old=$(cat "/proc/$p/oom_score_adj" 2>/dev/null) || continue
-      printf '%s %s\n' "$p" "$old" >> "$state"
-      echo -900 > "/proc/$p/oom_score_adj" 2>/dev/null || true
-    done
-  '';
-
-  unprotect = pkgs.writeShellScript "nixly-gameprio-unprotect" ''
-    set -u
-    export PATH=${pkgs.coreutils}/bin
-
-    pid=''${1:-}
-    [ -n "$pid" ] || { echo "usage: $0 <pid>" >&2; exit 1; }
-    state=${oomStateDir}/oom.$pid
-    [ -f "$state" ] || exit 0
-
-    while read -r old_pid old_value; do
-      [ -f "/proc/$old_pid/oom_score_adj" ] || continue
-      echo "$old_value" > "/proc/$old_pid/oom_score_adj" 2>/dev/null
-    done < "$state"
-    rm -f "$state"
+  # The privileged half of nixlytile's game mode. The script is a verbatim
+  # copy of nixlytile:scripts/nixly-gametune — that file is the source of
+  # truth, keep the two in sync. Everything it touches is auto-detected
+  # (CPU driver, GPU vendor, exposed knobs) and every value is saved before
+  # it is changed and restored on stop.
+  #
+  # No errexit wrapper: the script handles every failure itself (set -u
+  # only), so a missing sysfs knob on one machine never kills the unit.
+  gametune = pkgs.writeShellScriptBin "nixly-gametune" ''
+    export PATH=${lib.makeBinPath (with pkgs; [
+      coreutils
+      gnugrep
+      gawk
+      procps
+      util-linux
+      systemd
+      scx.rustscheds # scx_lavd, attached while a game runs
+    ])}:/run/current-system/sw/bin
+    ${builtins.readFile ./nixly-gametune}
   '';
 in
 {
-  # The privileged half of nixlytile's game mode; everything else it used to
-  # touch is now static in boot.nix, perf.nix and system_services.nix.
+  # On PATH for `nixly-gametune status` debugging.
+  environment.systemPackages = [ gametune ];
+
+  # Started/stopped by nixlytile when ultra game mode kicks in. The daemon
+  # applies CPU/kernel/GPU tuning, attaches scx_lavd, holds
+  # /dev/cpu_dma_latency at 0 us, and restores everything on stop — or by
+  # itself if the compositor dies without stopping the unit.
   systemd.services.nixly-gametune = {
     description = "Low-latency tuning while a game is running";
     serviceConfig = {
       Type = "simple";
-      ExecStart = start;
-      ExecStop = stop;
+      ExecStart = "${gametune}/bin/nixly-gametune daemon";
       Restart = "no";
+      RuntimeDirectory = "nixly-gametune";
+      RuntimeDirectoryPreserve = "yes";
     };
   };
 
-  # Per-game OOM protection; the game PID is the instance name.
+  # Per-game OOM + VRAM (dmem) protection; the game PID is the instance name.
   systemd.services."nixly-gameprio@" = {
-    description = "OOM protection for game PID %i";
+    description = "OOM/VRAM protection for game PID %i";
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${protect} %i";
-      ExecStop = "${unprotect} %i";
-      # That is where the saved oom_score_adj values live.
+      ExecStart = "${gametune}/bin/nixly-gametune protect %i";
+      ExecStop = "${gametune}/bin/nixly-gametune unprotect %i";
       RuntimeDirectory = "nixly-gametune";
       RuntimeDirectoryPreserve = "yes";
+    };
+  };
+
+  # Boot-time NVIDIA power-limit ceiling: costs nothing at idle (clocks
+  # still scale down), only removes the factory cap under load. No state is
+  # saved — this is the baseline a game-mode restore lands back on.
+  systemd.services.nixly-gpumax = {
+    description = "NVIDIA power-limit ceiling at boot";
+    wantedBy = [ "multi-user.target" ];
+    unitConfig.ConditionPathExists = "/sys/module/nvidia";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${gametune}/bin/nixly-gametune gpumax";
     };
   };
 
