@@ -31,6 +31,8 @@
     ./security.nix
     ./keyring.nix
     ./power.nix
+    ./diskd.nix
+    ./disks-auto.nix
     # scripts/detect-hw.sh rewrites the cpu/ and gpu/ imports below this anchor
     # before every eval, so none of them are committed here.
     # <detect-hw: cpu + gpu>
