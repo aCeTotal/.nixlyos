@@ -21,6 +21,15 @@
     extraTypes = [
       { type = "Game"; nice = -10; ioclass = "best-effort"; ionice = 0; }
     ];
+    # The CachyOS rules classify sddm as BG_CPUIO (nice 16, sched idle).
+    # sddm-helper forks the whole session out of sddm, so nixlytile, Xwayland,
+    # Steam and every app inherited SCHED_IDLE — the session starved to a halt
+    # (Steam webhelper IPC timeouts, apps failing to launch) whenever any
+    # SCHED_OTHER process needed CPU (shader prewarm, nix builds). Override the
+    # rule so the display manager and everything it forks stay SCHED_OTHER.
+    extraRules = [
+      { name = "sddm"; nice = 0; sched = "other"; ioclass = "best-effort"; }
+    ];
   };
 
   # MGLRU: keep the last second of the working set out of reclaim so memory
