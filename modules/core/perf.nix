@@ -27,8 +27,12 @@
     # (Steam webhelper IPC timeouts, apps failing to launch) whenever any
     # SCHED_OTHER process needed CPU (shader prewarm, nix builds). Override the
     # rule so the display manager and everything it forks stay SCHED_OTHER.
+    # sddm-helper is the process that actually forks the session (sddm itself
+    # never does), and the CachyOS set has a separate BG_CPUIO rule for it —
+    # overriding only "sddm" still left the whole session SCHED_IDLE.
     extraRules = [
       { name = "sddm"; nice = 0; sched = "other"; ioclass = "best-effort"; }
+      { name = "sddm-helper"; nice = 0; sched = "other"; ioclass = "best-effort"; }
     ];
   };
 
