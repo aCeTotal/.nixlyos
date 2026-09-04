@@ -10,7 +10,7 @@
     ./tailscale.nix
     ./ssh_gate.nix
     ./nix.nix
-    ./lockscreen.nix
+    # ./lockscreen.nix  # disabled: no auto-lock/lockscreen
     ./nfs.nix
     ./ssh.nix
     ./gaming.nix
